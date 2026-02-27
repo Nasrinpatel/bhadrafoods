@@ -1,3 +1,17 @@
+<!-- MARQUEE START -->
+<!-- <div class="marquee-wrapper">
+    <div class="marquee">
+        <span>
+            ✦ Taste Of Tradition ✦ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            ✦ Surety For Purity ✦ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            ✦ Celebration Boxes ✦ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            ✦ Gujarati Snacks ✦ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            ✦ Fine Gift Boxes ✦ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </span>
+    </div>
+</div> -->
+<!-- MARQUEE END -->
+
 <section class="banner-area pt-100 pb-95">
     <div class="container">
         <div class="row g-0">
