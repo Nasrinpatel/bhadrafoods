@@ -59,3 +59,4 @@ storage/framework/maintenance.php
 .claude/
 .mcp.json
 .taskmaster/
+composer.lock
