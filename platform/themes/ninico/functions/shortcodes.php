@@ -768,116 +768,120 @@ app()->booted(function (): void {
         return Theme::partial('shortcodes.about.index', compact('shortcode'));
     });
 
-    // Shortcode::setAdminConfig('about', function (array $attributes) {
-    //     $form = ShortcodeForm::createFromArray($attributes)
-    //         ->withLazyLoading()
-    //         ->columns()
-    //         ->add('image_1', 'mediaImage', [
-    //             'label' => __('Image :number', ['number' => 1]),
-    //         ])
-    //         ->add('image_2', 'mediaImage', [
-    //             'label' => __('Image :number', ['number' => 2]),
-    //         ])
-    //         ->add('logo', 'mediaImage', [
-    //             'label' => __('Logo'),
-    //             'colspan' => 2,
-    //         ])
-    //         ->add('title', 'text', [
-    //             'label' => __('Title'),
-    //             'colspan' => 2,
-    //         ])
-    //         ->add('subtitle', 'text', [
-    //             'label' => __('Subtitle'),
-    //             'colspan' => 2,
-    //         ])
-    //         ->add('story_text_1', 'textarea', [
-    //             'label' => __('Story text :number', ['number' => 1]),
-    //             'attr' => [
-    //                 'rows' => 3,
-    //             ],
-    //             'colspan' => 2,
-    //         ])
-    //         ->add('story_text_2', 'textarea', [
-    //             'label' => __('Story text :number', ['number' => 2]),
-    //             'attr' => [
-    //                 'rows' => 3,
-    //             ],
-    //             'colspan' => 2,
-    //         ]);
-
-    //     for ($i = 1; $i <= 5; $i++) {
-    //         $form
-    //             ->add('list_item_' . $i, 'text', [
-    //                 'label' => __('List item :number', ['number' => $i]),
-    //                 'colspan' => 2,
-    //             ])
-    //             ->add('list_item_url_' . $i, 'text', [
-    //                 'label' => __('List item url :number', ['number' => $i]),
-    //                 'colspan' => 2,
-    //             ]);
-    //     }
-
-    //     return $form;
-    // });
     Shortcode::setAdminConfig('about', function (array $attributes) {
+        $form = ShortcodeForm::createFromArray($attributes)
+            ->withLazyLoading()
+            ->columns()
+            ->add('image_1', 'mediaImage', [
+                'label' => __('Image :number', ['number' => 1]),
+            ])
+            ->add('image_2', 'mediaImage', [
+                'label' => __('Image :number', ['number' => 2]),
+            ])
+            ->add('logo', 'mediaImage', [
+                'label' => __('Logo'),
+                'colspan' => 2,
+            ])
+            ->add('title', 'text', [
+                'label' => __('Title'),
+                'colspan' => 2,
+            ])
+            ->add('subtitle', 'text', [
+                'label' => __('Subtitle'),
+                'colspan' => 2,
+            ])
+            ->add('story_text_1', 'textarea', [
+                'label' => __('Story text :number', ['number' => 1]),
+                'attr' => [
+                    'rows' => 3,
+                ],
+                'colspan' => 2,
+            ])
+            ->add('story_text_2', 'textarea', [
+                'label' => __('Story text :number', ['number' => 2]),
+                'attr' => [
+                    'rows' => 3,
+                ],
+                'colspan' => 2,
+            ]);
 
-    return ShortcodeForm::createFromArray($attributes)
-        ->withLazyLoading()
-        ->columns()
+        for ($i = 1; $i <= 5; $i++) {
+            $form
+                ->add('list_item_' . $i, 'text', [
+                    'label' => __('List item :number', ['number' => $i]),
+                    'colspan' => 2,
+                ])
+                ->add('list_item_url_' . $i, 'text', [
+                    'label' => __('List item url :number', ['number' => $i]),
+                    'colspan' => 2,
+                ]);
+        }
 
-        ->add('image_1', 'mediaImage', [
-            'label' => __('Main Image'),
-            'colspan' => 2,
-        ])
+        return $form;
+    });
 
-        ->add('image_2', 'mediaImage', [
-            'label' => __('Bottom Image'),
-            'colspan' => 2,
-        ])
+    Shortcode::register('about2', __('About 2'), __('About 2'), function (ShortcodeCompiler $shortcode) {
+        return Theme::partial('shortcodes.about2.index', compact('shortcode'));
+    });
 
-        ->add('logo', 'mediaImage', [
-            'label' => __('Center Logo'),
-            'colspan' => 2,
-        ])
+    Shortcode::setAdminConfig('about2', function (array $attributes) {
+        return ShortcodeForm::createFromArray($attributes)
+            ->withLazyLoading()
+            ->columns()
 
-        ->add('subtitle', 'text', [
-            'label' => __('Small Badge Title'),
-            'colspan' => 2,
-        ])
+            ->add('image_1', 'mediaImage', [
+                'label' => __('Main Image'),
+                'colspan' => 2,
+            ])
 
-        ->add('title', 'text', [
-            'label' => __('Main Title'),
-            'colspan' => 2,
-        ])
+            ->add('image_2', 'mediaImage', [
+                'label' => __('Bottom Image'),
+                'colspan' => 2,
+            ])
 
-        ->add('description', 'textarea', [
-            'label' => __('Main Description'),
-            'attr' => ['rows' => 4],
-            'colspan' => 2,
-        ])
+            ->add('logo', 'mediaImage', [
+                'label' => __('Center Logo'),
+                'colspan' => 2,
+            ])
 
-        ->add('feature_title_1', 'text', [
-            'label' => __('Feature Title 1'),
-            'colspan' => 2,
-        ])
+            ->add('subtitle', 'text', [
+                'label' => __('Small Badge Title'),
+                'colspan' => 2,
+            ])
 
-        ->add('feature_text_1', 'textarea', [
-            'label' => __('Feature Description 1'),
-            'attr' => ['rows' => 3],
-            'colspan' => 2,
-        ])
+            ->add('title', 'text', [
+                'label' => __('Main Title'),
+                'colspan' => 2,
+            ])
 
-        ->add('feature_title_2', 'text', [
-            'label' => __('Feature Title 2'),
-            'colspan' => 2,
-        ])
+            ->add('description', 'textarea', [
+                'label' => __('Main Description'),
+                'attr' => ['rows' => 4],
+                'colspan' => 2,
+            ])
 
-        ->add('feature_text_2', 'textarea', [
-            'label' => __('Feature Description 2'),
-            'attr' => ['rows' => 3],
-            'colspan' => 2,
-        ]);
-});
+            ->add('feature_title_1', 'text', [
+                'label' => __('Feature Title 1'),
+                'colspan' => 2,
+            ])
+
+            ->add('feature_text_1', 'textarea', [
+                'label' => __('Feature Description 1'),
+                'attr' => ['rows' => 3],
+                'colspan' => 2,
+            ])
+
+            ->add('feature_title_2', 'text', [
+                'label' => __('Feature Title 2'),
+                'colspan' => 2,
+            ])
+
+            ->add('feature_text_2', 'textarea', [
+                'label' => __('Feature Description 2'),
+                'attr' => ['rows' => 3],
+                'colspan' => 2,
+            ]);
+    });
 
     Shortcode::register('features', __('Features'), __('Features'), function (ShortcodeCompiler $shortcode) {
         $quantity = min((int) $shortcode->quantity, 5);

@@ -18,7 +18,7 @@
                         <!-- 98% Box -->
                         <div class="col-6">
                             <div class="about-satisfaction text-center">
-                               
+
                                 <h2>98%</h2><br>
                                 <p>Satisfaction Rate</p>
                             </div>
