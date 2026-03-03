@@ -1,6 +1,6 @@
 @php
     $hasAds = $shortcode->ads_1 || $shortcode->ads_2;
-    $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'furniture', 'cosmetics', 'grocery', 'full-width']) ? 'wooden' : $shortcode->style;
+    $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'furniture', 'cosmetics', 'grocery', 'full-width', 'hero']) ? 'wooden' : $shortcode->style;
 @endphp
 
 @if($sliders->isNotEmpty())

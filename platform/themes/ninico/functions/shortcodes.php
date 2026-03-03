@@ -71,6 +71,7 @@ app()->booted(function (): void {
                             'cosmetics' => __('Cosmetics'),
                             'grocery' => __('Grocery'),
                             'full-width' => __('Full width'),
+                            'hero' => __('Hero'),
                         ])->mapWithKeys(fn ($label, $key) => [
                             $key => [
                                 'label' => $label,
@@ -1145,5 +1146,5 @@ app()->booted(function (): void {
                 'default_value' => '#ffffff',
             ]);
     });
-    
+
 });
