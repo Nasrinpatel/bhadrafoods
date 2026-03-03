@@ -1134,20 +1134,23 @@ app()->booted(function (): void {
 
     Shortcode::setAdminConfig('marquee', function (array $attributes) {
         return ShortcodeForm::createFromArray($attributes)
-            ->add('text', 'text', [
-                'label' => __('Marquee Text'),
+            ->add('feature', 'text', [
+                'label' => __('Feature text'),
             ])
-            ->add('speed', 'number', [
-                'label' => __('Speed (seconds)'),
-                'default_value' => 60,
+            ->add('feature2', 'text', [
+                'label' => __('Feature text 2'),
             ])
-            ->add('background_color', ColorField::class, [
-                'label' => __('Background color'),
-                'default_value' => '#8a6116',
+            ->add('feature3', 'text', [
+                'label' => __('Feature text 3'),
             ])
-            ->add('text_color', ColorField::class, [
-                'label' => __('Text color'),
-                'default_value' => '#ffffff',
+            ->add('feature4', 'text', [
+                'label' => __('Feature text 4'),
+            ])
+            ->add('feature5', 'text', [
+                'label' => __('Feature text 5'),
+            ])
+            ->add('feature6', 'text', [
+                'label' => __('Feature text 6'),
             ]);
     });
 

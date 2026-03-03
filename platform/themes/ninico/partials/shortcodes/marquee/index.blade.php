@@ -1,16 +1,24 @@
-@php
-    $speed = $shortcode->speed ?: 40;
-    $bgColor = $shortcode->background_color ?: '#8a6116';
-    $textColor = $shortcode->text_color ?: '#ffffff';
-@endphp
+<!-- Scrolling Ticker Section Start -->
+<div class="our-scrolling-ticker">
+    <!-- Scrolling Ticker Start -->
+    <div class="scrolling-ticker-box">
+        <div class="scrolling-content">
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature2 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature3 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature4 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature5 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature6 }}</span>
+        </div>
 
-<div class="marquee-wrapper" style="background-color: {{ $bgColor }};">
-    <div class="marquee" style="animation-duration: {{ $speed }}s; color: {{ $textColor }};">
-        <span>
-            {{ $shortcode->text }}&nbsp;&nbsp;&nbsp;
-        </span>
-        <span>
-            {{ $shortcode->text }}&nbsp;&nbsp;&nbsp;
-        </span>
+        <div class="scrolling-content">
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature2 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature3 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature4 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature5 }}</span>
+            <span><img src="../../../storage/icons/icon-sparkle-white.svg" alt="">{{ $shortcode->feature6 }}</span>
+        </div>
     </div>
 </div>
+<!-- Scrolling Ticker Section End -->
