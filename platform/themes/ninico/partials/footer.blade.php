@@ -18,6 +18,9 @@
         background-color: var(--footer-bottom-background-color);
         color: var(--footer-bottom-text-color);
     }
+    .footer-copyright__content span {
+        color: var(--footer-bottom-text-color) !important;
+    }
 </style>
 <footer>
     <div
