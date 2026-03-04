@@ -176,7 +176,7 @@ app()->booted(function (): void {
                     return null;
                 }
 
-                $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'cosmetics']) ? 'wooden' : $shortcode->style;
+                $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'cosmetics', 'custom']) ? 'wooden' : $shortcode->style;
 
                 return Theme::partial(
                     "shortcodes.product-categories.styles.$style",
@@ -192,6 +192,12 @@ app()->booted(function (): void {
                     'label' => __('Title'),
                     'help_block' => [
                         'text' => __('Wrapper text into <code>:tag</code> tag to make it highlight.', ['tag' => '&lt;span&gt;text&lt;/span&gt;']),
+                    ],
+                ])
+                ->add('subtitle', 'text', [
+                    'label' => __('Subtitle'),
+                    'help_block' => [
+                        'text' => __('Only work in custom style', ['tag' => '&lt;span&gt;text&lt;/span&gt;']),
                     ],
                 ])
                 ->add('category_ids', ShortcodeTagsField::class, [
@@ -210,6 +216,7 @@ app()->booted(function (): void {
                         'wooden' => __('Wooden'),
                         'fashion' => __('Fashion'),
                         'cosmetics' => __('Cosmetics'),
+                        'custom' => __('Custom'),
                     ],
                 ]);
         });
@@ -879,6 +886,103 @@ app()->booted(function (): void {
             ->add('feature_text_2', 'textarea', [
                 'label' => __('Feature Description 2'),
                 'attr' => ['rows' => 3],
+                'colspan' => 2,
+            ]);
+    });
+
+    Shortcode::register('why-choose', __('Why Choose Us'), __('Why Choose Us'), function (ShortcodeCompiler $shortcode) {
+        return Theme::partial('shortcodes.why-choose.index', compact('shortcode'));
+    });
+
+    Shortcode::setAdminConfig('why-choose', function (array $attributes) {
+        return ShortcodeForm::createFromArray($attributes)
+            ->withLazyLoading()
+            ->columns()
+            ->add('title', 'text', [
+                'label' => __('Main Title'),
+                'colspan' => 2,
+            ])
+            ->add('subtitle', 'text', [
+                'label' => __('Sub Title'),
+                'colspan' => 2,
+            ])
+            ->add('image_1', 'mediaImage', [
+                'label' => __('Main Image'),
+                'colspan' => 2,
+            ])
+            ->add('image_2', 'mediaImage', [
+                'label' => __('Bottom Image'),
+                'colspan' => 2,
+            ])
+            ->add('description', 'textarea', [
+                'label' => __('Description'),
+                'attr' => ['rows' => 4],
+                'colspan' => 2,
+            ])
+            ->add('feature_title_1', 'text', [
+                'label' => __('Feature Title 1'),
+                'colspan' => 2,
+            ])
+            ->add('feature_title_2', 'text', [
+                'label' => __('Feature Title 2'),
+                'colspan' => 2,
+            ])
+            ->add('feature_title_3', 'text', [
+                'label' => __('Feature Title 3'),
+                'colspan' => 2,
+            ])
+            ->add('feature_text_3', 'textarea', [
+                'label' => __('Feature Description 3'),
+                'attr' => ['rows' => 3],
+                'colspan' => 2,
+            ])
+            ->add('feature_title_4', 'text', [
+                'label' => __('Feature Title 4'),
+                'colspan' => 2,
+            ])
+            ->add('feature_text_4', 'textarea', [
+                'label' => __('Feature Description 4'),
+                'attr' => ['rows' => 3],
+                'colspan' => 2,
+            ])
+            ->add('counter_title_1', 'text', [
+                'label' => __('Counter Title 1'),
+                'colspan' => 2,
+            ])
+            ->add('counter_value_1', 'text', [
+                'label' => __('Counter Value 1'),
+                'colspan' => 2,
+            ])
+            ->add('counter_title_2', 'text', [
+                'label' => __('Counter Title 2'),
+                'colspan' => 2,
+            ])
+            ->add('counter_value_2', 'text', [
+                'label' => __('Counter Value 2'),
+                'colspan' => 2,
+            ])
+            ->add('counter_title_3', 'text', [
+                'label' => __('Counter Title 3'),
+                'colspan' => 2,
+            ])
+            ->add('counter_value_3', 'text', [
+                'label' => __('Counter Value 3'),
+                'colspan' => 2,
+            ])
+            ->add('counter_title_4', 'text', [
+                'label' => __('Counter Title 4'),
+                'colspan' => 2,
+            ])
+            ->add('counter_value_4', 'text', [
+                'label' => __('Counter Value 4'),
+                'colspan' => 2,
+            ])
+            ->add('counter_title_5', 'text', [
+                'label' => __('Counter Title 5'),
+                'colspan' => 2,
+            ])
+            ->add('counter_value_5', 'text', [
+                'label' => __('Counter Value 5'),
                 'colspan' => 2,
             ]);
     });
