@@ -19,7 +19,7 @@ Go to the **Admin Panel** and click on the **Plugins** tab. Click on the **Add n
 ### Install manually
 
 1. Download the plugin from
-   the [Botble Marketplace](https://marketplace.botble.com/products/friendsofbotble/fob-phonepe).
+   the [Botble Marketplace](https://marketplace.botble.com/products/fidaalivahora/phonepe).
 2. Extract the downloaded file and upload the extracted folder to the `platform/plugins` directory.
 3. Go to **Admin** > **Plugins** and click on the **Activate** button.
 
@@ -29,11 +29,11 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## Security
 
-If you discover any security related issues, please email friendsofbotble@gmail.com instead of using the issue tracker.
+If you discover any security related issues, please email fbvohra95@gmail.com instead of using the issue tracker.
 
 ## Credits
 
-* [Friends Of Botble](https://github.com/FriendsOfBotble)
+* [Friends Of Botble](https://github.com/fidaalivohra)
 * [All Contributors](../../contributors)
 
 ## License
