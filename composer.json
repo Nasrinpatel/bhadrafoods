@@ -129,6 +129,22 @@
     "prefer-stable": true,
     "repositories": [
         {
+            "type": "package",
+            "package": {
+                "name": "phonepe/pg-php-sdk-v2",
+                "version": "2.0.0",
+                "dist": {
+                    "url": "https://phonepe.mycloudrepo.io/public/repositories/phonepe-pg-php-sdk/v2-sdk.zip",
+                    "type": "zip"
+                },
+                "autoload": {
+                    "classmap": [
+                        "/"
+                    ]
+                }
+            }
+        },
+        {
             "type": "path",
             "url": "./platform/core"
         },

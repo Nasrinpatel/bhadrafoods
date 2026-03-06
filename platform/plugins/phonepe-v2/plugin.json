@@ -1,0 +1,14 @@
+{
+    "id": "bhadrafoods/phonepe-v2",
+    "name": "PhonePe v2",
+    "namespace": "BhadraFoods\\PhonePeV2\\",
+    "provider": "BhadraFoods\\PhonePeV2\\Providers\\PhonePeV2ServiceProvider",
+    "author": "Bhadra Foods",
+    "url": "https://bhadrafoods.com",
+    "version": "1.0.0",
+    "description": "PhonePe Standard Checkout v2 payment gateway for Botble scripts",
+    "minimum_core_version": "7.3.0",
+    "require": [
+        "botble/payment"
+    ]
+}

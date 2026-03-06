@@ -1,0 +1,8 @@
+{
+    "name": "bhadrafoods/phonepe-v2",
+    "description": "PhonePe Standard Checkout v2 payment gateway for Botble",
+    "type": "package",
+    "require": {
+        "phonepe/pg-php-sdk-v2": "^2.0"
+    }
+}
