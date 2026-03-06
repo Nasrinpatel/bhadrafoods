@@ -33,7 +33,7 @@ If you discover any security related issues, please email fbvohra95@gmail.com in
 
 ## Credits
 
-* [Friends Of Botble](https://github.com/fidaalivohra)
+* [Fidaali Vahora](https://github.com/fidaalivohra/phonepay-botble)
 * [All Contributors](../../contributors)
 
 ## License
