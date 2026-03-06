@@ -24,13 +24,16 @@ class PhonePePaymentClient
 
     public function pay(array $data, string $transactionId): ?string
     {
+        $orderId = $this->normalizeMetadataValue($data['order_id'] ?? $transactionId);
+        $customerId = $this->normalizeMetadataValue($data['customer_id'] ?? '');
+
         $request = StandardCheckoutPayRequestBuilder::builder()
             ->merchantOrderId($transactionId)
             ->amount((int) round($data['amount'] * 100))
             ->redirectUrl(route('payment.phonepe-v2.callback', ['trans_id' => $transactionId]))
-            ->message(__('Payment for order #:order', ['order' => $data['order_id']]))
-            ->udf1((string) $data['order_id'])
-            ->udf2((string) $data['customer_id'])
+            ->message('Payment for order ' . $orderId)
+            ->udf1($orderId)
+            ->udf2($customerId)
             ->build();
 
         try {
@@ -153,5 +156,22 @@ class PhonePePaymentClient
 
             return null;
         }
+    }
+
+    protected function normalizeMetadataValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            return implode(',', array_map(fn (mixed $item) => $this->normalizeMetadataValue($item), $value));
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+
+        if ($value === null) {
+            return '';
+        }
+
+        return (string) $value;
     }
 }

@@ -32,6 +32,7 @@
         "laravel/framework": "12.50.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10",
+        "netresearch/jsonmapper": "^4.4",
         "predis/predis": "^3.0",
         "wikimedia/composer-merge-plugin": "^2.1"
     },
