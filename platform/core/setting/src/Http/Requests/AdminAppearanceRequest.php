@@ -27,6 +27,7 @@ class AdminAppearanceRequest extends Request
             'enable_page_visual_builder' => ['nullable', 'bool'],
             'admin_appearance_layout' => ['required', 'string', Rule::in(array_keys(AdminAppearance::getLayouts()))],
             'admin_appearance_show_menu_item_icon' => ['nullable', 'bool'],
+            'admin_appearance_show_get_started' => ['nullable', 'bool'],
             'admin_appearance_container_width' => ['required', 'string', Rule::in(array_keys(AdminAppearance::getContainerWidths()))],
             'admin_primary_font' => new GoogleFontsRule(),
             'admin_primary_color' => ['nullable', 'string'],

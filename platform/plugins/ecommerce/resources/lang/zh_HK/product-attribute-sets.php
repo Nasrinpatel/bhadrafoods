@@ -52,6 +52,7 @@ return [
     'is_default' => '是否預設?',
     'title' => '標題',
     'slug' => '網址',
+    'slug_help_block' => '用於產品篩選URL，例如 ?attributes[<slug>]=value。留空將從標題自動產生。',
     'color' => '顏色',
     'image' => '圖片',
     'remove' => '移除',

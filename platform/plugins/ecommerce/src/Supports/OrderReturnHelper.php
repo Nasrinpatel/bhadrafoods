@@ -3,6 +3,7 @@
 namespace Botble\Ecommerce\Supports;
 
 use Botble\Base\Facades\EmailHandler;
+use Botble\Base\Supports\EmailHandler as EmailHandlerSupport;
 use Botble\Ecommerce\Enums\OrderReturnHistoryActionEnum;
 use Botble\Ecommerce\Enums\OrderReturnStatusEnum;
 use Botble\Ecommerce\Events\OrderReturnedEvent;
@@ -190,6 +191,8 @@ class OrderReturnHelper
             $customer = $orderReturn->customer;
 
             if ($customer?->email) {
+                $locale = $orderReturn->order?->getOrderMetadata('customer_locale') ?: EmailHandlerSupport::getDefaultEmailLocale();
+
                 EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME)
                     ->setVariableValues([
                         'customer_name' => $customer->name ?? 'Guest',
@@ -197,7 +200,7 @@ class OrderReturnHelper
                         'description' => $data['description'] ?? null,
                         'status' => $orderReturn->return_status->label(),
                     ])
-                    ->sendUsingTemplate('order-return-status-updated', $customer->email);
+                    ->sendUsingTemplateWithLocale('order-return-status-updated', $customer->email, $locale);
             }
 
             DB::commit();

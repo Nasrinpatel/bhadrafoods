@@ -680,4 +680,14 @@ return [
         'flag' => 'ecommerce.specification-tables.destroy',
         'parent_flag' => 'ecommerce.specification-tables.index',
     ],
+    [
+        'name' => 'Import Product Specifications',
+        'flag' => 'ecommerce.product-specifications.import',
+        'parent_flag' => 'ecommerce.product-specification.index',
+    ],
+    [
+        'name' => 'Export Product Specifications',
+        'flag' => 'ecommerce.product-specifications.export',
+        'parent_flag' => 'ecommerce.product-specification.index',
+    ],
 ];

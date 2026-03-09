@@ -52,6 +52,7 @@ return [
     'is_default' => 'Er standard?',
     'title' => 'Titel',
     'slug' => 'Slug',
+    'slug_help_block' => 'Bruges i produktfilter-URL\'er, f.eks. ?attributes[<slug>]=value. Lad stå tomt for at auto-generere fra titel.',
     'color' => 'Farve',
     'image' => 'Billede',
     'remove' => 'Fjern',

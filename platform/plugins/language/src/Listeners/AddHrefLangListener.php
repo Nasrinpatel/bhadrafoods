@@ -51,8 +51,8 @@ class AddHrefLangListener
 
     protected function generateHreflangUrls(?string $referenceType, int|string|null $referenceId): array
     {
-        $hreflangUrls = [];
-        $currentAppLocale = app()->getLocale();
+        $entries = [];
+        $languageVariantCounts = $this->countLanguageVariants();
 
         foreach (Language::getSupportedLocales() as $localeCode => $properties) {
             $hreflangCode = Language::formatLocaleForHrefLang($properties['lang_code']);
@@ -69,21 +69,36 @@ class AddHrefLangListener
             if (str_contains($hreflangCode, '-')) {
                 $languageOnly = explode('-', $hreflangCode)[0];
 
-                if ($localeCode === $currentAppLocale) {
-                    $hreflangUrls[$languageOnly] = $url;
-                    $hreflangUrls[$hreflangCode] = $url;
+                if (($languageVariantCounts[$languageOnly] ?? 0) > 1) {
+                    $entries[$hreflangCode] = $url;
                 } else {
-                    $hreflangUrls[$hreflangCode] = $url;
-                    if (! isset($hreflangUrls[$languageOnly])) {
-                        $hreflangUrls[$languageOnly] = $url;
-                    }
+                    $entries[$languageOnly] = $url;
                 }
             } else {
-                $hreflangUrls[$hreflangCode] = $url;
+                $entries[$hreflangCode] = $url;
             }
         }
 
-        return $hreflangUrls;
+        return $entries;
+    }
+
+    protected function countLanguageVariants(): array
+    {
+        $counts = [];
+
+        foreach (Language::getSupportedLocales() as $properties) {
+            $hreflangCode = Language::formatLocaleForHrefLang($properties['lang_code']);
+
+            if (str_contains($hreflangCode, '-')) {
+                $languageOnly = explode('-', $hreflangCode)[0];
+            } else {
+                $languageOnly = $hreflangCode;
+            }
+
+            $counts[$languageOnly] = ($counts[$languageOnly] ?? 0) + 1;
+        }
+
+        return $counts;
     }
 
     protected function getTranslatedUrl(?string $referenceType, int|string|null $referenceId, string $langCode, string $localeCode): ?string

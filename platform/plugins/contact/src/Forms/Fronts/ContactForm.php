@@ -5,7 +5,6 @@ namespace Botble\Contact\Forms\Fronts;
 use Botble\Base\Forms\FieldOptions\ButtonFieldOption;
 use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
 use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
-use Botble\Base\Forms\FieldOptions\InputFieldOption;
 use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\PhoneNumberFieldOption;
 use Botble\Base\Forms\FieldOptions\RadioFieldOption;
@@ -208,9 +207,8 @@ class ContactForm extends FormFront
 
                             $fieldOptions = match ($customField->type->getValue()) {
                                 CustomFieldType::NUMBER => NumberFieldOption::make()
-                                    ->when($customField->placeholder, function (InputFieldOption $options, string $placeholder): void {
-                                        $options->placeholder($placeholder);
-                                    }),
+                                    ->placeholder($customField->placeholder ?: $customField->name)
+                                    ->cssClass($this->formInputClass),
                                 CustomFieldType::DROPDOWN => SelectFieldOption::make()
                                     ->when($customField->placeholder, function (SelectFieldOption $fieldOptions, string $placeholder) use ($options): void {
                                         $fieldOptions->choices(['' => $placeholder, ...$options]);
@@ -244,6 +242,9 @@ class ContactForm extends FormFront
                                     $fieldOptions
                                         ->label($customField->name)
                                         ->required($customField->required)
+                                        ->when($customField->required, function ($options): void {
+                                            $options->addAttribute('required', 'required');
+                                        })
                                         ->wrapperAttributes(['class' => $this->formInputWrapperClass])
                                 );
                             }, 12);

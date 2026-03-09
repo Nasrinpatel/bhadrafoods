@@ -52,6 +52,7 @@ return [
     'is_default' => 'Apakah default?',
     'title' => 'Judul',
     'slug' => 'Slug',
+    'slug_help_block' => 'Digunakan dalam URL filter produk, mis. ?attributes[<slug>]=value. Biarkan kosong untuk dibuat otomatis dari judul.',
     'color' => 'Warna',
     'image' => 'Gambar',
     'remove' => 'Hapus',

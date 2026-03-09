@@ -52,6 +52,7 @@ return [
     'is_default' => '¿Es predeterminado?',
     'title' => 'Título',
     'slug' => 'Slug',
+    'slug_help_block' => 'Usado en URL de filtro de productos, p. ej. ?attributes[<slug>]=value. Dejar vacío para generar automáticamente desde el título.',
     'color' => 'Color',
     'image' => 'Imagen',
     'remove' => 'Eliminar',

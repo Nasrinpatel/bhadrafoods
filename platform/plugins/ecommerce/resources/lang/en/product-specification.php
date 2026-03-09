@@ -1,7 +1,24 @@
 <?php
 
 return [
+    'name' => 'Product Specifications',
     'product_specification' => 'Product Specification',
+
+    'import' => [
+        'name' => 'Import Product Specifications',
+        'description' => 'Import product specifications in bulk by uploading a CSV/Excel file.',
+        'done_message' => 'Updated specifications for :count product(s) successfully.',
+        'rules' => [
+            'name' => 'The product name is required and must match an existing parent product.',
+            'specification_table' => 'The specification table name must match an existing specification table.',
+            'specifications' => 'Specifications should be in "Name:Value" format, separated by "|".',
+            'specifications_locale' => 'Specifications for :locale should be in "Name:Value" format, separated by "|".',
+        ],
+    ],
+
+    'export' => [
+        'description' => 'Export product specifications to a CSV/Excel file.',
+    ],
     'specification_groups' => [
         'title' => 'Specification Groups',
         'menu_name' => 'Groups',

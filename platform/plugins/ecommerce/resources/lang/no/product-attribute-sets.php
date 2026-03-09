@@ -52,6 +52,7 @@ return [
     'is_default' => 'Er standard?',
     'title' => 'Tittel',
     'slug' => 'URL-nøkkel',
+    'slug_help_block' => 'Brukes i produktfilter-URL-er, f.eks. ?attributes[<slug>]=value. La stå tomt for å automatisk generere fra tittel.',
     'color' => 'Farge',
     'image' => 'Bilde',
     'remove' => 'Fjern',

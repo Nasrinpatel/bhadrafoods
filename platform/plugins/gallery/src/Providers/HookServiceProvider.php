@@ -203,6 +203,7 @@ class HookServiceProvider extends ServiceProvider
                     'section_id' => 'opt-text-subsection-page',
                     'type' => 'customSelect',
                     'label' => trans('plugins/gallery::gallery.galleries_page'),
+                    'shared' => true,
                     'attributes' => [
                         'name' => 'galleries_page_id',
                         'list' => ['' => trans('core/base::forms.select_placeholder')] + $pages,

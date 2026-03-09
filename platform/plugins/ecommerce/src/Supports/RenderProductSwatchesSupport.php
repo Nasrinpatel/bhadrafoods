@@ -33,9 +33,9 @@ class RenderProductSwatchesSupport
         ], $params);
 
         $product = $this->product;
-        $cacheKey = 'product_variations_' . $product->getKey() . '_' . md5(json_encode($params['selected']));
+        $cacheKey = 'product_variations_' . $product->getKey();
 
-        $data = Cache::remember($cacheKey, 300, function () use ($product) {
+        $data = Cache::remember($cacheKey, 1800, function () use ($product) {
             $attributeSets = $product->productAttributeSets()->oldest('order')->latest()->get();
             $attributes = $this->productRepository->getRelatedProductAttributes($this->product)->sortBy('order');
 

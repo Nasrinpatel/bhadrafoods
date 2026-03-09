@@ -366,7 +366,7 @@ class PluginService
 
     public function getPluginNamespace(string $plugin): string
     {
-        return $this->app['config']->get('core.base.general.plugin_namespaces.' . $plugin, $plugin);
+        return $this->app['config']->get('core.base.general.plugin_namespaces.' . $plugin, 'plugins/' . $plugin);
     }
 
     protected function saveActivatedPlugins(array $plugins): array

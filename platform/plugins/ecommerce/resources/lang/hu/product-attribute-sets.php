@@ -52,6 +52,7 @@ return [
     'is_default' => 'Alapértelmezett?',
     'title' => 'Cím',
     'slug' => 'Slug',
+    'slug_help_block' => 'Termékszűrő URL-ekben használatos, pl. ?attributes[<slug>]=value. Hagyja üresen a címből való automatikus generáláshoz.',
     'color' => 'Szín',
     'image' => 'Kép',
     'remove' => 'Eltávolítás',

@@ -210,7 +210,7 @@ class Menu
     protected function read(): Collection
     {
         $cacheEnabled = setting('cache_front_menu_enabled', true);
-        $cacheKey = 'menu_all_menus_' . md5(serialize(BaseHelper::getHomepageUrl()));
+        $cacheKey = 'menu_all_menus_' . md5(serialize(BaseHelper::getHomepageUrl()) . app()->getLocale());
 
         if ($cacheEnabled && $this->cache->has($cacheKey)) {
             $cached = $this->cache->get($cacheKey);
@@ -234,7 +234,17 @@ class Menu
             ->wherePublished()
             ->with($with);
 
-        $result = RepositoryHelper::applyBeforeExecuteQuery($items, new MenuModel())->get();
+        try {
+            $result = RepositoryHelper::applyBeforeExecuteQuery($items, new MenuModel())->get();
+        } catch (Throwable) {
+            $safeWith = array_values(array_filter($with, fn ($relation) => ! str_contains($relation, '.reference')));
+
+            $items = MenuModel::query()
+                ->wherePublished()
+                ->with($safeWith);
+
+            $result = RepositoryHelper::applyBeforeExecuteQuery($items, new MenuModel())->get();
+        }
 
         $this->preloadMenuNodeMetadata($result);
 
@@ -282,7 +292,7 @@ class Menu
 
         $theme = Arr::get($args, 'theme', true);
 
-        $cacheKey = 'menu_location_' . md5(serialize(BaseHelper::getHomepageUrl()) . serialize($args));
+        $cacheKey = 'menu_location_' . md5(serialize(BaseHelper::getHomepageUrl()) . serialize($args) . app()->getLocale());
 
         $cacheEnabled = setting('cache_front_menu_enabled', true);
 

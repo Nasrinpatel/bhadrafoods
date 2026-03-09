@@ -52,6 +52,7 @@ return [
     'is_default' => 'Vai noklusējuma?',
     'title' => 'Nosaukums',
     'slug' => 'URL',
+    'slug_help_block' => 'Izmanto produktu filtra URL, piemēram, ?attributes[<slug>]=value. Atstājiet tukšu, lai automātiski ģenerētu no nosaukuma.',
     'color' => 'Krāsa',
     'image' => 'Attēls',
     'remove' => 'Noņemt',

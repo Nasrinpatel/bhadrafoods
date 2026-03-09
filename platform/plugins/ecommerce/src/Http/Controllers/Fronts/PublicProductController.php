@@ -242,9 +242,9 @@ class PublicProductController extends BaseController
         }
 
         // Cache variation data for better performance
-        $cacheKey = 'product_variation_ajax_' . $originalProduct->id . '_' . md5(json_encode($attributes)) . '_' . app()->getLocale();
+        $cacheKey = 'product_variation_ajax_' . $originalProduct->id . '_' . app()->getLocale();
 
-        $variationData = Cache::remember($cacheKey, 60, function () use ($originalProduct, $productRepository) {
+        $variationData = Cache::remember($cacheKey, 1800, function () use ($originalProduct, $productRepository) {
             $productAttributes = $productRepository->getRelatedProductAttributes($originalProduct)->sortBy('order');
             $attributeSets = $originalProduct->productAttributeSets()->orderBy('order')->get();
 

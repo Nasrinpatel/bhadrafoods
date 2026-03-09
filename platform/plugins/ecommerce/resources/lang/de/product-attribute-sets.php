@@ -52,6 +52,7 @@ return [
     'is_default' => 'Ist Standard?',
     'title' => 'Titel',
     'slug' => 'Slug',
+    'slug_help_block' => 'Wird in Produktfilter-URLs verwendet, z.B. ?attributes[<slug>]=value. Leer lassen, um automatisch aus dem Titel zu generieren.',
     'color' => 'Farbe',
     'image' => 'Bild',
     'remove' => 'Entfernen',

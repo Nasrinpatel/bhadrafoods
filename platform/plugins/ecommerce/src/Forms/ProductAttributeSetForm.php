@@ -50,6 +50,15 @@ class ProductAttributeSetForm extends FormAbstract
                     'data-counter' => 120,
                 ],
             ])
+            ->add('slug', 'text', [
+                'label' => trans('core/base::forms.slug'),
+                'attr' => [
+                    'data-counter' => 120,
+                ],
+                'help_block' => [
+                    'text' => trans('plugins/ecommerce::product-attribute-sets.slug_help_block'),
+                ],
+            ])
             ->add('use_image_from_product_variation', 'onOff', [
                 'label' => trans('plugins/ecommerce::product-attribute-sets.use_image_from_product_variation'),
                 'default_value' => false,

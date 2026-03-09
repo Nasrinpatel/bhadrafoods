@@ -35,7 +35,7 @@ class ProductAttributeSet extends BaseModel
     protected static function booted(): void
     {
         self::saving(function (self $model): void {
-            $model->slug = self::createSlug($model->title, $model->getKey());
+            $model->slug = self::createSlug($model->slug ?: $model->title, $model->getKey());
         });
 
         static::deleted(function (ProductAttributeSet $productAttributeSet): void {

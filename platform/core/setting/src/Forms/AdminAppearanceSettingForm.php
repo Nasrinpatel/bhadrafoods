@@ -26,6 +26,7 @@ use Botble\Base\Forms\Fields\RadioField;
 use Botble\Base\Forms\Fields\SelectField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Base\Forms\FormAbstract;
+use Botble\GetStarted\Providers\GetStartedServiceProvider;
 use Botble\Setting\Http\Requests\AdminAppearanceRequest;
 
 class AdminAppearanceSettingForm extends SettingForm
@@ -214,6 +215,16 @@ class AdminAppearanceSettingForm extends SettingForm
                     ->value(AdminAppearance::showMenuItemIcon())
                     ->helperText(trans('core/setting::setting.admin_appearance.form.show_menu_item_icon_helper'))
             )
+            ->when(class_exists(GetStartedServiceProvider::class), function (FormAbstract $form): void {
+                $form->add(
+                    AdminAppearance::getSettingKey('show_get_started'),
+                    OnOffCheckboxField::class,
+                    OnOffCheckboxFieldOption::make()
+                        ->label(trans('core/setting::setting.admin_appearance.form.show_get_started'))
+                        ->value(AdminAppearance::getSetting('show_get_started', '1'))
+                        ->helperText(trans('core/setting::setting.admin_appearance.form.show_get_started_helper'))
+                );
+            })
             ->add(
                 AdminAppearance::getSettingKey('custom_css'),
                 CodeEditorField::class,

@@ -97,6 +97,9 @@ class ProductExporter extends Exporter
             ExportColumn::make('minimum_order_quantity'),
             ExportColumn::make('maximum_order_quantity'),
             ExportColumn::make('order'),
+            ExportColumn::make('seo_title')->label('SEO Title'),
+            ExportColumn::make('seo_description')->label('SEO Description'),
+            ExportColumn::make('seo_index')->label('SEO Index'),
         ];
 
         if ($this->isEnabledDigital) {
@@ -254,6 +257,11 @@ class ProductExporter extends Exporter
             'order' => (int) $product->order ?: 0,
         ];
 
+        $seoMeta = $product->getMetaData('seo_meta', true);
+        $result['seo_title'] = is_array($seoMeta) ? ($seoMeta['seo_title'] ?? '') : '';
+        $result['seo_description'] = is_array($seoMeta) ? ($seoMeta['seo_description'] ?? '') : '';
+        $result['seo_index'] = is_array($seoMeta) ? ($seoMeta['index'] ?? 'index') : 'index';
+
         if ($this->isEnabledDigital) {
             $result['product_type'] = $product->product_type;
         }
@@ -306,6 +314,7 @@ class ProductExporter extends Exporter
             'variations.productAttributes.productAttributeSet',
             'tags',
             'productAttributeSets',
+            'metadata',
         ];
 
         if ($this->isMarketplaceActive) {
@@ -334,6 +343,7 @@ class ProductExporter extends Exporter
             'productCollections:id,name',
             'tags:id,name',
             'productAttributeSets:id,title',
+            'metadata',
         ];
 
         if ($this->includeVariations) {
@@ -581,6 +591,10 @@ class ProductExporter extends Exporter
             'maximum_order_quantity' => $variation->product->maximum_order_quantity,
             'order' => (int) $variation->product->order ?: 0,
         ];
+
+        $data['seo_title'] = '';
+        $data['seo_description'] = '';
+        $data['seo_index'] = '';
 
         if ($this->isEnabledDigital) {
             $data['product_type'] = ProductTypeEnum::PHYSICAL;

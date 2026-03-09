@@ -1,1 +1,1 @@
-@include(Theme::getThemeNamespace('views.ecommerce.products'), ['pageName' => $tag->name, 'pageDescription' => $tag->description])
+@include(Theme::getThemeNamespace('views.ecommerce.products'), ['pageName' => $tag->name, 'pageDescription' => $tag->content ? \Botble\Shortcode\Facades\Shortcode::compile($tag->content, true)->toHtml() : $tag->description])

@@ -52,6 +52,7 @@ return [
     'is_default' => '是否默认？',
     'title' => '标题',
     'slug' => '别名',
+    'slug_help_block' => '用于产品筛选URL，例如 ?attributes[<slug>]=value。留空将从标题自动生成。',
     'color' => '颜色',
     'image' => '图片',
     'remove' => '移除',

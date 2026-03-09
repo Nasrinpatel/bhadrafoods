@@ -52,6 +52,7 @@ return [
     'is_default' => 'Este implicit?',
     'title' => 'Titlu',
     'slug' => 'Slug',
+    'slug_help_block' => 'Folosit în URL-urile de filtrare produse, de ex. ?attributes[<slug>]=value. Lasă gol pentru generare automată din titlu.',
     'color' => 'Culoare',
     'image' => 'Imagine',
     'remove' => 'Elimină',

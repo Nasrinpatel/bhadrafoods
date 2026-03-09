@@ -52,6 +52,7 @@ return [
     'is_default' => 'Default ba?',
     'title' => 'Pamagat',
     'slug' => 'Slug',
+    'slug_help_block' => 'Ginagamit sa mga URL ng filter ng produkto, hal. ?attributes[<slug>]=value. Iwanang blangko upang awtomatikong mabuo mula sa pamagat.',
     'color' => 'Kulay',
     'image' => 'Larawan',
     'remove' => 'Alisin',

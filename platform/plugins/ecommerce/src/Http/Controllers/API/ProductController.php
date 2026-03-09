@@ -8,6 +8,7 @@ use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\FlashSale;
 use Botble\Ecommerce\Http\Resources\API\AvailableProductResource;
 use Botble\Ecommerce\Http\Resources\API\ProductDetailResource;
+use Botble\Ecommerce\Http\Resources\API\ProductSearchResource;
 use Botble\Ecommerce\Http\Resources\API\RelatedProductResource;
 use Botble\Ecommerce\Http\Resources\API\ReviewResource;
 use Botble\Ecommerce\Http\Resources\ProductVariationResource;
@@ -68,6 +69,35 @@ class ProductController extends BaseApiController
         return $this
             ->httpResponse()
             ->setData(AvailableProductResource::collection($products))
+            ->toApiResponse();
+    }
+
+    /**
+     * Search products (lightweight)
+     *
+     * @group Products
+     * @queryParam q string required Search keyword. No-example
+     * @queryParam limit int Number of results (1-20, default 8). No-example
+     */
+    public function search(Request $request)
+    {
+        $request->validate([
+            'q' => ['required', 'string', 'max:255'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $products = Product::query()
+            ->wherePublished()
+            ->where('is_variation', false)
+            ->where('name', 'LIKE', '%' . $request->input('q') . '%')
+            ->with('slugable')
+            ->orderBy('name')
+            ->limit($request->integer('limit', 8))
+            ->get();
+
+        return $this
+            ->httpResponse()
+            ->setData(ProductSearchResource::collection($products))
             ->toApiResponse();
     }
 

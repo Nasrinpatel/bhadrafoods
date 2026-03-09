@@ -189,6 +189,29 @@ class ThemeService
         ];
     }
 
+    protected function copyDirectoryWithoutOverwriting(string $source, string $destination): void
+    {
+        if (! $this->files->isDirectory($source)) {
+            return;
+        }
+
+        if (! $this->files->isDirectory($destination)) {
+            $this->files->makeDirectory($destination, 0755, true);
+        }
+
+        $items = new \FilesystemIterator($source, \FilesystemIterator::SKIP_DOTS);
+
+        foreach ($items as $item) {
+            $target = $destination . '/' . $item->getBasename();
+
+            if ($item->isDir()) {
+                $this->copyDirectoryWithoutOverwriting($item->getPathname(), $target);
+            } elseif (! $this->files->exists($target)) {
+                $this->files->copy($item->getPathname(), $target);
+            }
+        }
+    }
+
     protected function getPath(string $theme, ?string $path = null): string
     {
         return rtrim(theme_path(), '/') . '/' . rtrim(ltrim(strtolower($theme), '/'), '/') . '/' . $path;
@@ -227,7 +250,22 @@ class ThemeService
                 $this->files->makeDirectory($publishPath, 0755, true);
             }
 
-            $this->files->copyDirectory($resourcePath, $publishPath);
+            $configFile = theme_path($theme . '/config.php');
+            $inheritTheme = $this->files->exists($configFile)
+                ? ($this->files->getRequire($configFile)['inherit'] ?? null)
+                : null;
+
+            if ($inheritTheme) {
+                $parentResourcePath = $this->getPath($inheritTheme, 'public');
+
+                if ($this->files->isDirectory($parentResourcePath)) {
+                    $this->files->copyDirectory($parentResourcePath, $publishPath);
+                }
+
+                $this->copyDirectoryWithoutOverwriting($resourcePath, $publishPath);
+            } else {
+                $this->files->copyDirectory($resourcePath, $publishPath);
+            }
 
             $screenshot = $this->getPath($theme, 'screenshot.png');
 

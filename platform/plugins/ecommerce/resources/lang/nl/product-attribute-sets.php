@@ -52,6 +52,7 @@ return [
     'is_default' => 'Is standaard?',
     'title' => 'Titel',
     'slug' => 'Slug',
+    'slug_help_block' => 'Gebruikt in productfilter-URL\'s, bijv. ?attributes[<slug>]=value. Laat leeg om automatisch te genereren vanuit de titel.',
     'color' => 'Kleur',
     'image' => 'Afbeelding',
     'remove' => 'Verwijderen',

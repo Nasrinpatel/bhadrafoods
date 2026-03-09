@@ -29,7 +29,7 @@
         "botble/widget": "*@dev",
         "doctrine/dbal": "^4.2",
         "guzzlehttp/guzzle": "^7.9",
-        "laravel/framework": "12.50.0",
+        "laravel/framework": "12.53.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10",
         "netresearch/jsonmapper": "^4.4",

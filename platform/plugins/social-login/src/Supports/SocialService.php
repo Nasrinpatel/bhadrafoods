@@ -150,14 +150,15 @@ class SocialService
 
     protected function getTokenRefreshEndpoint(string $provider): string
     {
-        return match ($provider) {
+        $endpoints = apply_filters('social_login_token_refresh_endpoints', [
             'google' => 'https://oauth2.googleapis.com/token',
             'facebook' => 'https://graph.facebook.com/v18.0/oauth/access_token',
             'github' => 'https://github.com/login/oauth/access_token',
             'linkedin' => 'https://www.linkedin.com/oauth/v2/accessToken',
             'x' => 'https://api.x.com/2/oauth2/token',
-            default => throw new \InvalidArgumentException("Unsupported provider: {$provider}"),
-        };
+        ]);
+
+        return $endpoints[$provider] ?? throw new \InvalidArgumentException("Unsupported provider: {$provider}");
     }
 
     public function canLinkAccount(string $provider, string $email, string $modelClass): bool

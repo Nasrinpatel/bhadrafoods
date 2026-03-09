@@ -52,6 +52,7 @@ return [
     'is_default' => 'Ar numatytasis?',
     'title' => 'Pavadinimas',
     'slug' => 'URL adresas',
+    'slug_help_block' => 'Naudojama produktų filtro URL, pvz., ?attributes[<slug>]=value. Palikite tuščią, kad būtų automatiškai sugeneruota iš pavadinimo.',
     'color' => 'Spalva',
     'image' => 'Vaizdas',
     'remove' => 'Pašalinti',

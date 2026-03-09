@@ -124,7 +124,15 @@ class PageController extends BaseController
         }
 
         // Get page data using the page service
-        $data = $pageService->handleFrontRoutes(null);
+        $data = $pageService->handleFrontRoutes($page->slugable);
+
+        if (empty($data) || ! isset($data['view'])) {
+            $data = [
+                'view' => 'page',
+                'default_view' => 'packages/page::themes.page',
+                'data' => compact('page'),
+            ];
+        }
 
         // Override the page in data
         $data['data']['page'] = $page;

@@ -378,7 +378,7 @@ class Product extends BaseModel
 
     public function variationInfo(): HasOne
     {
-        return $this->hasOne(ProductVariation::class, 'product_id')->withDefault();
+        return $this->hasOne(ProductVariation::class, 'product_id')->orderByDesc('id')->withDefault();
     }
 
     public function defaultVariation(): HasOne

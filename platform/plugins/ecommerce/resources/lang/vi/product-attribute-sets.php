@@ -52,6 +52,7 @@ return [
     'is_default' => 'Là mặc định?',
     'title' => 'Tiêu đề',
     'slug' => 'Đường dẫn tĩnh',
+    'slug_help_block' => 'Sử dụng trong URL lọc sản phẩm, ví dụ ?attributes[<slug>]=value. Để trống để tự động tạo từ tiêu đề.',
     'color' => 'Màu sắc',
     'image' => 'Hình ảnh',
     'remove' => 'Xóa',

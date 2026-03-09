@@ -52,6 +52,7 @@ return [
     'is_default' => 'Podrazumevano?',
     'title' => 'Naslov',
     'slug' => 'URL oznaka',
+    'slug_help_block' => 'Koristi se u URL-ovima filtera proizvoda, npr. ?attributes[<slug>]=value. Ostavite prazno za automatsko generisanje iz naslova.',
     'color' => 'Boja',
     'image' => 'Slika',
     'remove' => 'Ukloni',

@@ -26,13 +26,14 @@
     @if (EcommerceHelper::isTaxEnabled() && $cartTax > 0)
         <div class="row ec-checkout-tax-row">
             <div class="col-6">
-                <p>{{ __('Tax') }} @if ($cartTax && EcommerceHelper::isDisplayCheckoutTaxInformation())
-                    (<small>{{ Cart::instance('cart')->taxClassesName() }}</small>)
-                @endif</p>
+                <p>{{ __('Tax') }}:</p>
             </div>
             <div class="col-6 float-end">
                 <p class="price-text tax-price-text">
                     {{ format_price($cartTax) }}
+                    @if ($cartTax && EcommerceHelper::isDisplayCheckoutTaxInformation())
+                        <small>({{ Cart::instance('cart')->taxClassesName() }})</small>
+                    @endif
                 </p>
             </div>
         </div>
@@ -80,6 +81,17 @@
             </div>
             <div class="col-6 float-end">
                 <p class="price-text shipping-price-text">{{ $shippingAmount > 0 ? format_price($shippingAmount) : trans('plugins/ecommerce::order.free_shipping') }}</p>
+            </div>
+        </div>
+    @endif
+
+    @if (isset($shippingTaxAmount) && (float) $shippingTaxAmount > 0)
+        <div class="row ec-checkout-shipping-tax-row">
+            <div class="col-6">
+                <p>{{ trans('plugins/ecommerce::order.shipping_tax') }}:</p>
+            </div>
+            <div class="col-6 float-end">
+                <p class="price-text shipping-tax-text">{{ format_price($shippingTaxAmount) }}</p>
             </div>
         </div>
     @endif

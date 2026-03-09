@@ -52,6 +52,7 @@ return [
     'is_default' => 'Varsayılan mı?',
     'title' => 'Başlık',
     'slug' => 'Slug',
+    'slug_help_block' => 'Ürün filtresi URL\'lerinde kullanılır, örn. ?attributes[<slug>]=value. Başlıktan otomatik oluşturmak için boş bırakın.',
     'color' => 'Renk',
     'image' => 'Resim',
     'remove' => 'Kaldır',

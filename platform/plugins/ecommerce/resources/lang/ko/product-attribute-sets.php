@@ -52,6 +52,7 @@ return [
     'is_default' => '기본값입니까?',
     'title' => '제목',
     'slug' => '슬러그',
+    'slug_help_block' => '제품 필터 URL에 사용됩니다(예: ?attributes[<slug>]=value). 제목에서 자동 생성하려면 비워두세요.',
     'color' => '색상',
     'image' => '이미지',
     'remove' => '제거',

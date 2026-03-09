@@ -66,9 +66,33 @@ abstract class BaseTranslationSeeder extends BaseSeeder
                     $foreignKey => $record->id,
                 ];
 
+                // Find nested translation entry by matching any column value as key
+                $nestedTranslation = null;
+
                 foreach ($validColumns as $column) {
                     $originalValue = $record->{$column};
-                    $data[$column] = $this->translateValue($localeTranslations, $originalValue);
+
+                    if ($originalValue === null) {
+                        continue;
+                    }
+
+                    $match = $localeTranslations[$originalValue] ?? $localeTranslations[trim($originalValue)] ?? null;
+
+                    if (is_array($match)) {
+                        $nestedTranslation = $match;
+
+                        break;
+                    }
+                }
+
+                foreach ($validColumns as $column) {
+                    $originalValue = $record->{$column};
+
+                    if ($nestedTranslation && isset($nestedTranslation[$column])) {
+                        $data[$column] = $nestedTranslation[$column];
+                    } else {
+                        $data[$column] = $this->translateValue($localeTranslations, $originalValue);
+                    }
                 }
 
                 try {

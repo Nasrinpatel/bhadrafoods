@@ -36,6 +36,7 @@ class Order extends BaseModel
         'shipping_method',
         'shipping_option',
         'shipping_amount',
+        'shipping_tax_amount',
         'payment_fee',
         'description',
         'coupon_code',
@@ -286,7 +287,7 @@ class Order extends BaseModel
 
     public function getDiscountAmountFormatAttribute(): string
     {
-        return format_price($this->shipping_amount);
+        return format_price($this->discount_amount);
     }
 
     public function isInvoiceAvailable(): bool

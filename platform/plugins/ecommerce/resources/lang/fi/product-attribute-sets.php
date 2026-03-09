@@ -52,6 +52,7 @@ return [
     'is_default' => 'Onko oletus?',
     'title' => 'Otsikko',
     'slug' => 'Slug',
+    'slug_help_block' => 'Käytetään tuotesuodattimien URL-osoitteissa, esim. ?attributes[<slug>]=value. Jätä tyhjäksi luodaksesi automaattisesti otsikosta.',
     'color' => 'Väri',
     'image' => 'Kuva',
     'remove' => 'Poista',

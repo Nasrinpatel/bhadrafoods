@@ -9,6 +9,7 @@ use Botble\Base\Supports\ServiceProvider;
 use Botble\Language\Facades\Language;
 use Botble\Language\Models\Language as LanguageModel;
 use Botble\LanguageAdvanced\Supports\LanguageAdvancedManager;
+use Botble\Page\Models\Page;
 use Botble\Table\CollectionDataTable;
 use Botble\Table\EloquentDataTable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -26,6 +27,17 @@ class HookServiceProvider extends ServiceProvider
     public function boot(): void
     {
         LanguageAdvancedManager::registerImportersAndExporters();
+
+        if (LanguageAdvancedManager::isSupported(Page::class)) {
+            LanguageAdvancedManager::registerTranslationImportExport(
+                Page::class,
+                fn () => trans('plugins/language-advanced::language-advanced.page_translations'),
+                [
+                    'import' => 'page-translations.import',
+                    'export' => 'page-translations.export',
+                ]
+            );
+        }
 
         $this->setLocaleFromRefLang();
 

@@ -52,6 +52,7 @@ return [
     'is_default' => 'ברירת מחדל?',
     'title' => 'כותרת',
     'slug' => 'Slug',
+    'slug_help_block' => 'משמש ב-URLs של סינון מוצרים, למשל ?attributes[<slug>]=value. השאר ריק ליצירה אוטומטית מהכותרת.',
     'color' => 'צבע',
     'image' => 'תמונה',
     'remove' => 'הסר',

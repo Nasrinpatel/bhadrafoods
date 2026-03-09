@@ -558,6 +558,7 @@ class EcommerceServiceProvider extends ServiceProvider
 
             LanguageAdvancedManager::registerModule(ProductTag::class, [
                 'name',
+                'content',
             ]);
 
             LanguageAdvancedManager::registerModule(Tax::class, [
@@ -1180,6 +1181,28 @@ class EcommerceServiceProvider extends ServiceProvider
                         ->withPermission('ecommerce.customers.import')
                         ->withRoute('ecommerce.customers.import.index')
                 );
+
+            if (EcommerceHelper::isProductSpecificationEnabled()) {
+                PanelSectionManager::default()
+                    ->registerItem(
+                        ImportPanelSection::class,
+                        fn () => PanelSectionItem::make('product-specifications')
+                            ->setTitle(trans('plugins/ecommerce::product-specification.name'))
+                            ->withDescription(trans('plugins/ecommerce::product-specification.import.description'))
+                            ->withPriority(95)
+                            ->withPermission('ecommerce.product-specifications.import')
+                            ->withRoute('ecommerce.product-specifications.import.index')
+                    )
+                    ->registerItem(
+                        ExportPanelSection::class,
+                        fn () => PanelSectionItem::make('product-specifications')
+                            ->setTitle(trans('plugins/ecommerce::product-specification.name'))
+                            ->withDescription(trans('plugins/ecommerce::product-specification.export.description'))
+                            ->withPriority(115)
+                            ->withPermission('ecommerce.product-specifications.export')
+                            ->withRoute('ecommerce.product-specifications.export.index')
+                    );
+            }
         });
 
         $this->app->booted(function (): void {

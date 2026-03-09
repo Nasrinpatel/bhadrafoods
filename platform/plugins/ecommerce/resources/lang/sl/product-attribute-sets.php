@@ -52,6 +52,7 @@ return [
     'is_default' => 'Je privzeto?',
     'title' => 'Naslov',
     'slug' => 'Slug',
+    'slug_help_block' => 'Uporablja se v URL-jih filtrov izdelkov, npr. ?attributes[<slug>]=value. Pustite prazno za samodejno generiranje iz naslova.',
     'color' => 'Barva',
     'image' => 'Slika',
     'remove' => 'Odstrani',

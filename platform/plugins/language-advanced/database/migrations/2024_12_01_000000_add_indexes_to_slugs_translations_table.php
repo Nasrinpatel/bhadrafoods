@@ -11,10 +11,13 @@ return new class () extends Migration {
             return;
         }
 
-        if (! Schema::hasIndex('slugs_translations', 'idx_slugid_key_prefix')) {
-            Schema::table('slugs_translations', function (Blueprint $table): void {
-                $table->index(['slugs_id', 'key', 'prefix'], 'idx_slugid_key_prefix');
-            });
+        try {
+            if (! Schema::hasIndex('slugs_translations', 'idx_slugid_key_prefix')) {
+                Schema::table('slugs_translations', function (Blueprint $table): void {
+                    $table->index(['slugs_id', 'key', 'prefix'], 'idx_slugid_key_prefix');
+                });
+            }
+        } catch (Exception) {
         }
     }
 

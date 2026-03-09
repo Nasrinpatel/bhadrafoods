@@ -23,6 +23,7 @@ use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\ProductTag;
 use Botble\Ecommerce\Models\ProductVariation;
 use Botble\Ecommerce\Models\Review;
+use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Repositories\Interfaces\ProductInterface;
 use Botble\Ecommerce\Services\Products\ProductImageService;
 use Botble\Location\Models\City;
@@ -85,6 +86,11 @@ class EcommerceHelper
     public function isReviewEnabled(): bool
     {
         return (bool) get_ecommerce_setting('review_enabled', 1);
+    }
+
+    public function isReviewCommentRequired(): bool
+    {
+        return (bool) get_ecommerce_setting('review_comment_required', 1);
     }
 
     public function isOrderTrackingEnabled(): bool
@@ -1236,7 +1242,7 @@ class EcommerceHelper
         $keys = ['name', 'company', 'address', 'country', 'state', 'city', 'zip_code', 'email', 'phone'];
 
         if ($this->isUsingInMultipleCountries()) {
-            $country = Arr::get($session, 'country');
+            $country = Arr::get($session, 'country') ?: $this->getDefaultCountryId();
         } else {
             $country = $this->getFirstCountryId();
         }
@@ -1362,6 +1368,45 @@ class EcommerceHelper
         return (bool) get_ecommerce_setting('display_item_tax_at_checkout', true);
     }
 
+    public function isTaxOnShippingFeeEnabled(): bool
+    {
+        return $this->isTaxEnabled() && (bool) get_ecommerce_setting('tax_on_shipping_fee', false);
+    }
+
+    public function calculateShippingTax(float $shippingAmount): float
+    {
+        if ($shippingAmount <= 0 || ! $this->isTaxOnShippingFeeEnabled()) {
+            return 0;
+        }
+
+        $percentage = 0;
+
+        $defaultTaxRateId = get_ecommerce_setting('default_tax_rate');
+
+        if ($defaultTaxRateId) {
+            $tax = Tax::query()->find($defaultTaxRateId);
+            if ($tax) {
+                $percentage = (float) $tax->percentage;
+            }
+        }
+
+        if (! $percentage) {
+            foreach (Cart::instance('cart')->content() as $cartItem) {
+                if ($cartItem->taxRate > 0) {
+                    $percentage = (float) $cartItem->taxRate;
+
+                    break;
+                }
+            }
+        }
+
+        if (! $percentage) {
+            return 0;
+        }
+
+        return round($shippingAmount * $percentage / 100, 2);
+    }
+
     public function isHideCustomerInfoAtCheckout(): bool
     {
         return (bool) get_ecommerce_setting('hide_customer_info_at_checkout', false);
@@ -1432,33 +1477,38 @@ class EcommerceHelper
             return collect();
         }
 
-        return Brand::query()
-            ->wherePublished()
-            ->with(['categories', 'slugable'])
-            ->when(count($categoryIds), function ($query) use ($categoryIds): void {
-                $query->where(function ($query) use ($categoryIds): void {
-                    $query
-                        ->whereDoesntHave('categories')
-                        ->orWhereHas('categories', function ($query) use ($categoryIds): void {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
-                        });
-                });
-            })
-            ->withCount([
-                'products' => function ($query) use ($categoryIds): void {
-                    if ($categoryIds) {
-                        $query->whereHas('categories', function ($query) use ($categoryIds): void {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
-                        });
-                    }
+        sort($categoryIds);
+        $cacheKey = 'brands_for_filter_' . md5(serialize($categoryIds));
 
-                    $query->where('status', BaseStatusEnum::PUBLISHED);
-                },
-            ])
-            ->oldest('order')
-            ->latest('products_count')->latest()
-            ->get()
-            ->where('products_count', '>', 0);
+        return Cache::remember($cacheKey, 1800, function () use ($categoryIds) {
+            return Brand::query()
+                ->wherePublished()
+                ->with(['categories', 'slugable'])
+                ->when(count($categoryIds), function ($query) use ($categoryIds): void {
+                    $query->where(function ($query) use ($categoryIds): void {
+                        $query
+                            ->whereDoesntHave('categories')
+                            ->orWhereHas('categories', function ($query) use ($categoryIds): void {
+                                $query->whereIn('ec_product_categories.id', $categoryIds);
+                            });
+                    });
+                })
+                ->withCount([
+                    'products' => function ($query) use ($categoryIds): void {
+                        if ($categoryIds) {
+                            $query->whereHas('categories', function ($query) use ($categoryIds): void {
+                                $query->whereIn('ec_product_categories.id', $categoryIds);
+                            });
+                        }
+
+                        $query->where('status', BaseStatusEnum::PUBLISHED);
+                    },
+                ])
+                ->oldest('order')
+                ->latest('products_count')->latest()
+                ->get()
+                ->where('products_count', '>', 0);
+        });
     }
 
     public function tagsForFilter(array $categoryIds = []): Collection
@@ -1467,24 +1517,29 @@ class EcommerceHelper
             return collect();
         }
 
-        return ProductTag::query()
-            ->wherePublished()
-            ->withCount([
-                'products' => function ($query) use ($categoryIds): void {
-                    if ($categoryIds) {
-                        $query->whereHas('categories', function ($query) use ($categoryIds): void {
-                            $query->whereIn('ec_product_categories.id', $categoryIds);
-                        });
-                    }
+        sort($categoryIds);
+        $cacheKey = 'tags_for_filter_' . md5(serialize($categoryIds));
 
-                    $query->where('status', BaseStatusEnum::PUBLISHED);
-                },
-            ])
-            ->with('slugable')
-            ->latest('products_count')->latest()
-            ->take($this->getNumberOfPopularTagsForFilter())
-            ->get()
-            ->where('products_count', '>', 0);
+        return Cache::remember($cacheKey, 1800, function () use ($categoryIds) {
+            return ProductTag::query()
+                ->wherePublished()
+                ->withCount([
+                    'products' => function ($query) use ($categoryIds): void {
+                        if ($categoryIds) {
+                            $query->whereHas('categories', function ($query) use ($categoryIds): void {
+                                $query->whereIn('ec_product_categories.id', $categoryIds);
+                            });
+                        }
+
+                        $query->where('status', BaseStatusEnum::PUBLISHED);
+                    },
+                ])
+                ->with('slugable')
+                ->latest('products_count')->latest()
+                ->take($this->getNumberOfPopularTagsForFilter())
+                ->get()
+                ->where('products_count', '>', 0);
+        });
     }
 
     public function dataForFilter(?ProductCategory $category, bool $currentCategoryOnly = false): array
@@ -1716,8 +1771,8 @@ class EcommerceHelper
             'is_prefix_symbol' => $currency->is_prefix_symbol,
             'symbol' => $currency->symbol,
             'title' => $currency->title,
-            'decimal_separator' => get_ecommerce_setting('decimal_separator', '.'),
-            'thousands_separator' => get_ecommerce_setting('thousands_separator', ','),
+            'decimal_separator' => ($ds = get_ecommerce_setting('decimal_separator', '.')) === 'space' ? ' ' : $ds,
+            'thousands_separator' => ($ts = get_ecommerce_setting('thousands_separator', ',')) === 'space' ? ' ' : $ts,
             'number_after_dot' => $currency->decimals ?: 0,
             'show_symbol_or_title' => true,
         ]);
@@ -2068,6 +2123,6 @@ class EcommerceHelper
 
     public function getAssetVersion(): string
     {
-        return '3.11.5';
+        return '3.11.6';
     }
 }

@@ -199,6 +199,8 @@ class ProductImporter extends Importer implements WithMapping
                 ->rules([Rule::in(StockStatusEnum::values())], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Stock status', 'values' => implode(', ', StockStatusEnum::values())])),
             ImportColumn::make('with_storehouse_management')
                 ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'With storehouse management'])),
+            ImportColumn::make('allow_checkout_when_out_of_stock')
+                ->rules(['nullable', 'bool'], trans('plugins/ecommerce::products.import.rules.nullable_bool', ['attribute' => 'Allow checkout when out of stock'])),
             ImportColumn::make('quantity')
                 ->rules(['numeric', 'nullable', 'min:0', 'max:100000000'], trans('plugins/ecommerce::products.import.rules.nullable_numeric_min_max', ['attribute' => 'Quantity', 'min' => 0, 'max' => 100000000])),
             ImportColumn::make('sale_price')
@@ -223,6 +225,15 @@ class ProductImporter extends Importer implements WithMapping
                 ->rules(['nullable', 'string'], trans('plugins/ecommerce::products.import.rules.nullable_string', ['attribute' => 'Content'])),
             ImportColumn::make('tags')
                 ->rules(['nullable', 'array'], trans('plugins/ecommerce::products.import.rules.nullable_array', ['attribute' => 'Tags'])),
+            ImportColumn::make('seo_title')
+                ->label('SEO Title')
+                ->rules(['nullable', 'string', 'max:250'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'SEO Title', 'max' => 250])),
+            ImportColumn::make('seo_description')
+                ->label('SEO Description')
+                ->rules(['nullable', 'string', 'max:500'], trans('plugins/ecommerce::products.import.rules.nullable_string_max', ['attribute' => 'SEO Description', 'max' => 500])),
+            ImportColumn::make('seo_index')
+                ->label('SEO Index')
+                ->rules(['nullable', Rule::in(['index', 'noindex'])], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'SEO Index', 'values' => 'index, noindex'])),
             ImportColumn::make('product_type')
                 ->rules([Rule::in(ProductTypeEnum::values())], trans('plugins/ecommerce::products.import.rules.in', ['attribute' => 'Product type', 'values' => implode(', ', ProductTypeEnum::values())])),
             ImportColumn::make('auto_generate_sku')
@@ -276,6 +287,7 @@ class ProductImporter extends Importer implements WithMapping
             'variations.productAttributes.productAttributeSet',
             'tags',
             'productAttributeSets',
+            'metadata',
         ];
 
         if ($this->isMarketplaceActive) {
@@ -319,6 +331,7 @@ class ProductImporter extends Importer implements WithMapping
                 'is_variation_default' => 1,
                 'stock_status' => 'in_stock',
                 'with_storehouse_management' => 1,
+                'allow_checkout_when_out_of_stock' => 0,
                 'quantity' => '100',
                 'sale_price' => '90',
                 'start_date' => '2021-01-01',
@@ -331,6 +344,9 @@ class ProductImporter extends Importer implements WithMapping
                 'barcode' => 'product-barcode',
                 'content' => 'product-content',
                 'tags' => 'tag1,tag2',
+                'seo_title' => 'Product SEO Title',
+                'seo_description' => 'Product SEO meta description for search engines',
+                'seo_index' => 'index',
                 'product_type' => 'physical',
                 'vendor' => 'vendor-name',
                 'auto_generate_sku' => 1,
@@ -407,6 +423,11 @@ class ProductImporter extends Importer implements WithMapping
                 'order' => (int) $product->order ?: 0,
             ];
 
+            $seoMeta = $product->getMetaData('seo_meta', true);
+            $result['seo_title'] = is_array($seoMeta) ? ($seoMeta['seo_title'] ?? '') : '';
+            $result['seo_description'] = is_array($seoMeta) ? ($seoMeta['seo_description'] ?? '') : '';
+            $result['seo_index'] = is_array($seoMeta) ? ($seoMeta['index'] ?? 'index') : 'index';
+
             if ($this->isEnabledDigital) {
                 $result['product_type'] = $product->product_type;
             }
@@ -474,6 +495,10 @@ class ProductImporter extends Importer implements WithMapping
                         'maximum_order_quantity' => $variation->product->maximum_order_quantity,
                         'order' => (int) $variation->product->order ?: 0,
                     ];
+
+                    $data['seo_title'] = '';
+                    $data['seo_description'] = '';
+                    $data['seo_index'] = '';
 
                     if ($this->isEnabledDigital) {
                         $data['product_type'] = ProductTypeEnum::PHYSICAL;
@@ -1082,6 +1107,18 @@ class ProductImporter extends Importer implements WithMapping
         ]);
 
         $row['product_labels'] = $row['labels'];
+
+        $seoTitle = Arr::get($row, 'seo_title');
+        $seoDescription = Arr::get($row, 'seo_description');
+        $seoIndex = Arr::get($row, 'seo_index', 'index');
+
+        if ($seoTitle || $seoDescription || ($seoIndex && $seoIndex !== 'index')) {
+            $row['seo_meta'] = array_filter([
+                'seo_title' => $seoTitle ?: null,
+                'seo_description' => $seoDescription ?: null,
+                'index' => $seoIndex ?: null,
+            ]);
+        }
 
         if ($row['import_type'] == 'product' && ! $row['sku'] && $row['auto_generate_sku']) {
             $row['sku'] = (new Product())->generateSKU();

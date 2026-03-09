@@ -52,6 +52,7 @@ return [
     'is_default' => 'デフォルト？',
     'title' => 'タイトル',
     'slug' => 'スラッグ',
+    'slug_help_block' => '商品フィルターURLで使用されます（例：?attributes[<slug>]=value）。タイトルから自動生成する場合は空欄にしてください。',
     'color' => '色',
     'image' => '画像',
     'remove' => '削除',

@@ -52,6 +52,7 @@ return [
     'is_default' => 'Je predvolené?',
     'title' => 'Názov',
     'slug' => 'Slug',
+    'slug_help_block' => 'Používa sa v URL adresách filtra produktov, napr. ?attributes[<slug>]=value. Nechajte prázdne pre automatické generovanie z názvu.',
     'color' => 'Farba',
     'image' => 'Obrázok',
     'remove' => 'Odstrániť',

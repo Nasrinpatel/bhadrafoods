@@ -379,18 +379,16 @@ final class Core
         $filePath = $this->getUpdatedFilePath($version);
 
         if (! $this->files->exists($filePath) || Carbon::createFromTimestamp(filectime($filePath))->diffInHours() > 1) {
-            $response = $this->createRequest('download_update/main/' . $updateId, $data);
-
-            throw_if($response->unauthorized(), RequiresLicenseActivatedException::class);
-
-            if (! $response->successful()) {
-                throw new Exception('Failed to download update. Server returned status: ' . $response->status());
-            }
-
             try {
-                $this->files->put($filePath, $response->body());
-            } catch (Throwable) {
-                throw UnableToWriteFile::atLocation($filePath);
+                $this->streamDownloadUpdate('download_update/main/' . $updateId, $data, $filePath);
+            } catch (RequiresLicenseActivatedException $e) {
+                $this->files->delete($filePath);
+
+                throw $e;
+            } catch (Throwable $e) {
+                $this->files->delete($filePath);
+
+                throw new Exception('Failed to download update: ' . $e->getMessage());
             }
         }
 
@@ -739,6 +737,34 @@ final class Core
             return $data;
         } catch (FileNotFoundException) {
             return [];
+        }
+    }
+
+    private function streamDownloadUpdate(string $path, array $data, string $filePath): void
+    {
+        if (! extension_loaded('curl')) {
+            throw new MissingCURLExtensionException();
+        }
+
+        $response = Http::baseUrl(ltrim($this->licenseUrl, '/') . '/api')
+            ->withHeaders([
+                'LB-API-KEY' => $this->licenseKey,
+                'LB-URL' => rtrim(url(''), '/'),
+                'LB-IP' => $this->getClientIpAddress(),
+                'LB-LANG' => 'english',
+            ])
+            ->asJson()
+            ->acceptJson()
+            ->withoutVerifying()
+            ->connectTimeout(100)
+            ->timeout(900)
+            ->withOptions(['sink' => $filePath])
+            ->post($path, $data);
+
+        throw_if($response->unauthorized(), RequiresLicenseActivatedException::class);
+
+        if (! $response->successful()) {
+            throw new Exception('Server returned status: ' . $response->status());
         }
     }
 

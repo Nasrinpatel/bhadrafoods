@@ -52,6 +52,7 @@ return [
     'is_default' => 'On vaikimisi?',
     'title' => 'Pealkiri',
     'slug' => 'URL',
+    'slug_help_block' => 'Kasutatakse toote filtri URL-ides, nt ?attributes[<slug>]=value. Jäta tühjaks, et genereerida automaatselt pealkirjast.',
     'color' => 'Värv',
     'image' => 'Pilt',
     'remove' => 'Eemalda',

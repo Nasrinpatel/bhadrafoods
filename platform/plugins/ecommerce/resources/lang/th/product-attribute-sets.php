@@ -52,6 +52,7 @@ return [
     'is_default' => 'เป็นค่าเริ่มต้น?',
     'title' => 'ชื่อ',
     'slug' => 'Slug',
+    'slug_help_block' => 'ใช้ใน URL ของตัวกรองสินค้า เช่น ?attributes[<slug>]=value ปล่อยว่างไว้เพื่อสร้างอัตโนมัติจากชื่อ',
     'color' => 'สี',
     'image' => 'รูปภาพ',
     'remove' => 'ลบ',

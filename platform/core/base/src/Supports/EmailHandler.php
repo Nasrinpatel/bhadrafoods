@@ -575,6 +575,21 @@ class EmailHandler
         }
     }
 
+    public static function getDefaultEmailLocale(): string
+    {
+        $locale = setting('email_default_locale');
+
+        if ($locale) {
+            return $locale;
+        }
+
+        if (is_plugin_active('language')) {
+            return \Botble\Language\Facades\Language::getDefaultLocale() ?: config('app.locale', 'en');
+        }
+
+        return config('app.locale', 'en');
+    }
+
     protected function sanitizeUtf8(string $content): string
     {
         if (json_encode($content) === false) {

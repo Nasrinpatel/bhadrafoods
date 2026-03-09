@@ -52,6 +52,16 @@ class HookServiceProvider extends ServiceProvider
 
         $this->app['events']->listen(RenderingThemeOptionSettings::class, function (): void {
             add_filter('theme-options-action-meta-boxes', [$this, 'addLanguageMetaBoxForThemeOptionsAndWidgets'], 55, 2);
+
+            add_filter('theme_options_is_non_default_locale', function (bool $isNonDefaultLocale): bool {
+                $currentLocale = Language::getCurrentAdminLocaleCode();
+
+                if (! $currentLocale) {
+                    return $isNonDefaultLocale;
+                }
+
+                return $currentLocale !== Language::getDefaultLocaleCode();
+            }, 55);
         });
 
         add_filter('widget-top-meta-boxes', [$this, 'addLanguageMetaBoxForThemeOptionsAndWidgets'], 55, 2);
@@ -582,6 +592,10 @@ class HookServiceProvider extends ServiceProvider
             $currentLanguage = Language::getCurrentAdminLocaleCode();
 
             foreach ($activeLanguages as $item) {
+                if (empty($item->lang_code)) {
+                    continue;
+                }
+
                 $languageButtons[] = [
                     'className' => 'change-data-language-item ' . ($item->lang_code === $currentLanguage ? 'active' : ''),
                     'text' => Html::tag(

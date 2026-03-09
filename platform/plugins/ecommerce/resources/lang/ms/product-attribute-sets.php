@@ -52,6 +52,7 @@ return [
     'is_default' => 'Piawai?',
     'title' => 'Tajuk',
     'slug' => 'Slug',
+    'slug_help_block' => 'Digunakan dalam URL penapis produk, cth. ?attributes[<slug>]=value. Biarkan kosong untuk menjana secara automatik daripada tajuk.',
     'color' => 'Warna',
     'image' => 'Imej',
     'remove' => 'Buang',
