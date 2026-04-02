@@ -16,35 +16,35 @@
                     @csrf
 
                     <div class="contact-form-row">
-                        <div class="contact-column-6">
+                        <div class="contact-column-6 col-md-6">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-name">{{ __('Name') }}</label>
                                 <input id="bulk-order-name" type="text" name="name" class="contact-form-input" placeholder="{{ __('Your name') }}" required>
                             </div>
                         </div>
 
-                        <div class="contact-column-6">
+                        <div class="contact-column-6 col-md-6">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-company">{{ __('Company Name') }}</label>
                                 <input id="bulk-order-company" type="text" name="company_name" class="contact-form-input" placeholder="{{ __('Company name') }}" required>
                             </div>
                         </div>
 
-                        <div class="contact-column-6">
+                        <div class="contact-column-6 col-md-6">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-phone">{{ __('Phone') }}</label>
                                 <input id="bulk-order-phone" type="text" name="phone" class="contact-form-input" placeholder="{{ __('Phone number') }}" required>
                             </div>
                         </div>
 
-                        <div class="contact-column-6">
+                        <div class="contact-column-6 col-md-6">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-email">{{ __('Email') }}</label>
                                 <input id="bulk-order-email" type="email" name="email" class="contact-form-input" placeholder="{{ __('Email address') }}" required>
                             </div>
                         </div>
 
-                        <div class="contact-column-12">
+                        <div class="contact-column-12 col-md-12">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-products">{{ __('Product') }}</label>
                                 <select id="bulk-order-products" name="product_id" class="contact-form-input" required>
@@ -56,7 +56,7 @@
                             </div>
                         </div>
 
-                        <div class="contact-column-12">
+                        <div class="contact-column-12 col-md-12">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-quantity">{{ __('Qty in KG') }}</label>
                                 <input type="hidden" name="minimum_order_quantity" value="{{ $minimumOrderQuantity }}">
@@ -65,21 +65,21 @@
                             </div>
                         </div>
 
-                        <div class="contact-column-12">
+                        <div class="contact-column-12 col-md-12">
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-message">{{ __('Message / Comment') }}</label>
                                 <textarea id="bulk-order-message" name="content" class="contact-form-input bulk-order-message" rows="6" placeholder="{{ __('Tell us about packaging, delivery location, timelines, or any special requirement') }}" required></textarea>
                             </div>
                         </div>
 
-                        <div class="contact-column-12">
+                        <div class="contact-column-12 col-md-12">
                             <div class="contact-form-group">
                                 <div class="contact-message contact-success-message" style="display: none"></div>
                                 <div class="contact-message contact-error-message" style="display: none"></div>
                             </div>
                         </div>
 
-                        <div class="contact-column-12">
+                        <div class="contact-column-12 col-md-12">
                             <div class="contact-form-group bulk-order-submit">
                                 <button type="submit" class="tp-btn tp-color-btn tp-wish-cart">
                                     {{ $shortcode->button_label ?: __('Send Bulk Order Request') }}

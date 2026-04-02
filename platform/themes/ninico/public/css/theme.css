@@ -8,6 +8,5 @@
 .bulk-order-section .bulk-order-form small.text-muted{color:#555!important;font-size:14px;line-height:1.42857143}
 .bulk-order-section .bulk-order-submit{margin-top:6px}
 @media(max-width:767px){.bulk-order-section .bulk-order-form-wrap{padding:24px 18px}}
-.bulk-order-section .bulk-order-form .contact-column-12, .bulk-order-section .bulk-order-form .contact-column-6{clear:both;float:none}
 .bulk-order-section .bulk-order-form .contact-column-6,.bulk-order-section .bulk-order-form .contact-column-12{display:block}
 .bulk-order-section .bulk-order-form .contact-form-row:after{clear:both;content:"";display:table}
