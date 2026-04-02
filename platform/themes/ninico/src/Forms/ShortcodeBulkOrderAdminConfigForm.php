@@ -2,7 +2,9 @@
 
 namespace Theme\Ninico\Forms;
 
+use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;
+use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Shortcode\Forms\ShortcodeForm;
 
@@ -28,11 +30,12 @@ class ShortcodeBulkOrderAdminConfigForm extends ShortcodeForm
                     ->toArray()
             )
             ->add(
-                'moq_note',
-                TextField::class,
-                TextFieldOption::make()
-                    ->label(__('MOQ note'))
-                    ->helperText(__('Shown below the quantity field.'))
+                'minimum_order_quantity',
+                NumberField::class,
+                NumberFieldOption::make()
+                    ->label(__('Minimum order quantity (kg)'))
+                    ->defaultValue(10)
+                    ->helperText(__('Example: 10 will show "Minimum 10kg" and enforce quantity starting from 10kg.'))
                     ->toArray()
             )
             ->add(

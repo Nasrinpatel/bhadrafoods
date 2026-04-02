@@ -19,6 +19,7 @@ use Botble\Base\Forms\FormAbstract;
 use Botble\Contact\Forms\Fronts\ContactForm;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Models\FlashSale;
+use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\ProductCollection;
 use Botble\Faq\FaqCollection;
@@ -726,7 +727,15 @@ app()->booted(function (): void {
         });
 
         Shortcode::register('bulk-order-form', __('Bulk Order Form'), __('B2B / bulk order enquiry form'), function (ShortcodeCompiler $shortcode) {
-            return Theme::partial('shortcodes.bulk-order-form.index', compact('shortcode'));
+            $products = is_plugin_active('ecommerce')
+                ? Product::query()
+                    ->wherePublished()
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all()
+                : [];
+
+            return Theme::partial('shortcodes.bulk-order-form.index', compact('shortcode', 'products'));
         });
 
         Shortcode::setAdminConfig('bulk-order-form', function (array $attributes) {
