@@ -727,6 +727,21 @@ app()->booted(function (): void {
         });
 
         Shortcode::register('bulk-order-form', __('Bulk Order Form'), __('B2B / bulk order enquiry form'), function (ShortcodeCompiler $shortcode) {
+            Theme::asset()
+                ->usePath(false)
+                ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.1');
+
+            Theme::asset()
+                ->container('footer')
+                ->usePath(false)
+                ->add(
+                    'contact-public-js',
+                    asset('vendor/core/plugins/contact/js/contact-public.js'),
+                    ['jquery'],
+                    [],
+                    '1.0.1'
+                );
+
             $products = is_plugin_active('ecommerce')
                 ? Product::query()
                     ->wherePublished()
