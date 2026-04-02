@@ -12,6 +12,7 @@ use Botble\Contact\Models\Contact;
 use Botble\Contact\Services\ContactService;
 use Botble\Ecommerce\Facades\Cart;
 use Botble\Ecommerce\Facades\EcommerceHelper;
+use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Services\Products\GetProductBySlugService;
 use Botble\Ecommerce\Services\Products\GetProductService;
 use Botble\Ecommerce\Services\Products\GetProductWithCrossSalesBySlugService;
@@ -21,6 +22,7 @@ use Botble\Theme\Http\Controllers\PublicController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 class NinicoController extends PublicController
 {
@@ -240,11 +242,22 @@ class NinicoController extends PublicController
             'company_name' => ['required', 'string', 'max:120'],
             'phone' => ['required', new PhoneNumberRule()],
             'email' => ['required', new EmailRule(), 'max:80'],
-            'product_list' => ['required', 'string', 'max:2000'],
-            'quantity_in_kg' => ['required', 'string', 'max:120'],
-            'moq_note' => ['nullable', 'string', 'max:500'],
+            'product_id' => [
+                'required',
+                'integer',
+                Rule::exists('ec_products', 'id')->where(fn ($query) => $query->where('status', 'published')),
+            ],
+            'minimum_order_quantity' => ['required', 'numeric', 'min:1'],
+            'quantity_in_kg' => ['required', 'numeric', 'gte:minimum_order_quantity'],
             'content' => ['required', 'string', 'max:10000'],
+        ], [
+            'quantity_in_kg.gte' => __('Quantity must be equal to or greater than the minimum order quantity.'),
         ]);
+
+        $product = Product::query()
+            ->wherePublished()
+            ->select(['id', 'name'])
+            ->findOrFail($data['product_id']);
 
         if ($error = $contactService->validateBlacklistDomain($data['email'])) {
             return $this->response
@@ -267,9 +280,9 @@ class NinicoController extends PublicController
             'status' => ContactStatusEnum::UNREAD,
             'custom_fields' => array_filter([
                 __('Company Name') => $data['company_name'],
-                __('Product List') => $data['product_list'],
+                __('Product') => $product->name,
                 __('Qty (kg)') => $data['quantity_in_kg'],
-                __('MOQ Note') => $data['moq_note'] ?? null,
+                __('MOQ (kg)') => $data['minimum_order_quantity'],
             ], fn ($value) => filled($value)),
         ]);
 
