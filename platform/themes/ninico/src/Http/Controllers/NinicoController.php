@@ -3,7 +3,13 @@
 namespace Theme\Ninico\Http\Controllers;
 
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Rules\EmailRule;
+use Botble\Base\Rules\PhoneNumberRule;
 use Botble\Base\Http\Responses\BaseHttpResponse;
+use Botble\Contact\Enums\ContactStatusEnum;
+use Botble\Contact\Events\SentContactEvent;
+use Botble\Contact\Models\Contact;
+use Botble\Contact\Services\ContactService;
 use Botble\Ecommerce\Facades\Cart;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Services\Products\GetProductBySlugService;
@@ -225,5 +231,51 @@ class NinicoController extends PublicController
                 )->render()
             )
             ->setMessage($message);
+    }
+
+    public function postBulkOrderContact(Request $request, ContactService $contactService): BaseHttpResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:40'],
+            'company_name' => ['required', 'string', 'max:120'],
+            'phone' => ['required', new PhoneNumberRule()],
+            'email' => ['required', new EmailRule(), 'max:80'],
+            'product_list' => ['required', 'string', 'max:2000'],
+            'quantity_in_kg' => ['required', 'string', 'max:120'],
+            'moq_note' => ['nullable', 'string', 'max:500'],
+            'content' => ['required', 'string', 'max:10000'],
+        ]);
+
+        if ($error = $contactService->validateBlacklistDomain($data['email'])) {
+            return $this->response
+                ->setError()
+                ->setMessage($error);
+        }
+
+        if ($error = $contactService->validateBlacklistKeywords($data['content'])) {
+            return $this->response
+                ->setError()
+                ->setMessage($error);
+        }
+
+        $contact = Contact::query()->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'subject' => __('B2B / Bulk Order Inquiry'),
+            'content' => $data['content'],
+            'status' => ContactStatusEnum::UNREAD,
+            'custom_fields' => array_filter([
+                __('Company Name') => $data['company_name'],
+                __('Product List') => $data['product_list'],
+                __('Qty (kg)') => $data['quantity_in_kg'],
+                __('MOQ Note') => $data['moq_note'] ?? null,
+            ], fn ($value) => filled($value)),
+        ]);
+
+        event(new SentContactEvent($contact));
+
+        return $this->response
+            ->setMessage(__('Your bulk order inquiry has been sent successfully.'));
     }
 }

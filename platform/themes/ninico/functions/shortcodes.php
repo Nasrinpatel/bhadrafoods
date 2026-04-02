@@ -35,6 +35,7 @@ use Botble\Theme\Supports\ThemeSupport;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Theme\Ninico\Forms\ShortcodeBulkOrderAdminConfigForm;
 use Theme\Ninico\Forms\ShortcodeContactAdminConfigForm;
 
 
@@ -723,6 +724,17 @@ app()->booted(function (): void {
         Shortcode::setAdminConfig('contact-box', function (array $attributes) {
             return ShortcodeContactAdminConfigForm::createFromArray($attributes);
         });
+
+        Shortcode::register('bulk-order-form', __('Bulk Order Form'), __('B2B / bulk order enquiry form'), function (ShortcodeCompiler $shortcode) {
+            return Theme::partial('shortcodes.bulk-order-form.index', compact('shortcode'));
+        });
+
+        Shortcode::setAdminConfig('bulk-order-form', function (array $attributes) {
+            return ShortcodeBulkOrderAdminConfigForm::createFromArray($attributes);
+        });
+
+        Shortcode::ignoreLazyLoading(['bulk-order-form']);
+        Shortcode::ignoreCaches(['bulk-order-form']);
     }
 
     if (is_plugin_active('faq')) {
