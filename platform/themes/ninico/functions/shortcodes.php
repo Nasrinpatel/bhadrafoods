@@ -729,7 +729,7 @@ app()->booted(function (): void {
         Shortcode::register('bulk-order-form', __('Bulk Order Form'), __('B2B / bulk order enquiry form'), function (ShortcodeCompiler $shortcode) {
             Theme::asset()
                 ->usePath(false)
-                ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.1');
+                ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.2');
 
             Theme::asset()
                 ->container('footer')

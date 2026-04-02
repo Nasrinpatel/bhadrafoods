@@ -54,7 +54,7 @@ class ContactForm extends FormFront
 
         Theme::asset()
             ->usePath(false)
-            ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.1');
+            ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.2');
 
         Theme::asset()
             ->container('footer')
