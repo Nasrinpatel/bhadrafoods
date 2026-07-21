@@ -1,6 +1,7 @@
 <section class="contact-area mb-40 bulk-order-section">
     @php
-        $minimumOrderQuantity = max((float) ($shortcode->minimum_order_quantity ?: 10), 1);
+        $bulkOrderQuantities = [10, 50, 100, 200, 500, 1000];
+        $minimumOrderQuantity = $bulkOrderQuantities[0];
         $minimumOrderQuantityLabel = rtrim(rtrim(number_format($minimumOrderQuantity, 2, '.', ''), '0'), '.');
     @endphp
 
@@ -60,7 +61,12 @@
                             <div class="contact-form-group">
                                 <label class="contact-label required" for="bulk-order-quantity">{{ __('Qty in KG') }}</label>
                                 <input type="hidden" name="minimum_order_quantity" value="{{ $minimumOrderQuantity }}">
-                                <input id="bulk-order-quantity" type="number" name="quantity_in_kg" class="contact-form-input" min="{{ $minimumOrderQuantity }}" step="0.01" placeholder="{{ __('Enter quantity in kg') }}" required>
+                                <select id="bulk-order-quantity" name="quantity_in_kg" class="contact-form-input" required>
+                                    <option value="">{{ __('Select quantity') }}</option>
+                                    @foreach ($bulkOrderQuantities as $bulkOrderQuantity)
+                                        <option value="{{ $bulkOrderQuantity }}">{{ $bulkOrderQuantity }} kg</option>
+                                    @endforeach
+                                </select>
                                 <small class="d-block mt-2 text-muted">{{ __('Minimum :qtykg', ['qty' => $minimumOrderQuantityLabel]) }}</small>
                             </div>
                         </div>
