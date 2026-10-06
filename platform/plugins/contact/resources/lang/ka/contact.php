@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => 'ჩვენი პასუხი:',
         'admin_reply_additional_questions' => 'თუ გაქვთ დამატებითი კითხვები, გთხოვთ უპასუხოთ ამ ელფოსტას ან დაგვიკავშირდით ხელახლა.',
         'admin_reply_best_regards' => 'პატივისცემით,',
-        'admin_reply_team' => '{{ site_title }} გუნდი',
+        'admin_reply_team' => ':site_title გუნდი',
         'notice_title' => 'ახალი საკონტაქტო შეტყობინება',
         'notice_greeting' => 'ძვირფასო ადმინისტრატორო,',
         'notice_message_details' => 'შეტყობინების დეტალები',
@@ -177,4 +177,6 @@ return [
     'subject_placeholder' => 'საგანი',
     'your_message' => 'თქვენი შეტყობინება',
     'agree_terms_privacy' => 'ვეთანხმები პირობებს და კონფიდენციალურობის პოლიტიკას',
+    'agree_terms_privacy_link' => 'ვეთანხმები :link',
+    'terms_and_privacy_policy' => 'პირობებს და კონფიდენციალურობის პოლიტიკას',
 ];

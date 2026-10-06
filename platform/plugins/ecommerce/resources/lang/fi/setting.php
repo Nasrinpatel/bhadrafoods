@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Näytä tiedottava viesti, joka ilmoittaa asiakkaille ehdoista, jotka he hyväksyvät tekemällä tilauksen.',
       'hide_customer_info_at_checkout' => 'Piilota asiakastiedot kassalla',
       'hide_customer_info_at_checkout_helper' => 'Piilota asiakastilin tiedot ja uloskirjautumispainike kassasivulta. Kun tämä on käytössä, sisäänkirjautuneet asiakkaat eivät näe tilin tietojaan.',
+      'enable_order_notes_at_checkout' => 'Ota tilauksen muistiinpanot käyttöön kassalla',
+      'enable_order_notes_at_checkout_helper' => 'Jos käytössä, asiakkaat voivat lisätä tilaukseensa valinnaisia muistiinpanoja kassasivulla (esim. erityiset toimitusohjeet).',
     ],
   ],
   'return' =>

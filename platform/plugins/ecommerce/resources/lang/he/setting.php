@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'הצג הודעה אינפורמטיבית המודיעה ללקוחות על התנאים שהם מסכימים להם על ידי ביצוع הזמנה.',
       'hide_customer_info_at_checkout' => 'הסתר מידע לקוח בתשלום',
       'hide_customer_info_at_checkout_helper' => 'הסתר את מידע חשבון הלקוח וכפתור ההתנתקות מדף התשלום. כאשר مופעל, לקוחות מחוברים לא יראו את פרטי החשבון שלהם מוצגים.',
+      'enable_order_notes_at_checkout' => 'הפעל הערות הזמנה בתשלום',
+      'enable_order_notes_at_checkout_helper' => 'אם מופעל, הלקוחות יכולים להוסיף הערות אופציונליות להזמנתם בדף התשלום (למשל, הוראות משלוח מיוחדות).',
     ],
   ],
   'return' =>

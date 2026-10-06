@@ -2,6 +2,7 @@
 
 namespace Botble\Ecommerce\Services;
 
+use Botble\Ecommerce\Enums\DiscountTypeOptionEnum;
 use Botble\Ecommerce\Enums\ShippingMethodEnum;
 use Botble\Ecommerce\Facades\Cart;
 use Botble\Ecommerce\Facades\EcommerceHelper;
@@ -60,15 +61,27 @@ class HandleCheckoutOrderData
                         ->first();
 
                     if ($order && isset($storeData['shipping_amount'])) {
-                        $shippingAmount = $storeData['shipping_amount'];
-                        $storeShippingTaxAmount = EcommerceHelper::calculateShippingTax($shippingAmount);
-                        $newAmount = max($order->sub_total - $order->discount_amount + $order->tax_amount + $shippingAmount + $storeShippingTaxAmount + ($order->payment_fee ?? 0), 0);
+                        $storeShippingAmount = $storeData['shipping_amount'];
+                        $storeShippingTaxAmount = EcommerceHelper::calculateShippingTax($storeShippingAmount);
+                        $newAmount = max($order->sub_total - $order->discount_amount + $order->tax_amount + $storeShippingAmount + $storeShippingTaxAmount + ($order->payment_fee ?? 0), 0);
 
-                        if ($order->shipping_amount != $shippingAmount || $order->amount != $newAmount) {
+                        $storeShippingMethod = Arr::get($storeData, 'shipping_method');
+                        $storeShippingOption = Arr::get($storeData, 'shipping_option');
+
+                        // Same rule as the single-vendor branch below: the vendor order has to
+                        // follow the method the buyer picked, and an amount-only guard misses a
+                        // provider switch when both providers quote the same fee.
+                        if (
+                            $order->shipping_amount != $storeShippingAmount
+                            || $order->amount != $newAmount
+                            || ($storeShippingMethod && $order->shipping_method != $storeShippingMethod)
+                            || $order->shipping_option != $storeShippingOption
+                        ) {
                             $order->update([
-                                'shipping_amount' => $shippingAmount,
+                                'shipping_amount' => $storeShippingAmount,
                                 'shipping_tax_amount' => $storeShippingTaxAmount,
-                                'shipping_option' => Arr::get($storeData, 'shipping_option'),
+                                'shipping_method' => $storeShippingMethod ?: $order->shipping_method,
+                                'shipping_option' => $storeShippingOption,
                                 'amount' => $newAmount,
                             ]);
                         }
@@ -82,11 +95,44 @@ class HandleCheckoutOrderData
 
             $couponDiscountAmount = 0;
             if (session()->has('applied_coupon_code')) {
-                $couponDiscountAmount = Arr::get($sessionCheckoutData, 'coupon_discount_amount', 0);
+                $appliedCouponCode = session('applied_coupon_code');
+                $discount = $this->applyCouponService->getCouponData($appliedCouponCode, $sessionCheckoutData);
+
+                if (! $discount) {
+                    // Coupon no longer exists or has expired - drop it.
+                    $this->removeCouponService->execute();
+                } elseif ($discount->type_option == DiscountTypeOptionEnum::SHIPPING) {
+                    // Free-shipping coupon: keep the stored state (the shipping fee
+                    // is computed further below, so it can't be re-validated here).
+                    $couponDiscountAmount = (float) Arr::get($sessionCheckoutData, 'coupon_discount_amount', 0);
+                } else {
+                    // Re-apply against the CURRENT cart so the discount tracks quantity
+                    // changes and its conditions (minimum order, product eligibility,
+                    // flash sale, promotion) are re-checked. Drop it when it no longer
+                    // qualifies instead of carrying a stale or invalid discount into the order.
+                    $couponResult = $this->applyCouponService->execute($appliedCouponCode, $sessionCheckoutData);
+
+                    if (Arr::get($couponResult, 'error')) {
+                        $this->removeCouponService->execute();
+                    } else {
+                        $couponDiscountAmount = max((float) Arr::get($couponResult, 'data.discount_amount', 0), 0);
+                    }
+                }
+
+                $sessionCheckoutData['coupon_discount_amount'] = $couponDiscountAmount;
             }
 
-            $orderTotal = Cart::instance('cart')->rawTotal() - $promotionDiscountAmount - $couponDiscountAmount;
-            $orderTotal = max($orderTotal, 0);
+            $rawCartTotal = Cart::instance('cart')->rawTotal();
+            $orderTotal = max($rawCartTotal - $promotionDiscountAmount - $couponDiscountAmount, 0);
+
+            // Intermediate total, before shipping is calculated from it.
+            $orderTotal = max((float) apply_filters('ecommerce_checkout_order_total', $orderTotal, [
+                'raw_total' => $rawCartTotal,
+                'promotion_discount_amount' => $promotionDiscountAmount,
+                'coupon_discount_amount' => $couponDiscountAmount,
+                'token' => $token,
+                'store_id' => null,
+            ]), 0);
 
             $shipping = [];
 
@@ -144,6 +190,11 @@ class HandleCheckoutOrderData
                         $defaultShippingMethod = (string) $defaultShippingMethod;
                     }
 
+                    // Ensure the resolved key exists in $shipping; otherwise the blade renders no checked radio.
+                    if (! array_key_exists($defaultShippingMethod, $shipping)) {
+                        $defaultShippingMethod = (string) array_key_first($shipping);
+                    }
+
                     $defaultShippingOption = Arr::first(array_keys(Arr::first($shipping)));
 
                     if ($optionRequest = $request->input('shipping_option', old('shipping_option'))) {
@@ -189,10 +240,19 @@ class HandleCheckoutOrderData
                         $orderShippingTaxAmount = EcommerceHelper::calculateShippingTax($shippingAmount);
                         $newAmount = max($order->sub_total - $order->discount_amount + $order->tax_amount + $shippingAmount + $orderShippingTaxAmount + ($order->payment_fee ?? 0), 0);
 
-                        if ($order->shipping_amount != $shippingAmount || $order->amount != $newAmount) {
+                        // The pending order must follow the shipping method the buyer picked, not just
+                        // the option/price. Comparing amounts alone also misses a provider switch when
+                        // both providers quote the same fee, leaving the order on the first method.
+                        if (
+                            $order->shipping_amount != $shippingAmount
+                            || $order->amount != $newAmount
+                            || $order->shipping_method != $defaultShippingMethod
+                            || $order->shipping_option != $defaultShippingOption
+                        ) {
                             $order->update([
                                 'shipping_amount' => $shippingAmount,
                                 'shipping_tax_amount' => $orderShippingTaxAmount,
+                                'shipping_method' => $defaultShippingMethod,
                                 'shipping_option' => $defaultShippingOption,
                                 'amount' => $newAmount,
                             ]);
@@ -242,6 +302,19 @@ class HandleCheckoutOrderData
         }
 
         Arr::set($sessionCheckoutData, 'payment_fee', $paymentFee);
+
+        // Final payable amount. Fires once per checkout, including on marketplace, where
+        // per-vendor order records keep their own amounts. Buyer-side instruments such as
+        // store credit or loyalty points belong here so they are not applied per vendor.
+        $orderAmount = max((float) apply_filters('ecommerce_order_amount', $orderAmount, [
+            'raw_total' => $rawTotal,
+            'promotion_discount_amount' => $promotionDiscountAmount,
+            'coupon_discount_amount' => $couponDiscountAmount,
+            'shipping_amount' => $shippingAmount,
+            'shipping_tax_amount' => $shippingTaxAmount,
+            'payment_fee' => $paymentFee,
+            'token' => $token,
+        ]), 0);
 
         return new CheckoutOrderData(
             shipping: $shipping,

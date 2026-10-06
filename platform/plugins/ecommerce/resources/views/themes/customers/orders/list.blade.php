@@ -3,6 +3,8 @@
 @section('title', trans('plugins/ecommerce::customer-dashboard.orders'))
 
 @section('content')
+    {!! apply_filters('ecommerce_customer_orders_before_content', '') !!}
+
     <div class="bb-customer-content-wrapper">
         @if($orders->isNotEmpty())
             <div class="customer-list-order">
@@ -87,4 +89,6 @@
             ])
         @endif
     </div>
+
+    {!! apply_filters('ecommerce_customer_orders_after_content', '') !!}
 @stop

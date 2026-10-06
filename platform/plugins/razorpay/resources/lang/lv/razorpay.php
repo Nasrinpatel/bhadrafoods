@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Vispirms veiciet testa maksājumu testa režīmā',
     'check_status' => 'Pārbaudiet, vai pasūtījuma statuss tiek atjaunināts uz "Pabeigts"',
     'verify_webhook' => 'Ja pasūtījumi paliek "Nepabeigti", pārbaudiet savu webhook konfigurāciju',
-    'check_logs' => 'Pārbaudiet maksājumu žurnālus storage/logs/payment-*.log atkļūdošanai',
+    'check_logs' => 'Pārbaudiet maksājumu žurnālus Payments > Payment Logs (admin panel) atkļūdošanai',
     'troubleshooting' => 'Problēmu novēršanas padomi:',
     'ssl_required' => 'Pārliecinieties, ka jūsu vietnei ir derīgs SSL sertifikāts (HTTPS)',
     'public_url' => 'Pārbaudiet, vai webhook URL ir publiski pieejams (ne localhost)',
     'firewall_check' => 'Pārbaudiet, ka neviens ugunsmūris nebloķē Razorpay webhook pieprasījumus',
     'live_mode' => 'Ražošanai pārliecinieties, ka Razorpay ir tiešsaistes režīmā, nevis testa režīmā',
+    'minimum_amount_error' => 'Pasūtījuma summa ir mazāka par Razorpay atļauto minimālo summu (:amount). Lūdzu, pievienojiet vairāk preču savam grozam.',
+    'minimum_amount_warning' => 'Razorpay pieprasa minimālo pasūtījuma summu :amount. Jūsu pašreizējā pasūtījuma kopsumma ir zem šī minimuma.',
 ];

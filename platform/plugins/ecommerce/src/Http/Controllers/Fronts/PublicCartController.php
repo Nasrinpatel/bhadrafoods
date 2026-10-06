@@ -7,6 +7,7 @@ use Botble\Ecommerce\AdsTracking\FacebookPixel;
 use Botble\Ecommerce\AdsTracking\GoogleTagManager;
 use Botble\Ecommerce\Cart\Cart as CartInstance;
 use Botble\Ecommerce\Enums\DiscountTypeEnum;
+use Botble\Ecommerce\Enums\DiscountTypeOptionEnum;
 use Botble\Ecommerce\Facades\Cart;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\OrderHelper;
@@ -20,6 +21,7 @@ use Botble\Ecommerce\Models\ProductVariation;
 use Botble\Ecommerce\Services\AbandonedCartService;
 use Botble\Ecommerce\Services\HandleApplyCouponService;
 use Botble\Ecommerce\Services\HandleApplyPromotionsService;
+use Botble\Ecommerce\Services\HandleRemoveCouponService;
 use Botble\Ecommerce\Services\Products\GetProductWithUpSalesBySlugService;
 use Botble\Ecommerce\Services\Products\ProductUpSalePriceService;
 use Botble\SeoHelper\Facades\SeoHelper;
@@ -41,7 +43,8 @@ class PublicCartController extends BaseController
 
     public function __construct(
         protected HandleApplyPromotionsService $applyPromotionsService,
-        protected HandleApplyCouponService $handleApplyCouponService
+        protected HandleApplyCouponService $handleApplyCouponService,
+        protected HandleRemoveCouponService $handleRemoveCouponService
     ) {
     }
 
@@ -78,6 +81,10 @@ class PublicCartController extends BaseController
 
     public function index(Request $request)
     {
+        // A webhook may have completed this session's order while the buyer was away; start
+        // from a clean cart and token instead of piling new items onto the paid order.
+        OrderHelper::discardSpentCheckoutSession();
+
         if ($token = $request->query('token')) {
             try {
                 $abandonedCartService = app(AbandonedCartService::class);
@@ -126,6 +133,10 @@ class PublicCartController extends BaseController
 
     public function store(CartRequest $request)
     {
+        // A webhook may have completed this session's order while the buyer was away; start
+        // from a clean cart and token instead of piling new items onto the paid order.
+        OrderHelper::discardSpentCheckoutSession();
+
         $response = $this->httpResponse();
 
         /**
@@ -138,6 +149,12 @@ class PublicCartController extends BaseController
             return $response
                 ->setError()
                 ->setMessage(trans('plugins/ecommerce::products.cart.product_not_exists'));
+        }
+
+        if ($product->isExternalProduct()) {
+            return $response
+                ->setError()
+                ->setMessage(trans('plugins/ecommerce::products.cart.external_product'));
         }
 
         if ($product->variations->isNotEmpty() && ! $product->is_variation && $product->defaultVariation->product->id) {
@@ -224,9 +241,13 @@ class PublicCartController extends BaseController
 
         $requestQuantity = $request->integer('qty', 1);
 
+        // Buy Now means "purchase this quantity": it replaces the quantity of the same
+        // cart line instead of accumulating on every repeat click (1 → 2 → 3...).
+        $isQuickBuy = $request->boolean('checkout');
+
         $existingAddedToCart = Cart::instance('cart')->content()->firstWhere('id', $product->id);
 
-        if ($existingAddedToCart) {
+        if ($existingAddedToCart && ! $isQuickBuy) {
             $requestQuantity += $existingAddedToCart->qty;
         }
 
@@ -240,7 +261,7 @@ class PublicCartController extends BaseController
         $cartContent = Cart::instance('cart')->content();
         $existingItem = $cartContent->firstWhere('id', $product->id);
 
-        if ($existingItem) {
+        if ($existingItem && ! $isQuickBuy) {
             $originalQuantity = $product->quantity;
             $product->quantity = (int) $product->quantity - $existingItem->qty;
 
@@ -303,12 +324,24 @@ class PublicCartController extends BaseController
                 ));
         }
 
+        $quantitiesBeforeAdd = $isQuickBuy ? Cart::instance('cart')->content()->pluck('qty', 'rowId')->all() : [];
+
         try {
             $cartItems = OrderHelper::handleAddCart($product, $request);
         } catch (Exception $e) {
             return $response
                 ->setError()
                 ->setMessage($e->getMessage());
+        }
+
+        if ($isQuickBuy) {
+            if (! $this->applyQuickBuyQuantity($product, $quantitiesBeforeAdd, $request->integer('qty', 1))) {
+                return $response
+                    ->setError()
+                    ->setMessage(trans('plugins/ecommerce::products.cart.max_quantity_detail', ['quantity' => $maxQuantity, 'product' => $product->name]));
+            }
+
+            $cartItems = Cart::instance('cart')->content()->toArray();
         }
 
         $cartItem = Arr::first(array_filter($cartItems, fn ($item) => $item['id'] == $product->id));
@@ -328,6 +361,7 @@ class PublicCartController extends BaseController
             $originalProduct,
             $cartItem['qty'],
             $cartItem['subtotal'],
+            $product->sku,
         );
 
         app(FacebookPixel::class)->addToCart(
@@ -343,7 +377,7 @@ class PublicCartController extends BaseController
             $nextUrl = route('public.cart');
         }
 
-        if ($request->input('checkout')) {
+        if ($isQuickBuy) {
             Cart::instance('cart')->refresh();
 
             $responseData['next_url'] = $nextUrl;
@@ -371,6 +405,10 @@ class PublicCartController extends BaseController
 
     public function addByUrl(Request $request, int|string $product)
     {
+        // A webhook may have completed this session's order while the buyer was away; start
+        // from a clean cart and token instead of piling new items onto the paid order.
+        OrderHelper::discardSpentCheckoutSession();
+
         $productModel = Product::query()
             ->where(function ($query) use ($product): void {
                 $query->where('id', $product)
@@ -382,6 +420,12 @@ class PublicCartController extends BaseController
             return redirect()
                 ->route('public.cart')
                 ->with('error_msg', trans('plugins/ecommerce::products.cart.product_not_exists'));
+        }
+
+        if ($productModel->isExternalProduct()) {
+            return redirect()
+                ->route('public.cart')
+                ->with('error_msg', trans('plugins/ecommerce::products.cart.external_product'));
         }
 
         $originalProduct = $productModel->original_product;
@@ -529,6 +573,14 @@ class PublicCartController extends BaseController
     {
         try {
             $cartItem = Cart::instance('cart')->get($id);
+
+            if (! $cartItem) {
+                return $this
+                    ->httpResponse()
+                    ->setError()
+                    ->setMessage(trans('plugins/ecommerce::products.cart.item_not_found'));
+            }
+
             $product = Product::query()->find($cartItem->id);
 
             $googleTagManager = app(GoogleTagManager::class);
@@ -549,6 +601,13 @@ class PublicCartController extends BaseController
 
             $this->persistCart();
 
+            // Mark the cart as freshly synced so the restore middleware
+            // does not overwrite the session with stale DB content on the
+            // next request — the DB updated_at is set after the session
+            // updated_at, which the middleware interprets as "DB is newer"
+            // and restores the old content (including the just-removed item).
+            session(['cart_last_restored_at' => now()->toIso8601String()]);
+
             $responseData = [
                 ...$this->getDataForResponse(),
             ];
@@ -567,6 +626,44 @@ class PublicCartController extends BaseController
                 ->setError()
                 ->setMessage(trans('plugins/ecommerce::products.cart.item_not_found'));
         }
+    }
+
+    /**
+     * Cart::add() merges into an existing line with the same product + options by summing
+     * quantities. For Buy Now, set that merged line (its quantity changed during the add)
+     * back to the quantity the customer actually requested.
+     *
+     * The stock / max-quantity check in store() skips the existing quantity for Buy Now, so
+     * the product's total across all its cart lines (e.g. lines with other product options)
+     * is re-checked here. Returns false, with the cart restored, when that total is too high.
+     */
+    protected function applyQuickBuyQuantity(Product $product, array $quantitiesBeforeAdd, int $requestedQuantity): bool
+    {
+        $cart = Cart::instance('cart');
+        $productItems = fn () => $cart->content()->where('id', $product->getKey());
+
+        $mergedItem = $productItems()->first(
+            fn ($item) => isset($quantitiesBeforeAdd[$item->rowId]) && $item->qty != $quantitiesBeforeAdd[$item->rowId]
+        );
+
+        if ($mergedItem) {
+            $cart->update($mergedItem->rowId, max(1, $requestedQuantity));
+        }
+
+        $totalQuantity = $productItems()->sum('qty');
+
+        // Re-query: store() lowers $product->quantity in memory before adding to the cart.
+        if ($totalQuantity <= $requestedQuantity || Product::query()->find($product->getKey())?->canAddToCart($totalQuantity)) {
+            return true;
+        }
+
+        foreach ($productItems() as $item) {
+            isset($quantitiesBeforeAdd[$item->rowId])
+                ? $cart->update($item->rowId, $quantitiesBeforeAdd[$item->rowId])
+                : $cart->remove($item->rowId);
+        }
+
+        return false;
     }
 
     protected function resetUpSaleItemsForRemovedParent(string $parentSlug): void
@@ -706,6 +803,12 @@ class PublicCartController extends BaseController
 
         if (auth('customer')->check()) {
             Cart::instance('cart')->deleteCustomerCart(auth('customer')->id());
+        } else {
+            // For guests, persist the empty cart state so the middleware
+            // does not restore the stale DB content on the next request.
+            $identifier = $this->getOrCreateGuestCartIdentifier();
+            Cart::instance('cart')->updateOrStoreQuietly($identifier);
+            session(['cart_last_restored_at' => now()->toIso8601String()]);
         }
 
         return $this
@@ -737,7 +840,29 @@ class PublicCartController extends BaseController
         $sessionData = OrderHelper::getOrderSessionData();
 
         if (session()->has('applied_coupon_code')) {
-            $couponDiscountAmount = (float) Arr::get($sessionData, 'coupon_discount_amount', 0);
+            $sessionData['promotion_discount_amount'] = $promotionDiscountAmount;
+            $appliedCouponCode = session('applied_coupon_code');
+            $discount = $this->handleApplyCouponService->getCouponData($appliedCouponCode, $sessionData);
+
+            if (! $discount) {
+                // Coupon no longer exists or has expired - drop it.
+                $this->handleRemoveCouponService->execute();
+                $couponDiscountAmount = 0;
+            } elseif ($discount->type_option == DiscountTypeOptionEnum::SHIPPING) {
+                $couponDiscountAmount = (float) Arr::get($sessionData, 'coupon_discount_amount', 0);
+            } else {
+                // Re-apply against the current cart so the discount tracks quantity
+                // changes and its conditions (minimum order, product eligibility, flash
+                // sale) are re-checked; drop it when it no longer qualifies.
+                $couponResult = $this->handleApplyCouponService->execute($appliedCouponCode, $sessionData, $cartData);
+
+                if (Arr::get($couponResult, 'error')) {
+                    $this->handleRemoveCouponService->execute();
+                    $couponDiscountAmount = 0;
+                } else {
+                    $couponDiscountAmount = max((float) Arr::get($couponResult, 'data.discount_amount', 0), 0);
+                }
+            }
         }
 
         $this->cachedCartData = [$products, $promotionDiscountAmount, $couponDiscountAmount];

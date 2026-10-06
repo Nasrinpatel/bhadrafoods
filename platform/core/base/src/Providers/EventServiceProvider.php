@@ -10,6 +10,7 @@ use Botble\Base\Events\CreatedContentEvent;
 use Botble\Base\Events\DeletedContentEvent;
 use Botble\Base\Events\PanelSectionsRendering;
 use Botble\Base\Events\SendMailEvent;
+use Botble\Base\Events\SystemUpdateCachesCleared;
 use Botble\Base\Events\UpdatedContentEvent;
 use Botble\Base\Events\UpdatedEvent;
 use Botble\Base\Facades\AdminHelper;
@@ -22,6 +23,7 @@ use Botble\Base\Http\Middleware\EnsureLicenseHasBeenActivated;
 use Botble\Base\Http\Middleware\HttpSecurityHeaders;
 use Botble\Base\Http\Middleware\HttpsProtocolMiddleware;
 use Botble\Base\Http\Middleware\LocaleMiddleware;
+use Botble\Base\Http\Middleware\RedirectFirstPaginationPageMiddleware;
 use Botble\Base\Listeners\AdminNotificationListener;
 use Botble\Base\Listeners\BeforeEditContentListener;
 use Botble\Base\Listeners\ClearDashboardMenuCaches;
@@ -38,7 +40,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Config\Repository;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Router;
@@ -72,6 +74,9 @@ class EventServiceProvider extends ServiceProvider
         UpdatedEvent::class => [
             ClearDashboardMenuCaches::class,
         ],
+        SystemUpdateCachesCleared::class => [
+            ClearDashboardMenuCaches::class,
+        ],
         Login::class => [
             ClearDashboardMenuCachesForLoggedUser::class,
         ],
@@ -97,6 +102,7 @@ class EventServiceProvider extends ServiceProvider
             $router->pushMiddlewareToGroup('web', AdminLocaleMiddleware::class);
             $router->pushMiddlewareToGroup('web', HttpsProtocolMiddleware::class);
             $router->pushMiddlewareToGroup('web', HttpSecurityHeaders::class);
+            $router->pushMiddlewareToGroup('web', RedirectFirstPaginationPageMiddleware::class);
             $router->aliasMiddleware('preventDemo', DisableInDemoModeMiddleware::class);
             $router->middlewareGroup('core', [CoreMiddleware::class]);
 
@@ -196,7 +202,7 @@ class EventServiceProvider extends ServiceProvider
             || $config->get('core.base.general.disable_verify_csrf_token', false)
             || ($this->app->environment('production') && AdminHelper::isInAdmin())
         ) {
-            $this->app->instance(ValidateCsrfToken::class, new BaseMiddleware());
+            $this->app->instance(PreventRequestForgery::class, new BaseMiddleware());
         }
     }
 }

@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Afficher un message informatif qui informe les clients des conditions qu\'ils acceptent en passant une commande.',
       'hide_customer_info_at_checkout' => 'Masquer les informations client à la commande',
       'hide_customer_info_at_checkout_helper' => 'Masquer les informations de compte client et le bouton de déconnexion de la page de commande. Lorsqu\'activé, les clients connectés ne verront pas leurs détails de compte affichés.',
+      'enable_order_notes_at_checkout' => 'Activer les notes de commande lors du paiement',
+      'enable_order_notes_at_checkout_helper' => 'Si activé, les clients peuvent ajouter des notes facultatives à leur commande sur la page de paiement (par exemple, des instructions de livraison spéciales).',
     ],
   ],
   'return' =>

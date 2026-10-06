@@ -121,6 +121,7 @@ return [
     'apply' => 'Rakenda',
     'available' => 'Saadaval',
     'back_to_return_requests' => 'Tagasi tagastamise taotluste juurde',
+    'backorder_warning' => 'Hoiatus: See toode on eeltellitud ja saatmine võib kauem aega võtta.',
     'choose_reason' => 'Valige põhjus',
     'clear' => 'Tühjenda',
     'clear_all_filters' => 'Tühjenda kõik filtrid',
@@ -191,4 +192,6 @@ return [
     'checkout' => 'Vormista tellimus',
     'complete_order' => 'Lõpeta tellimus',
     'agree_terms_and_policy_error' => 'Peate nõustuma tingimuste ja privaatsuspoliitikaga.',
+    'optional' => 'Valikuline',
+
 ];

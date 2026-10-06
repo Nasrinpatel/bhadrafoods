@@ -70,7 +70,11 @@
                             <i class="fal fa-heart"></i>
                         </a>
                     @endif
-                    @if(EcommerceHelper::isCartEnabled())
+                    @if ($product->isExternalProduct())
+                        <a href="{{ $product->original_product->external_url ?? $product->external_url }}" target="_blank" rel="nofollow noopener noreferrer" title="{{ __('Buy on External Store') }}">
+                            <i class="fal fa-external-link"></i>
+                        </a>
+                    @elseif(EcommerceHelper::isCartEnabled())
                         @if ($product->variations()->exists())
                             <a href="#" data-url="{{ route('public.ajax.quick-shop', $product->slug) }}" class="button-quick-shop" data-id="{{ $product->id }}">
                                 <i class="fal fa-shopping-cart"></i>

@@ -41,13 +41,24 @@
                                         <th>{{ __('Add to cart') }}</th>
                                         @foreach ($products as $product)
                                             <td>
-                                                <a
-                                                    class="add-to-cart"
-                                                    data-id="{{ $product->id }}"
-                                                    href="#" data-url="{{ route('public.cart.add-to-cart') }}"
-                                                >
-                                                    <i class="fas fa-shopping-bag"></i>
-                                                </a>
+                                                @if ($product->isExternalProduct())
+                                                    <a
+                                                        href="{{ $product->original_product->external_url ?? $product->external_url }}"
+                                                        target="_blank"
+                                                        rel="nofollow noopener noreferrer"
+                                                        title="{{ __('Buy on External Store') }}"
+                                                    >
+                                                        <i class="fal fa-external-link"></i>
+                                                    </a>
+                                                @else
+                                                    <a
+                                                        class="add-to-cart"
+                                                        data-id="{{ $product->id }}"
+                                                        href="#" data-url="{{ route('public.cart.add-to-cart') }}"
+                                                    >
+                                                        <i class="fas fa-shopping-bag"></i>
+                                                    </a>
+                                                @endif
                                             </td>
                                         @endforeach
                                     </tr>

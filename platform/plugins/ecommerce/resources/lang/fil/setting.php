@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Magpakita ng mensaheng pang-impormasyon na nagpapaalam sa mga customer tungkol sa mga tuntuning kanilang sinasang-ayunan sa pamamagitan ng pag-order.',
       'hide_customer_info_at_checkout' => 'Itago ang impormasyon ng customer sa checkout',
       'hide_customer_info_at_checkout_helper' => 'Itago ang impormasyon ng account ng customer at button ng logout mula sa pahina ng checkout. Kapag naka-enable, ang mga naka-login na customer ay hindi makikita ang kanilang mga detalye ng account na ipinapakita.',
+      'enable_order_notes_at_checkout' => 'Paganahin ang mga tala sa order sa checkout',
+      'enable_order_notes_at_checkout_helper' => 'Kung pinagana, maaaring magdagdag ang mga customer ng mga opsyonal na tala sa kanilang order sa pahina ng checkout (hal. mga espesyal na tagubilin sa paghahatid).',
     ],
   ],
   'return' =>

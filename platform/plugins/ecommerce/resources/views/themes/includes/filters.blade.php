@@ -1,7 +1,9 @@
 @if (EcommerceHelper::hasAnyProductFilters())
     @php
         $dataForFilter = EcommerceHelper::dataForFilter($category ?? null);
-        [$categories, $brands, $tags, $rand, $categoriesRequest, $urlCurrent, $categoryId, $maxFilterPrice] = $dataForFilter;
+        $dataForFilter = array_pad($dataForFilter, 9, null);
+        [$categories, $brands, $tags, $rand, $categoriesRequest, $urlCurrent, $categoryId, $maxFilterPrice, $labels] = $dataForFilter;
+        $labels = $labels ?: collect();
     @endphp
 
     <div class="bb-shop-sidebar">
@@ -22,6 +24,10 @@
                 @include(EcommerceHelper::viewPath('includes.filters.tags'))
             @endif
 
+            @if (EcommerceHelper::isEnabledFilterProductsByLabels())
+                @include(EcommerceHelper::viewPath('includes.filters.labels'))
+            @endif
+
             @if (EcommerceHelper::isEnabledFilterProductsByPrice() && (! EcommerceHelper::hideProductPrice() || EcommerceHelper::isCartEnabled()))
                 @include(EcommerceHelper::viewPath('includes.filters.price'))
             @endif
@@ -30,6 +36,10 @@
 
             @if (EcommerceHelper::isEnabledFilterProductsByAttributes())
                 @include(EcommerceHelper::viewPath('includes.filters.attributes', ['view' => $view ?? null]))
+            @endif
+
+            @if (EcommerceHelper::isEnabledFilterProductsByRating())
+                @include(EcommerceHelper::viewPath('includes.filters.rating'))
             @endif
 
             {!! apply_filters('theme_ecommerce_products_filter_after', null, $dataForFilter) !!}

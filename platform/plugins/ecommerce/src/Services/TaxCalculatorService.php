@@ -38,7 +38,7 @@ class TaxCalculatorService
             }
 
             $quantity = $inputProduct['quantity'] ?? 1;
-            $price = $inputProduct['price'] ?? $product->price;
+            $price = (float) ($inputProduct['price'] ?? $product->price ?? 0);
 
             $context = new TaxContext(
                 product: $product,

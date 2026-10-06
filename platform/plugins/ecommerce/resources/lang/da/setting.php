@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Vis en informationsbesked der informerer kunder om vilkårene de accepterer ved at afgive en ordre.',
       'hide_customer_info_at_checkout' => 'Skjul kundeinfo ved betaling',
       'hide_customer_info_at_checkout_helper' => 'Skjul kundekontooplysninger og logout-knappen fra betalingssiden. Når aktiveret, vil indloggede kunder ikke se deres kontodetaljer vist.',
+      'enable_order_notes_at_checkout' => 'Aktivér ordrenoter ved checkout',
+      'enable_order_notes_at_checkout_helper' => 'Hvis aktiveret, kan kunder tilføje valgfrie noter til deres ordre på checkout-siden (f.eks. særlige leveringsinstruktioner).',
     ],
   ],
   'return' =>

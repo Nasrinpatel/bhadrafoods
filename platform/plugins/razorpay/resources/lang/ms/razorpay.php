@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Buat pembayaran ujian dalam Mod Ujian dahulu',
     'check_status' => 'Semak sama ada status pesanan dikemas kini kepada "Selesai"',
     'verify_webhook' => 'Jika pesanan kekal "Tidak Lengkap", sahkan konfigurasi webhook anda',
-    'check_logs' => 'Semak log pembayaran dalam storage/logs/payment-*.log untuk penyahpepijatan',
+    'check_logs' => 'Semak log pembayaran dalam Payments > Payment Logs (admin panel) untuk penyahpepijatan',
     'troubleshooting' => 'Petua Penyelesaian Masalah:',
     'ssl_required' => 'Pastikan laman web anda mempunyai sijil SSL yang sah (HTTPS)',
     'public_url' => 'Sahkan URL webhook boleh diakses secara awam (bukan localhost)',
     'firewall_check' => 'Semak bahawa tiada firewall menyekat permintaan webhook Razorpay',
     'live_mode' => 'Untuk pengeluaran, pastikan Razorpay dalam Mod Langsung, bukan Mod Ujian',
+    'minimum_amount_error' => 'Jumlah pesanan kurang daripada jumlah minimum yang dibenarkan oleh Razorpay (:amount). Sila tambah lebih banyak item ke troli anda.',
+    'minimum_amount_warning' => 'Razorpay memerlukan jumlah pesanan minimum sebanyak :amount. Jumlah keseluruhan pesanan anda kini di bawah minimum ini.',
 ];

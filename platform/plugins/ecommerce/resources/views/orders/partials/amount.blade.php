@@ -1,4 +1,8 @@
-{!! apply_filters(RENDER_PRODUCTS_IN_CHECKOUT_PAGE, $products) !!}
+{{-- Product list is wrapped in a stable container so themes can position it
+     independently of the order summary (e.g. reorder the checkout on mobile). --}}
+<div class="checkout-products-block">
+    {!! apply_filters(RENDER_PRODUCTS_IN_CHECKOUT_PAGE, $products) !!}
+</div>
 
 @php
     $cartSubTotal = Cart::instance('cart')->rawSubTotal();
@@ -9,6 +13,9 @@
     $showSubtotal = $cartSubTotal != $orderAmount || $cartTax > 0 || $hasShipping || $hasDiscount || $hasPaymentFee;
 @endphp
 
+{{-- Order summary (subtotal, discounts, fees, total) wrapped so it can be
+     positioned independently of the product list. --}}
+<div class="checkout-summary-block">
 <div class="mt-2 p-2">
     @if ($showSubtotal)
         <div class="row ec-checkout-subtotal-row">
@@ -117,4 +124,5 @@
             </p>
         </div>
     </div>
+</div>
 </div>

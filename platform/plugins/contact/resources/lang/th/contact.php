@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'คำตอบของเรา:',
         'admin_reply_additional_questions' => 'หากคุณมีคำถามเพิ่มเติม สามารถตอบกลับอีเมลนี้หรือติดต่อเราอีกครั้งได้',
         'admin_reply_best_regards' => 'ขอแสดงความนับถือ',
-        'admin_reply_team' => 'ทีม {{ site_title }}',
+        'admin_reply_team' => 'ทีม :site_title',
 
         // Notice email template
         'notice_title' => 'ข้อความติดต่อใหม่',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => 'เรื่อง',
     'your_message' => 'ข้อความของคุณ',
     'agree_terms_privacy' => 'ฉันยอมรับข้อกำหนดและนโยบายความเป็นส่วนตัว',
+    'agree_terms_privacy_link' => 'ฉันยอมรับ :link',
+    'terms_and_privacy_policy' => 'ข้อกำหนดและนโยบายความเป็นส่วนตัว',
 ];

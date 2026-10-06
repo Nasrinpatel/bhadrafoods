@@ -74,7 +74,35 @@ class RenderingSiteMapListener
                     break;
             }
 
-            // Handle products with pagination - added in March 2025
+            // Consolidated products handler with optional page-based pagination.
+            // Matches: products, products-page-{N}
+            if ($key === 'products' || preg_match('/^products-page-(\d+)$/', $key, $pageMatches)) {
+                $itemsPerPage = SiteMapManager::getItemsPerPage();
+                $page = isset($pageMatches[1]) ? max(1, (int) $pageMatches[1]) : 1;
+                $offset = ($page - 1) * $itemsPerPage;
+
+                $products = Product::query()
+                    ->with('slugable')
+                    ->wherePublished()
+                    ->where('is_variation', 0)
+                    ->latest('updated_at')
+                    ->select(['id', 'name', 'updated_at'])
+                    ->skip($offset)
+                    ->take($itemsPerPage)
+                    ->get();
+
+                foreach ($products as $product) {
+                    if (! $product->slugable) {
+                        continue;
+                    }
+
+                    SiteMapManager::add($product->url, $product->updated_at, '0.8');
+                }
+
+                return;
+            }
+
+            // Backward compatibility: legacy monthly archive URLs (products-YYYY-MM[-page-N]).
             $paginationData = SiteMapManager::extractPaginationDataByPattern($key, 'products', 'monthly-archive');
 
             if ($paginationData) {
@@ -124,27 +152,22 @@ class RenderingSiteMapListener
                 }
             }
         } else {
-            $products = Product::query()
-                ->selectRaw(
-                    'YEAR(created_at) as created_year, MONTH(created_at) as created_month, MAX(created_at) as created_at, COUNT(*) as product_count'
-                )
-                ->where('is_variation', 0)
+            // Sitemap index registration.
+            // Match pages.xml behavior: single consolidated products.xml by default,
+            // auto-paginate (products-page-N.xml) only when total products exceed items_per_page threshold.
+            $totalProducts = Product::query()
                 ->wherePublished()
-                ->groupBy('created_year', 'created_month')
-                ->latest('created_year')
-                ->latest('created_month')
-                ->get();
+                ->where('is_variation', 0)
+                ->count();
 
-            foreach ($products as $product) {
-                $formattedMonth = str_pad($product->created_month, 2, '0', STR_PAD_LEFT);
-                $baseKey = sprintf(
-                    'products-%s-%s',
-                    $product->created_year,
-                    $formattedMonth
-                );
+            if ($totalProducts > 0) {
+                $latestUpdated = Product::query()
+                    ->wherePublished()
+                    ->where('is_variation', 0)
+                    ->latest('updated_at')
+                    ->value('updated_at');
 
-                // Use the pagination functionality to split sitemaps with more than 1000 products - added in March 2025
-                SiteMapManager::createPaginatedSitemaps($baseKey, $product->product_count, $product->created_at);
+                SiteMapManager::createPaginatedSitemaps('products', $totalProducts, $latestUpdated);
             }
 
             $productCategoryUpdated = ProductCategory::query()

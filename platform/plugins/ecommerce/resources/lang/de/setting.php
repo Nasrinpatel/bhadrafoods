@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Eine Informationsnachricht anzeigen, die Kunden über die Bedingungen informiert, denen sie durch Aufgabe einer Bestellung zustimmen.',
       'hide_customer_info_at_checkout' => 'Kundeninfo beim Checkout ausblenden',
       'hide_customer_info_at_checkout_helper' => 'Die Kundenkontoinformationen und Abmelde-Schaltfläche von der Checkout-Seite ausblenden. Wenn aktiviert, sehen angemeldete Kunden ihre Kontodetails nicht angezeigt.',
+      'enable_order_notes_at_checkout' => 'Bestellnotizen an der Kasse aktivieren',
+      'enable_order_notes_at_checkout_helper' => 'Wenn aktiviert, können Kunden ihrer Bestellung auf der Kassenseite optionale Notizen hinzufügen (z. B. spezielle Lieferanweisungen).',
     ],
   ],
   'return' =>

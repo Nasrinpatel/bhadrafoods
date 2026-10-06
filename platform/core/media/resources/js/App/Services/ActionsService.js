@@ -17,9 +17,31 @@ export class ActionsService {
     }
 
     static handlePreview() {
+        const selectedFiles = Helpers.getSelectedFiles()
+
+        // Previewing a single image opens the images currently loaded in this view as
+        // a gallery, starting on that image, so it can be browsed with the lightbox
+        // arrows / keyboard. Pages not yet fetched by the infinite scroll are not
+        // included; the lightbox cannot be extended once open.
+        if (Helpers.size(selectedFiles) === 1 && selectedFiles[0].type === 'image') {
+            const images = ActionsService.getPreviewableImages()
+            const index = images.findIndex((image) => image.id === selectedFiles[0].id)
+
+            if (images.length > 1 && index !== -1) {
+                Helpers.addToRecent(selectedFiles[0].id)
+
+                Botble.lightbox(
+                    images.map((image) => image.preview_url),
+                    index
+                )
+
+                return
+            }
+        }
+
         let selected = []
 
-        Helpers.each(Helpers.getSelectedFiles(), (value) => {
+        Helpers.each(selectedFiles, (value) => {
             if (value.preview_url) {
                 if (value.type === 'document') {
                     const iframe = document.createElement('iframe')
@@ -42,6 +64,27 @@ export class ActionsService {
         } else {
             this.handleGlobalAction('download')
         }
+    }
+
+    /**
+     * Images currently listed, in display order, that can be shown in the lightbox.
+     *
+     * Reads the rows directly rather than going through Helpers.getItems(), which
+     * computes a positional index per row and would walk the sibling list once per
+     * item on what is now a click-blocking path.
+     */
+    static getPreviewableImages() {
+        const images = []
+
+        $('.js-media-list-title[data-context=file]').each((index, el) => {
+            const data = $(el).data() || {}
+
+            if (data.type === 'image' && data.preview_url) {
+                images.push(data)
+            }
+        })
+
+        return images
     }
 
     static renderCropImage() {
@@ -213,6 +256,9 @@ export class ActionsService {
                 $('#modal-properties').modal('show')
 
                 break
+            case 'manage_access':
+                ActionsService.handleManageAccess()
+                break
             default:
                 ActionsService.processAction(
                     {
@@ -356,9 +402,10 @@ export class ActionsService {
         let actionsList = $.extend({}, true, Helpers.getConfigs().actions_list)
 
         if (hasFolderSelected) {
-            const ignoreActions = ['preview', 'crop', 'alt_text', 'copy_link', 'copy_direct_link', 'share']
+            const ignoreActions = ['preview', 'crop', 'alt_text', 'copy_link', 'copy_indirect_link', 'share']
 
             actionsList.basic = Helpers.arrayReject(actionsList.basic, (item) => ignoreActions.includes(item.action))
+            actionsList.file = Helpers.arrayReject(actionsList.file, (item) => ignoreActions.includes(item.action))
 
             if (!Helpers.hasPermission('folders.create')) {
                 actionsList.file = Helpers.arrayReject(actionsList.file, (item) => {
@@ -498,7 +545,7 @@ export class ActionsService {
                         )
                         .replace('__icon__', '<span class="icon-tabler-wrapper dropdown-item-icon">__icon__</span>')
                         .replace('__icon__', item.icon || '')
-                        .replace(/__name__/gi, Helpers.trans(`actions_list.${key}.${item.action}`) || item.name)
+                        .replace(/__name__/gi, Helpers.trans(`actions_list.${key}.${item.action}`, item.name))
 
                     if (item.icon) {
                         template = template.replace('media-icon', 'media-icon dropdown-item-icon')
@@ -553,6 +600,116 @@ export class ActionsService {
             .finally(() => {
                 html.hide()
                 clearTimeout(downloadTimeout)
+            })
+    }
+
+    static handleManageAccess() {
+        let selectedFolders = Helpers.getSelectedFolder()
+        if (!selectedFolders.length) {
+            return
+        }
+
+        let folder = selectedFolders[0]
+        let folderId = folder.id
+        let modal = $('#modal_folder_permissions')
+        let permissionsList = $('#folder-permissions-list')
+        let permUrl = RV_MEDIA_URL.folder_permissions.replace('__FOLDER_ID__', folderId)
+
+        modal.data('folder-id', folderId)
+        modal.modal('show')
+
+        // Load users for the select dropdown
+        $httpClient
+            .make()
+            .get(RV_MEDIA_URL.folder_permissions_users)
+            .then(({ data }) => {
+                let select = $('#folder-permission-user-select')
+                select.empty().append('<option value="">-- Select user --</option>')
+                data.data.forEach((user) => {
+                    let opt = $('<option></option>').val(user.id).text(`${user.name} (${user.email})`)
+                    select.append(opt)
+                })
+            })
+
+        // Load current permissions
+        ActionsService._loadFolderPermissions(folderId, permissionsList, permUrl)
+
+        // Grant permission handler
+        $('#btn-grant-folder-permission')
+            .off('click')
+            .on('click', () => {
+                let userId = $('#folder-permission-user-select').val()
+                let permission = $('#folder-permission-level-select').val()
+                if (!userId) {
+                    return
+                }
+
+                $httpClient
+                    .make()
+                    .post(permUrl, {
+                        user_id: userId,
+                        permission: permission,
+                    })
+                    .then(() => {
+                        ActionsService._loadFolderPermissions(folderId, permissionsList, permUrl)
+                        MessageService.showMessage('success', 'Permission granted', 'Success')
+                    })
+                    .catch(({ response }) => {
+                        MessageService.showMessage('error', response?.data?.message || 'Error', 'Error')
+                    })
+            })
+    }
+
+    static _loadFolderPermissions(folderId, container, permUrl) {
+        container.html('<div class="text-muted text-center py-3">Loading...</div>')
+
+        $httpClient
+            .make()
+            .get(permUrl)
+            .then(({ data }) => {
+                container.empty()
+                if (!data.data || !data.data.length) {
+                    container.html('<div class="text-muted text-center py-3">No permissions set</div>')
+                    return
+                }
+
+                data.data.forEach((perm) => {
+                    let levelBadge =
+                        perm.permission === 'manage'
+                            ? 'bg-danger'
+                            : perm.permission === 'upload'
+                              ? 'bg-warning'
+                              : 'bg-info'
+
+                    let row = $('<div class="list-group-item d-flex justify-content-between align-items-center"></div>')
+                    let info = $('<div></div>')
+                    info.append($('<strong></strong>').text(perm.user_name))
+                    info.append($('<small class="text-muted d-block"></small>').text(perm.user_email))
+                    row.append(info)
+
+                    let actions = $('<div class="d-flex align-items-center gap-2"></div>')
+                    actions.append($(`<span class="badge ${levelBadge}"></span>`).text(perm.permission))
+                    actions.append(
+                        $(`<button type="button" class="btn btn-sm btn-outline-danger btn-revoke-permission"><svg xmlns="http://www.w3.org/2000/svg" class="icon" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button>`).data(
+                            'user-id',
+                            perm.user_id
+                        )
+                    )
+                    row.append(actions)
+                    container.append(row)
+                })
+
+                // Revoke permission handler
+                container.find('.btn-revoke-permission').on('click', function () {
+                    let userId = $(this).data('user-id')
+                    $httpClient
+                        .make()
+                        .delete(permUrl + '/' + userId)
+                        .then(() => {
+                            ActionsService._loadFolderPermissions(folderId, container, permUrl)
+                            MessageService.showMessage('success', 'Permission revoked', 'Success')
+                        })
+                })
             })
     }
 }

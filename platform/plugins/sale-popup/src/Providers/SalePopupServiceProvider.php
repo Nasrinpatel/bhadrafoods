@@ -6,11 +6,17 @@ use Botble\Base\Facades\PanelSectionManager;
 use Botble\Base\PanelSections\PanelSectionItem;
 use Botble\Base\Traits\LoadAndPublishDataTrait;
 use Botble\Ecommerce\PanelSections\SettingEcommercePanelSection;
+use Botble\SalePopup\Support\SalePopupHelper;
 use Illuminate\Support\ServiceProvider;
 
 class SalePopupServiceProvider extends ServiceProvider
 {
     use LoadAndPublishDataTrait;
+
+    public function register(): void
+    {
+        $this->app->scoped(SalePopupHelper::class);
+    }
 
     public function boot(): void
     {

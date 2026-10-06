@@ -1,3 +1,52 @@
+const SALE_POPUP_DISMISSED_STORAGE_KEY = 'bb_sale_popup_dismissed_until'
+
+// Returns the number of hours the popup should stay hidden after a visitor closes it.
+// 0 (or a missing/invalid value) disables the behaviour entirely.
+let getSalePopupHideDuration = function () {
+    const hours = parseFloat($('.js-sale-popup-container').data('hide-duration-after-closed'))
+
+    return isNaN(hours) || hours <= 0 ? 0 : hours
+}
+
+let isSalePopupDismissed = function () {
+    if (!getSalePopupHideDuration()) {
+        return false
+    }
+
+    try {
+        const dismissedUntil = parseInt(window.localStorage.getItem(SALE_POPUP_DISMISSED_STORAGE_KEY), 10)
+
+        if (isNaN(dismissedUntil)) {
+            return false
+        }
+
+        if (Date.now() >= dismissedUntil) {
+            window.localStorage.removeItem(SALE_POPUP_DISMISSED_STORAGE_KEY)
+
+            return false
+        }
+
+        return true
+    } catch (error) {
+        // localStorage can be unavailable (private mode, blocked cookies) - fall back to always showing.
+        return false
+    }
+}
+
+let dismissSalePopup = function () {
+    const hours = getSalePopupHideDuration()
+
+    if (!hours) {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(SALE_POPUP_DISMISSED_STORAGE_KEY, Date.now() + hours * 60 * 60 * 1000)
+    } catch (error) {
+        // Ignore storage errors - the popup will simply reappear on the next page load.
+    }
+}
+
 let salesPopup = function ($popupContainer) {
     // Check if we should show on mobile
     const showOnMobile = $('.js-sale-popup-container').data('show-on-mobile') === true;
@@ -101,6 +150,7 @@ let salesPopup = function ($popupContainer) {
         hideSalesPopUp()
         clearTimeout(stayTimeout)
         clearTimeout(starTimeout)
+        dismissSalePopup()
     })
 
     $popupContainer.on('open-sale-popup', function () {
@@ -113,7 +163,7 @@ let salesPopup = function ($popupContainer) {
 $(document).ready(function () {
     const $popupContainer = $('.js-sale-popup-container.hidden')
 
-    if ($popupContainer.length) {
+    if ($popupContainer.length && !isSalePopupDismissed()) {
         setTimeout(() => {
             $popupContainer.removeClass('hidden')
 

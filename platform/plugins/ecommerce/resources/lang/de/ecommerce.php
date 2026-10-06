@@ -121,6 +121,7 @@ return [
     'apply' => 'Anwenden',
     'available' => 'Verfügbar',
     'back_to_return_requests' => 'Zurück zu Rückgabeanfragen',
+    'backorder_warning' => 'Warnung: Dieses Produkt ist vorbestellt und der Versand kann länger dauern.',
     'choose_reason' => 'Grund wählen',
     'clear' => 'Löschen',
     'clear_all_filters' => 'Alle Filter löschen',
@@ -191,4 +192,6 @@ return [
     'checkout' => 'Zur Kasse',
     'complete_order' => 'Bestellung abschließen',
     'agree_terms_and_policy_error' => 'Sie müssen den Allgemeinen Geschäftsbedingungen und der Datenschutzrichtlinie zustimmen.',
+    'optional' => 'Optional',
+
 ];

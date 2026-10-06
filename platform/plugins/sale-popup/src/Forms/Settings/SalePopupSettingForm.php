@@ -182,6 +182,18 @@ class SalePopupSettingForm extends SettingForm
                             ->helperText(trans('plugins/sale-popup::sale-popup.show_on_mobile_helper'))
                     )
                     ->add(
+                        'hide_duration_after_closed',
+                        NumberField::class,
+                        [
+                            'label' => trans('plugins/sale-popup::sale-popup.hide_duration_after_closed'),
+                            'value' => $salePopupHelper->getSetting('hide_duration_after_closed', 24),
+                            'attr' => ['min' => 0],
+                            'help_block' => [
+                                'text' => trans('plugins/sale-popup::sale-popup.hide_duration_after_closed_helper'),
+                            ],
+                        ]
+                    )
+                    ->add(
                         'display_pages[]',
                         MultiCheckListField::class,
                         [

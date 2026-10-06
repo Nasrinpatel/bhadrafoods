@@ -47,6 +47,53 @@
     }
 
     /**
+     * Replace an element with ajax HTML without triggering jQuery's synchronous
+     * XMLHttpRequest for embedded `<script src>` tags (a deprecated browser API).
+     * jQuery's replaceWith() loads external scripts found in the markup via a
+     * blocking sync XHR; here we strip those scripts and (re)load them
+     * asynchronously, only once (matched by path, ignoring the ?v= query). Inline
+     * scripts are left in place for jQuery to evaluate as before.
+     * @param {jQuery} $element - Element to replace
+     * @param {string} html - HTML returned from the ajax response
+     */
+    const replaceWithSafe = function ($element, html) {
+        const template = document.createElement('template')
+        template.innerHTML = html
+
+        const sources = []
+        template.content.querySelectorAll('script[src]').forEach((script) => {
+            sources.push(script.getAttribute('src'))
+            script.remove()
+        })
+
+        $element.replaceWith(template.innerHTML)
+
+        const pathOf = (src) => {
+            try {
+                return new URL(src, window.location.href).pathname
+            } catch (e) {
+                return src
+            }
+        }
+
+        sources.forEach((src) => {
+            if (!src) return
+
+            const alreadyLoaded = Array.prototype.some.call(
+                document.querySelectorAll('script[src]'),
+                (existing) => pathOf(existing.getAttribute('src')) === pathOf(src)
+            )
+
+            if (alreadyLoaded) return
+
+            const script = document.createElement('script')
+            script.src = src
+            script.async = true
+            document.body.appendChild(script)
+        })
+    }
+
+    /**
      * Show success message using available theme methods
      * @param {string} message - Message to show
      */
@@ -83,6 +130,12 @@
         } else {
             console.error(message)
         }
+    }
+
+    // Read CSRF token from <meta name="csrf-token"> so AJAX add-to-cart
+    // requests don't fail with 419 (TokenMismatchException → "Session expired").
+    const getCsrfToken = function () {
+        return $('meta[name="csrf-token"]').attr('content') || ''
     }
 
     window.EcommerceUpSaleCrossSale = {
@@ -128,8 +181,8 @@
                     url: url,
                     type: 'GET',
                     success: function (response) {
-                        const data = response.data || response
-                        $element.replaceWith(data)
+                        const data = response.data !== undefined ? response.data : response;
+                        replaceWithSafe($element, data)
 
                         // Update lazy load images if available
                         if (typeof window.LazyLoad !== 'undefined' && window.lazyLoadInstance) {
@@ -233,7 +286,7 @@
                 $.ajax({
                     url: url,
                     type: 'POST',
-                    data: { id: productId },
+                    data: { id: productId, _token: getCsrfToken() },
                     success: function (response) {
                         if (response.error) {
                             showError(response.message || 'Failed to add product to cart')
@@ -295,8 +348,8 @@
                 url: this.upsellRefreshUrl,
                 type: 'GET',
                 success: function (response) {
-                    const data = response.data || response
-                    $section.replaceWith(data)
+                    const data = response.data !== undefined ? response.data : response;
+                    replaceWithSafe($section, data)
 
                     dispatchEvent('ecommerce.upsale.section.refreshed', {
                         html: data,
@@ -408,6 +461,7 @@
                     data: {
                         id: productId,
                         reference_product_for_upsale: parentProduct,
+                        _token: getCsrfToken(),
                     },
                     success: function (response) {
                         $btn.removeClass('loading')
@@ -537,6 +591,7 @@
                         data: {
                             id: selectedProducts[index],
                             reference_product_for_upsale: parentProduct,
+                            _token: getCsrfToken(),
                         },
                         success: function (response) {
                             if (response.error) {

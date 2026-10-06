@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Наш одговор:',
         'admin_reply_additional_questions' => 'Ако имате додатна питања, слободно одговорите на ову е-пошту или нас поново контактирајте.',
         'admin_reply_best_regards' => 'Срдачан поздрав,',
-        'admin_reply_team' => 'Тим {{ site_title }}',
+        'admin_reply_team' => 'Тим :site_title',
 
         // Notice email template
         'notice_title' => 'Нова контакт порука',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => 'Предмет',
     'your_message' => 'Ваша порука',
     'agree_terms_privacy' => 'Слажем се са условима и политиком приватности',
+    'agree_terms_privacy_link' => 'Слажем се са :link',
+    'terms_and_privacy_policy' => 'условима и политиком приватности',
 ];

@@ -11,20 +11,29 @@ class EnvironmentManager
     {
         $results = trans('packages/installer::installer.environment.success');
 
+        try {
+            file_put_contents(base_path('.env'), $this->buildEnvironmentContent($request));
+        } catch (Throwable) {
+            $results = trans('packages/installer::installer.environment.errors');
+        }
+
+        return $results;
+    }
+
+    public function buildEnvironmentContent(Request $request): string
+    {
         $content = file_get_contents(base_path('.env.example'));
+
+        $appUrl = rtrim((string) $request->input('app_url'), '/');
 
         $replacements = [
             'APP_NAME' => [
                 'default' => '"Your App"',
-                'value' => '"' . str_replace('"', '', $request->input('app_name')) . '"',
+                'value' => $this->quoteValue($request->input('app_name')),
             ],
             'APP_URL' => [
                 'default' => 'http:\/\/localhost',
-                'value' => $request->input('app_url'),
-            ],
-            'FORCE_ROOT_URL' => [
-                'default' => 'https:\/\/your-domain.com',
-                'value' => $request->input('app_url'),
+                'value' => $appUrl,
             ],
             'DB_CONNECTION' => [
                 'default' => 'mysql',
@@ -40,33 +49,63 @@ class EnvironmentManager
             ],
             'DB_DATABASE' => [
                 'default' => '"laravel"',
-                'value' => '"' . str_replace('"', '', $request->input('database_name')) . '"',
+                'value' => $this->quoteValue($request->input('database_name')),
             ],
             'DB_USERNAME' => [
                 'default' => '"root"',
-                'value' => '"' . str_replace('"', '', $request->input('database_username')) . '"',
+                'value' => $this->quoteValue($request->input('database_username')),
             ],
             'DB_PASSWORD' => [
                 'default' => '"your_db_password"',
-                'value' => '"' . str_replace('"', '', $request->input('database_password')) . '"',
+                'value' => $this->quoteValue($request->input('database_password')),
             ],
         ];
 
+        // FORCE_ROOT_URL pins every generated URL to a fixed origin (URL::useOrigin()).
+        // Sub-folder installs need it, because the folder segment is otherwise lost from the
+        // request root. On a root-domain install it only causes harm: after the site is moved
+        // to another domain, every link keeps pointing at the old one until this line is found
+        // and edited by hand - changing APP_URL alone has no effect. So only write it when the
+        // install really lives in a sub-folder, and leave it commented out otherwise.
+        if ($this->isSubFolderInstallation($appUrl)) {
+            $replacements['FORCE_ROOT_URL'] = [
+                'default' => 'https:\/\/your-domain.com',
+                'value' => $appUrl,
+            ];
+        }
+
         foreach ($replacements as $key => $replacement) {
-            $content = preg_replace(
-                '/^' . $key . '=' . $replacement['default'] . '/m',
-                $key . '=' . $replacement['value'],
+            // Allow an optional leading "#" (and spaces/tabs, not newlines) so commented-out
+            // defaults (e.g. #FORCE_ROOT_URL=...) are uncommented and written. Without this,
+            // FORCE_ROOT_URL is never set, and sub-folder installs fall back to the wrong root
+            // URL (e.g. http://localhost). [ \t]* avoids matching across line breaks.
+            // A callback keeps the value literal: as a plain replacement string, "$1" or "\\"
+            // in a password would be read as backreferences/escapes and silently altered.
+            $content = preg_replace_callback(
+                '/^#?[ \t]*' . $key . '=' . $replacement['default'] . '/m',
+                fn () => $key . '=' . $replacement['value'],
                 $content
             );
         }
 
-        try {
-            file_put_contents(base_path('.env'), $content);
-        } catch (Throwable) {
-            $results = trans('packages/installer::installer.environment.errors');
-        }
+        return $content;
+    }
 
-        return $results;
+    /**
+     * Wrap a value in double quotes so phpdotenv reads it back exactly as entered.
+     * Inside double quotes phpdotenv treats "\" as an escape (an unknown one such as "\a" is a
+     * parse error that stops the whole .env from loading) and "${NAME}" as a variable, so a
+     * password containing these used to fail with "Access denied". strtr() does a single pass,
+     * so the backslashes it adds are never escaped a second time.
+     */
+    protected function quoteValue(?string $value): string
+    {
+        return '"' . strtr((string) $value, ['\\' => '\\\\', '"' => '\\"', '$' => '\\$']) . '"';
+    }
+
+    protected function isSubFolderInstallation(string $appUrl): bool
+    {
+        return trim((string) parse_url($appUrl, PHP_URL_PATH), '/') !== '';
     }
 
     public function turnOffDebugMode(): void

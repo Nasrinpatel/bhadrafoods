@@ -35,6 +35,12 @@ class ChangeProductSwatches {
             .on('change', '.product-attributes input, .product-attributes select', (event) => {
                 const $parent = $(event.currentTarget).closest('.product-attributes')
 
+                // Upsell bundle items load their own variations (front-upsale-crosssale.js).
+                // Handling them here too would apply their variation to the main product.
+                if ($parent.is('.ec-upsell-attributes')) {
+                    return
+                }
+
                 _self.getProductVariation($parent)
             })
 
@@ -45,15 +51,21 @@ class ChangeProductSwatches {
                     if (e.state?.product_attributes_id) {
                         let $el = $('#' + e.state.product_attributes_id)
 
+                        if (window.EcommerceApp && typeof window.EcommerceApp.defaultOnChangeSwatchesSuccess === 'function') {
+                            window.EcommerceApp.defaultOnChangeSwatchesSuccess(e.state.data, $el)
+                        }
+
                         if (window.onChangeSwatchesSuccess && typeof window.onChangeSwatchesSuccess === 'function') {
                             window.onChangeSwatchesSuccess(e.state.data, $el)
                         }
+
+                        $(document).trigger('product-variation-changed', [e.state.data, $el])
 
                         if (e.state.slugAttributes) {
                             _self.updateSelectingAttributes(e.state.slugAttributes, $el)
                         }
                     } else {
-                        $('.product-attribute-swatches').each(function (i, el) {
+                        $('.product-attribute-swatches').not('.ec-upsell-attributes').each(function (i, el) {
                             let params = _self.parseParamsSearch()
                             let attributes = []
                             let slugAttributes = {}
@@ -164,6 +176,10 @@ class ChangeProductSwatches {
             type: 'GET',
             data: formData,
             beforeSend: () => {
+                if (window.EcommerceApp && typeof window.EcommerceApp.defaultOnBeforeChangeSwatches === 'function') {
+                    window.EcommerceApp.defaultOnBeforeChangeSwatches(attributes, $productAttributes)
+                }
+
                 if (window.onBeforeChangeSwatches && typeof window.onBeforeChangeSwatches === 'function') {
                     window.onBeforeChangeSwatches(attributes, $productAttributes)
                 }
@@ -229,9 +245,17 @@ class ChangeProductSwatches {
     handleResponse = function(res, $productAttributes, slugAttributes, id, updateUrl) {
         let _self = this
 
+        if (window.EcommerceApp && typeof window.EcommerceApp.defaultOnChangeSwatchesSuccess === 'function') {
+            window.EcommerceApp.defaultOnChangeSwatchesSuccess(res, $productAttributes)
+        }
+
         if (window.onChangeSwatchesSuccess && typeof window.onChangeSwatchesSuccess === 'function') {
             window.onChangeSwatchesSuccess(res, $productAttributes)
         }
+
+        // Lets other scripts (e.g. product options) react after the variation
+        // price has been written to the page.
+        $(document).trigger('product-variation-changed', [res, $productAttributes])
 
         const { data, message } = res
 
@@ -310,22 +334,25 @@ class ChangeProductSwatches {
 $(() => {
     const swatchInstance = new ChangeProductSwatches()
     
-    // Check initial selection on page load
-    $('.product-attribute-swatches').each(function() {
+    // Check initial selection on page load (upsell bundle items select their own)
+    $('.product-attribute-swatches').not('.ec-upsell-attributes').each(function() {
         const $container = $(this)
-        const hasCheckedVariation = $container.find('input[type=radio]:checked:not(:disabled)').length > 0
-        
+        const hasCheckedRadio = $container.find('input[type=radio]:checked:not(:disabled)').length > 0
+        const hasSelectedDropdown = $container.find('select.product-filter-item').filter(function() {
+            return !!$(this).val()
+        }).length > 0
+
         // If no valid variation is selected, select the first available one
-        if (!hasCheckedVariation) {
+        if (!hasCheckedRadio && !hasSelectedDropdown) {
             $container.find('.attribute-swatches-wrapper').each(function() {
                 const $wrapper = $(this)
                 const $firstAvailable = $wrapper.find('input[type=radio]:not(:disabled)').first()
-                
+
                 if ($firstAvailable.length) {
                     $firstAvailable.prop('checked', true)
                 }
             })
-            
+
             // Trigger change to update product info
             swatchInstance.getProductVariation($container)
         }

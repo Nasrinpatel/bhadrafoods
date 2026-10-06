@@ -2,7 +2,7 @@
     <div class="row justify-content-xl-end">
         <div @class(['col-xl-9 col-xxl-7 col-lg-9' => $hasAds, 'col-xl-12 col-xxl-10 col-lg-12' => ! $hasAds])>
             <div class="tp-slider-area p-relative">
-                <div class="swiper-container slider-active">
+                <div class="swiper-container slider-active" data-autoplay-speed="{{ $autoplaySpeed }}">
                     <div class="swiper-wrapper">
                         @foreach($sliders as $slider)
                             <div class="swiper-slide">

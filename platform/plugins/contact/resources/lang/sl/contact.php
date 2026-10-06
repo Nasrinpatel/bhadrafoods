@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Naš odgovor:',
         'admin_reply_additional_questions' => 'Če imate kakršna koli dodatna vprašanja, lahko odgovorite na to e-pošto ali nas ponovno kontaktirate.',
         'admin_reply_best_regards' => 'Lep pozdrav,',
-        'admin_reply_team' => 'Ekipa {{ site_title }}',
+        'admin_reply_team' => 'Ekipa :site_title',
 
         // Notice email template
         'notice_title' => 'Novo kontaktno sporočilo',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => 'Predmet',
     'your_message' => 'Vaše sporočilo',
     'agree_terms_privacy' => 'Strinjam se s pogoji in politiko zasebnosti',
+    'agree_terms_privacy_link' => 'Strinjam se s :link',
+    'terms_and_privacy_policy' => 'pogoji in politiko zasebnosti',
 ];

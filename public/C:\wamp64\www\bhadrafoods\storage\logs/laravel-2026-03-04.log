@@ -1,0 +1,21 @@
+[2026-03-04 17:15:31] production.ERROR: include(/home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/../botble/platform/base/src/Supports/ServiceProvider.php): Failed to open stream: No such file or directory {"exception":"[object] (ErrorException(code: 0): include(/home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/../botble/platform/base/src/Supports/ServiceProvider.php): Failed to open stream: No such file or directory at /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php:576)
+[stacktrace]
+#0 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
+#1 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php(576): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
+#2 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php(576): include('/home/u55189551...')
+#3 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#4 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/botble/api/src/Providers/ApiServiceProvider.php(23): Composer\\Autoload\\ClassLoader->loadClass()
+#5 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php(576): include('/home/u55189551...')
+#6 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/composer/ClassLoader.php(427): Composer\\Autoload\\{closure}()
+#7 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(961): Composer\\Autoload\\ClassLoader->loadClass()
+#8 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(893): Illuminate\\Foundation\\Application->resolveProvider()
+#9 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/ProviderRepository.php(74): Illuminate\\Foundation\\Application->register()
+#10 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(871): Illuminate\\Foundation\\ProviderRepository->load()
+#11 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/RegisterProviders.php(37): Illuminate\\Foundation\\Application->registerConfiguredProviders()
+#12 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(342): Illuminate\\Foundation\\Bootstrap\\RegisterProviders->bootstrap()
+#13 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(186): Illuminate\\Foundation\\Application->bootstrapWith()
+#14 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(170): Illuminate\\Foundation\\Http\\Kernel->bootstrap()
+#15 /home/u551895517/domains/bhadrafoods.in/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter()
+#16 /home/u551895517/domains/bhadrafoods.in/public_html/public/index.php(23): Illuminate\\Foundation\\Http\\Kernel->handle()
+#17 {main}
+"} 

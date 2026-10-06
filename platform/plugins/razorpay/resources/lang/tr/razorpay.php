@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Önce Test Modunda bir test ödemesi yapın',
     'check_status' => 'Sipariş durumunun "Tamamlandı" olarak güncellenip güncellenmediğini kontrol edin',
     'verify_webhook' => 'Siparişler "Tamamlanmamış" kalıyorsa webhook yapılandırmanızı doğrulayın',
-    'check_logs' => 'Hata ayıklama için storage/logs/payment-*.log dosyasındaki ödeme günlüklerini kontrol edin',
+    'check_logs' => 'Hata ayıklama için Payments > Payment Logs (admin panel) dosyasındaki ödeme günlüklerini kontrol edin',
     'troubleshooting' => 'Sorun Giderme İpuçları:',
     'ssl_required' => 'Sitenizin geçerli bir SSL sertifikasına (HTTPS) sahip olduğundan emin olun',
     'public_url' => 'Webhook URL\'sinin herkese açık olduğunu doğrulayın (localhost değil)',
     'firewall_check' => 'Hiçbir güvenlik duvarının Razorpay webhook isteklerini engellemediğini kontrol edin',
     'live_mode' => 'Üretim için Razorpay\'ın Test Modunda değil, Canlı Modda olduğundan emin olun',
+    'minimum_amount_error' => 'Sipariş tutarı Razorpay tarafından izin verilen minimum tutardan (:amount) düşüktür. Lütfen sepetinize daha fazla ürün ekleyin.',
+    'minimum_amount_warning' => 'Razorpay, minimum :amount sipariş tutarı gerektirir. Mevcut sipariş toplamınız bu minimumun altındadır.',
 ];

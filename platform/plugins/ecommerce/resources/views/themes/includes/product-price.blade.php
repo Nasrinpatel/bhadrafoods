@@ -21,7 +21,7 @@
             data-bb-value="product-price"
         >{{ $priceFormatted ?? $product->price()->displayAsText() }}</span>
 
-        @if ($isDisplayPriceOriginal && $product->isOnSale())
+        @if ($isDisplayPriceOriginal)
             @include(EcommerceHelper::viewPath('includes.product-prices.original'), [
                 'priceWrapperClassName' => $priceOriginalWrapperClassName,
                 'priceClassName' => $priceOriginalClassName,

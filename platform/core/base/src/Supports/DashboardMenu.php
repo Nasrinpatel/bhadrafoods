@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\Tappable;
 use RuntimeException;
+use Throwable;
 
 class DashboardMenu
 {
@@ -179,15 +180,27 @@ class DashboardMenu
             $items = $this->getItemsByGroup();
 
             return tap(
-                apply_filters('dashboard_menu', $items, $this),
-                function ($menu): void {
+                $this->ensureCollection(apply_filters('dashboard_menu', $items, $this), $items),
+                function (Collection $menu): void {
                     $this->dispatchAfterRetrieved($menu);
                 }
             );
         };
 
         if ($this->cacheEnabled) {
-            $items = $this->cache->remember($this->cacheKey(), Carbon::now()->addHours(3), $value);
+            $items = $this->cache->remember(
+                $this->cacheKey(),
+                Carbon::now()->addHours(3),
+                function () use ($value) {
+                    return $this->sanitizeItemsForCache(value($value));
+                }
+            );
+
+            // The cache may return null when the entry expires or is flushed between
+            // the existence check and the read, so rebuild the menu instead of failing.
+            if (! $items instanceof Collection) {
+                $items = value($value);
+            }
         } else {
             $items = value($value);
         }
@@ -327,6 +340,64 @@ class DashboardMenu
         return $this->getMappedItems($groupedItems[''] ?? collect(), $groupedItems);
     }
 
+    /**
+     * Guard against a `dashboard_menu` filter listener that forgets to return the
+     * menu (or returns something else). Without this, a single third-party plugin
+     * breaks the whole admin layout with a TypeError.
+     */
+    protected function ensureCollection(mixed $items, Collection $fallback): Collection
+    {
+        if ($items instanceof Collection) {
+            return $items;
+        }
+
+        if (is_array($items)) {
+            return collect($items);
+        }
+
+        if ($items instanceof Arrayable) {
+            return collect($items->toArray());
+        }
+
+        return $fallback;
+    }
+
+    /**
+     * Resolve every Closure inside the menu tree so the Collection is safe to
+     * serialize to the file/redis cache store. Required because plugins may add
+     * items via apply_filters('dashboard_menu', ...) or registerItem([...]) that
+     * still carry Closures in fields other than url/name.
+     */
+    protected function sanitizeItemsForCache(Collection $items): Collection
+    {
+        return $items->map(fn ($item) => $this->sanitizeValue($item));
+    }
+
+    protected function sanitizeValue(mixed $value): mixed
+    {
+        if ($value instanceof Closure) {
+            try {
+                return $this->sanitizeValue(call_user_func($value));
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        if ($value instanceof Collection) {
+            return $value->map(fn ($item) => $this->sanitizeValue($item));
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $key => $nested) {
+                $value[$key] = $this->sanitizeValue($nested);
+            }
+
+            return $value;
+        }
+
+        return $value;
+    }
+
     protected function getGroupedItemsByGroup(): Collection
     {
         $removedItems = $this->removedItems[$this->groupId] ?? [];
@@ -403,10 +474,31 @@ class DashboardMenu
 
     protected function applyActive(Collection $menu): Collection
     {
-        foreach ($menu as $key => $item) {
-            $menu[$key] = $this->applyActiveRecursive($item);
+        $currentUrl = $this->request->fullUrl();
+        $adminRoot = url(BaseHelper::getAdminPrefix());
 
-            if ($menu[$key]['active']) {
+        // First pass: find the single most-specific matching item across the whole
+        // menu tree (the longest matching URL). Selecting the longest match - instead
+        // of the first substring match - keeps a nested sibling (e.g. /admin/plugin/history)
+        // highlighted over the plugin root item (/admin/plugin) whose URL is a prefix of it.
+        $bestLength = 0;
+
+        foreach ($menu as $item) {
+            $this->findLongestActiveMatch($item, $currentUrl, $adminRoot, $bestLength);
+        }
+
+        if ($bestLength === 0) {
+            return $menu;
+        }
+
+        // Second pass: mark the first item that matches at the longest length active,
+        // together with its ancestors, and stop once it is found.
+        $matched = false;
+
+        foreach ($menu as $key => $item) {
+            $menu[$key] = $this->applyActiveRecursive($item, $currentUrl, $adminRoot, $bestLength, $matched);
+
+            if ($matched) {
                 break;
             }
         }
@@ -414,35 +506,57 @@ class DashboardMenu
         return $menu;
     }
 
-    protected function applyActiveRecursive(array $item): array
+    protected function isMenuItemMatched(string $currentUrl, string $url, string $adminRoot): bool
     {
-        $currentUrl = $this->request->fullUrl();
-        $adminPrefix = BaseHelper::getAdminPrefix();
-        $url = $item['url'];
+        return $currentUrl === $url
+            || (Str::contains($currentUrl, $url) && $url !== $adminRoot);
+    }
 
-        $item['active'] = $currentUrl === $item['url']
-            || (
-                Str::contains($currentUrl, $url)
-                && $url !== url($adminPrefix)
-            );
-
-        if ($item['children']->isEmpty()) {
-            return $item;
+    protected function findLongestActiveMatch(array $item, string $currentUrl, string $adminRoot, int &$bestLength): void
+    {
+        if ($this->isMenuItemMatched($currentUrl, $item['url'], $adminRoot)) {
+            $bestLength = max($bestLength, Str::length($item['url']));
         }
 
-        $children = $item['children']->toArray();
+        foreach ($item['children'] as $child) {
+            $this->findLongestActiveMatch((array) $child, $currentUrl, $adminRoot, $bestLength);
+        }
+    }
 
-        foreach ($children as &$child) {
-            $child = $this->applyActiveRecursive($child);
+    protected function applyActiveRecursive(array $item, string $currentUrl, string $adminRoot, int $bestLength, bool &$matched): array
+    {
+        $item['active'] = false;
 
-            if ($child['active']) {
-                $item['active'] = true;
+        if (! $item['children']->isEmpty()) {
+            $children = $item['children']->toArray();
 
-                break;
+            foreach ($children as &$child) {
+                $child = $this->applyActiveRecursive($child, $currentUrl, $adminRoot, $bestLength, $matched);
+
+                if ($child['active']) {
+                    $item['active'] = true;
+
+                    break;
+                }
+            }
+
+            unset($child);
+
+            $item['children'] = collect($children);
+
+            if ($item['active']) {
+                return $item;
             }
         }
 
-        $item['children'] = collect($children);
+        if (
+            ! $matched
+            && $this->isMenuItemMatched($currentUrl, $item['url'], $adminRoot)
+            && Str::length($item['url']) === $bestLength
+        ) {
+            $item['active'] = true;
+            $matched = true;
+        }
 
         return $item;
     }

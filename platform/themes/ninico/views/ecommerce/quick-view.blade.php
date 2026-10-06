@@ -85,7 +85,19 @@
                 </div>
 
                 <div class="tpproduct-details__count d-flex align-items-center flex-wrap gap-2 mb-25">
-                    @if (EcommerceHelper::isCartEnabled())
+                    @if ($product->isExternalProduct())
+                        <div class="d-flex gap-2">
+                            <a
+                                class="tp-btn tp-color-btn"
+                                href="{{ $product->original_product->external_url ?? $product->external_url }}"
+                                target="_blank"
+                                rel="nofollow noopener noreferrer"
+                            >
+                                {{ __('Buy on External Store') }}
+                                <i class="fal fa-external-link ms-1"></i>
+                            </a>
+                        </div>
+                    @elseif (EcommerceHelper::isCartEnabled())
                         <div class="tpproduct-details__quantity">
                             <span class="cart-minus"><i class="far fa-minus"></i></span>
                             <input

@@ -91,6 +91,8 @@ class CustomerCartTable extends TableAbstract
             FormattedColumn::make('total')
                 ->title(trans('plugins/ecommerce::cart.total'))
                 ->width(120)
+                ->searchable(false)
+                ->orderable(false)
                 ->renderUsing(function (FormattedColumn $column) {
                     $item = $column->getItem();
 

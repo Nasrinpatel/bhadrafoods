@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Vores svar:',
         'admin_reply_additional_questions' => 'Hvis du har yderligere spørgsmål, er du velkommen til at svare på denne e-mail eller kontakte os igen.',
         'admin_reply_best_regards' => 'Med venlig hilsen,',
-        'admin_reply_team' => '{{ site_title }} Team',
+        'admin_reply_team' => ':site_title Team',
 
         // Notice email template
         'notice_title' => 'Ny kontaktbesked',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => 'Emne',
     'your_message' => 'Din besked',
     'agree_terms_privacy' => 'Jeg accepterer vilkårene og privatlivspolitikken',
+    'agree_terms_privacy_link' => 'Jeg accepterer :link',
+    'terms_and_privacy_policy' => 'vilkårene og privatlivspolitikken',
 ];

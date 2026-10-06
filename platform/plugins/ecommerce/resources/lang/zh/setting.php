@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => '显示一条提示信息，告知客户下单即表示同意相关条款。',
       'hide_customer_info_at_checkout' => '在结账页面隐藏客户信息',
       'hide_customer_info_at_checkout_helper' => '在结账页面隐藏客户账户信息和退出登录按钮。启用后，已登录的客户将不会看到其账户详情。',
+      'enable_order_notes_at_checkout' => '在结账时启用订单备注',
+      'enable_order_notes_at_checkout_helper' => '如果启用，客户可以在结账页面向订单添加可选备注（例如特殊送货说明）。',
     ],
   ],
   'return' =>

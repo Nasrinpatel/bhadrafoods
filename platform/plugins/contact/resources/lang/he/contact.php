@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'התשובה שלנו:',
         'admin_reply_additional_questions' => 'אם יש לך שאלות נוספות, אל תהסס/י להשיב לדוא"ל זה או ליצור איתנו קשר שוב.',
         'admin_reply_best_regards' => 'בברכה,',
-        'admin_reply_team' => 'צוות {{ site_title }}',
+        'admin_reply_team' => 'צוות :site_title',
 
         // Notice email template
         'notice_title' => 'הודעת פנייה חדשה',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => 'נוֹשֵׂא',
     'your_message' => 'ההודעה שלך',
     'agree_terms_privacy' => 'אני מסכים לתנאים ולמדיניות הפרטיות',
+    'agree_terms_privacy_link' => 'אני מסכים ל:link',
+    'terms_and_privacy_policy' => 'תנאים ומדיניות הפרטיות',
 ];

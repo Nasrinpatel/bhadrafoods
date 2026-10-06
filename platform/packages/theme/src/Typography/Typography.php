@@ -9,8 +9,10 @@ use Botble\Theme\Facades\ThemeOption;
 use Botble\Theme\Http\Requests\UpdateOptionsRequest;
 use Botble\Theme\ThemeOption\Fields\GoogleFontsField;
 use Botble\Theme\ThemeOption\Fields\NumberField;
+use Botble\Theme\ThemeOption\Fields\SelectField;
 use Botble\Theme\ThemeOption\ThemeOptionSection;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 
 class Typography
 {
@@ -127,20 +129,33 @@ class Typography
             if (! in_array($value, $renderedFonts) && $fontFamily->isGoogleFont()) {
                 $fontWeights = $fontFamily->getFontWeights() ?: ['300', '400', '500', '600', '700'];
 
+                // Link the cached font CSS rather than inlining it: the same declarations
+                // (~13KB per family) are otherwise re-sent with every page and can never be
+                // reused by the browser. Opt back in with CMS_GOOGLE_FONTS_INLINE=true.
                 $fontFaces .= BaseHelper::googleFonts('https://fonts.googleapis.com/' . sprintf(
                     'css2?family=%s:wght@%s&display=swap',
                     urlencode($value),
                     implode(';', $fontWeights)
-                ));
+                ), (bool) config('core.base.general.google_fonts_inline', false));
 
                 $renderedFonts[] = $value;
             }
 
             $styles .= sprintf(
-                '--%s-font: "%s", sans-serif;',
+                '--%s-font: "%s", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;',
                 $fontFamily->getName(),
                 $value
             );
+
+            $fontWeight = theme_option("tp_{$fontFamily->getName()}_font_weight");
+
+            if ($fontWeight) {
+                $styles .= sprintf(
+                    '--%s-font-weight: %s;',
+                    $fontFamily->getName(),
+                    $fontWeight
+                );
+            }
         }
 
         $fontSizes = $this->getFontSizes();
@@ -171,13 +186,88 @@ class Typography
             }
         }
 
+        // Apply font-weight from font families if set
+        foreach ($fontFamilies as $fontFamily) {
+            $fontWeight = theme_option("tp_{$fontFamily->getName()}_font_weight");
+
+            if (! $fontWeight) {
+                continue;
+            }
+
+            if ($fontFamily->getName() === 'primary') {
+                $styles .= sprintf('body{font-weight: var(--%s-font-weight);}', $fontFamily->getName());
+            } elseif ($fontFamily->getName() === 'heading') {
+                $styles .= sprintf('h1,h2,h3,h4,h5,h6{font-weight: var(--%s-font-weight);}', $fontFamily->getName());
+            }
+        }
+
         $styles .= '</style>';
 
-        return $fontFaces . $styles;
+        $fontPreloads = $this->renderFontPreload($fontFaces);
+
+        return $fontPreloads . $fontFaces . $styles;
+    }
+
+    /**
+     * Preload the first woff2 so the real font swaps in as early as possible.
+     *
+     * The URL lives in the @font-face CSS, which is normally linked rather than inlined -
+     * so when it is a <link> the declarations are read from the cached file on disk. Losing
+     * this preload would lengthen the fallback-font flash, which is exactly the kind of
+     * regression that moving the CSS out of the page could otherwise introduce.
+     */
+    protected function renderFontPreload(string $fontFaces): string
+    {
+        if (! $fontFaces) {
+            return '';
+        }
+
+        $css = $fontFaces;
+
+        // Linked stylesheet: resolve it back to the local file to read its declarations.
+        if (! str_contains($fontFaces, '@font-face') && preg_match('/href="([^"]+\.css)"/i', $fontFaces, $href)) {
+            $path = public_path(ltrim((string) parse_url($href[1], PHP_URL_PATH), '/'));
+
+            if (! File::exists($path)) {
+                return '';
+            }
+
+            $css = (string) File::get($path);
+        }
+
+        if (! preg_match('/url\(([^)]+\.woff2)/i', $css, $matches)) {
+            return '';
+        }
+
+        return '<link rel="preload" href="' . e(trim($matches[1], '\'"')) . '" as="font" type="font/woff2" crossorigin>';
     }
 
     public function renderThemeOptions(): void
     {
+        // Typography (font family, weight, size) is intentionally locale-agnostic:
+        // a font that supports the site's scripts should apply on every language version.
+        // Forcing shared storage avoids the trap where setting Primary font on the default
+        // locale leaves other locales falling back to the registration default.
+        add_filter('theme_option_field_is_shared', function (bool $isShared, string $key): bool {
+            if ($isShared) {
+                return true;
+            }
+
+            foreach ($this->fontFamilies as $fontFamily) {
+                if ($key === "tp_{$fontFamily->getName()}_font" || $key === "tp_{$fontFamily->getName()}_font_weight") {
+                    return true;
+                }
+            }
+
+            foreach ($this->fontSizes as $fontSize) {
+                if ($key === "tp_{$fontSize->getName()}_size") {
+                    return true;
+                }
+            }
+
+            return false;
+        }, 10, 2);
+
         Event::listen(RenderingThemeOptionSettings::class, function (): void {
             if (empty($this->fontFamilies) && empty($this->fontSizes)) {
                 return;
@@ -189,7 +279,28 @@ class Typography
                 $fields[] = GoogleFontsField::make()
                     ->name("tp_{$fontFamily->getName()}_font")
                     ->label(trans('packages/theme::theme.typography_font_family', ['name' => $fontFamily->getLabel()]))
-                    ->defaultValue($fontFamily->getDefault());
+                    ->defaultValue($fontFamily->getDefault())
+                    ->shared();
+
+                if ($fontFamily->getDefaultFontWeight() !== null) {
+                    $fields[] = SelectField::make()
+                        ->name("tp_{$fontFamily->getName()}_font_weight")
+                        ->label(trans('packages/theme::theme.typography_font_weight', ['name' => $fontFamily->getLabel()]))
+                        ->options([
+                            '' => trans('packages/theme::theme.typography_font_weight_default'),
+                            '100' => '100 - Thin',
+                            '200' => '200 - Extra Light',
+                            '300' => '300 - Light',
+                            '400' => '400 - Regular',
+                            '500' => '500 - Medium',
+                            '600' => '600 - Semi Bold',
+                            '700' => '700 - Bold',
+                            '800' => '800 - Extra Bold',
+                            '900' => '900 - Black',
+                        ])
+                        ->defaultValue((string) $fontFamily->getDefaultFontWeight())
+                        ->shared();
+                }
             }
 
             foreach ($this->fontSizes as $fontSize) {
@@ -199,7 +310,8 @@ class Typography
                     ->defaultValue($fontSize->getDefault())
                     ->helperText(trans('packages/theme::theme.typography_font_size_helper', [
                         'default' => "<code>{$fontSize->getDefault()}</code>",
-                    ]));
+                    ]))
+                    ->shared();
             }
 
             ThemeOption::setSection(
@@ -218,6 +330,10 @@ class Typography
 
             foreach ($this->fontFamilies as $fontFamily) {
                 $rules["tp_{$fontFamily->getName()}_font"] = ['sometimes', 'required', 'string'];
+
+                if ($fontFamily->getDefaultFontWeight() !== null) {
+                    $rules["tp_{$fontFamily->getName()}_font_weight"] = ['sometimes', 'nullable', 'string', 'in:,100,200,300,400,500,600,700,800,900'];
+                }
             }
 
             foreach ($this->fontSizes as $fontSize) {
@@ -234,6 +350,10 @@ class Typography
 
             foreach ($this->fontFamilies as $fontFamily) {
                 $attributes["tp_{$fontFamily->getName()}_font"] = $fontFamily->getLabel();
+
+                if ($fontFamily->getDefaultFontWeight() !== null) {
+                    $attributes["tp_{$fontFamily->getName()}_font_weight"] = $fontFamily->getLabel() . ' Font Weight';
+                }
             }
 
             foreach ($this->fontSizes as $fontSize) {

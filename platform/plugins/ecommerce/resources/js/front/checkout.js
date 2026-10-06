@@ -1,13 +1,10 @@
-try {
-    window.$ = window.jQuery = require('jquery')
-
-    require('bootstrap')
-} catch (e) {
-}
-
+import jQuery from 'jquery'
+import 'bootstrap'
 import Toastify from '../../../../../core/base/resources/js/base/toast'
 import { CheckoutAddress } from './partials/address'
 import { DiscountManagement } from './partials/discount'
+
+window.$ = window.jQuery = jQuery
 
 const showToast = (type, message) => {
     const icons = {
@@ -163,6 +160,22 @@ class MainCheckout {
             document.dispatchEvent(new CustomEvent('payment-form-reloaded'))
         }
 
+        // reCAPTCHA v3 tokens expire two minutes after they are issued, and the token is
+        // generated once on page load. Every time the form is refreshed over AJAX we mint a
+        // fresh one, otherwise a customer who spends a while picking a shipping or payment
+        // method submits an expired token and the order is rejected.
+        //
+        // v2 is skipped on purpose: it renders a checkbox the customer has already solved and
+        // refreshing calls grecaptcha.reset(), which would make them solve it again on every
+        // update. The .g-recaptcha placeholder only exists for v2.
+        const refreshCaptchaToken = () => {
+            if (typeof refreshRecaptcha === 'undefined' || document.querySelector('.g-recaptcha')) {
+                return
+            }
+
+            refreshRecaptcha()
+        }
+
         const updateCheckoutButtonStatus = () => {
             // Make a quick AJAX call to check if checkout is valid
             $.ajax({
@@ -191,7 +204,7 @@ class MainCheckout {
                             }
                         }
                     }
-                }
+                },
             })
         }
 
@@ -241,6 +254,7 @@ class MainCheckout {
                 complete: () => {
                     enablePaymentMethodsForm()
                     $('.shipping-info-loading').hide()
+                    refreshCaptchaToken()
                 },
             })
         }
@@ -510,6 +524,33 @@ class MainCheckout {
                     error: (error) => {
                         MainCheckout.handleError(error)
                     }
+                })
+            })
+            .on('click', '[data-bb-toggle="remove-checkout-item"]', (e) => {
+                const $button = $(e.currentTarget)
+
+                $.ajax({
+                    type: 'GET',
+                    url: $button.data('url'),
+                    beforeSend: () => {
+                        $button.prop('disabled', true)
+                    },
+                    success: ({ error, message }) => {
+                        if (error) {
+                            MainCheckout.showError(message)
+                            $button.prop('disabled', false)
+                            return
+                        }
+
+                        // Removing an item can drop a whole vendor group, its shipping methods and
+                        // applied discounts, so reload to rebuild checkout from the updated cart.
+                        // An empty cart is redirected to the cart page by the checkout controller.
+                        window.location.reload()
+                    },
+                    error: (error) => {
+                        $button.prop('disabled', false)
+                        MainCheckout.handleError(error)
+                    },
                 })
             })
 

@@ -3,6 +3,8 @@
 @section('title', trans('plugins/ecommerce::customer-dashboard.account_settings'))
 
 @section('content')
+    {!! apply_filters('ecommerce_customer_edit_account_before_content', '') !!}
+
     <div class="bb-customer-card-list account-settings-cards">
         {{-- Profile Information Card --}}
         <div class="bb-customer-card profile-card">
@@ -144,4 +146,6 @@
             </div>
         @endif
     </div>
+
+    {!! apply_filters('ecommerce_customer_edit_account_after_content', '') !!}
 @endsection

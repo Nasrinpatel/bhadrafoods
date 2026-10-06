@@ -43,6 +43,8 @@ class PublicProductController extends BaseController
         SeoHelper::setTitle(theme_option('ecommerce_products_seo_title') ?: __('Products'))
             ->setDescription(theme_option('ecommerce_products_seo_description'));
 
+        SeoHelper::meta()->setUrl(route('public.products'));
+
         $with = EcommerceHelper::withProductEagerLoadingRelations();
 
         if (($query = BaseHelper::stringify($request->input('q'))) && ! $request->ajax()) {
@@ -228,6 +230,9 @@ class PublicProductController extends BaseController
                         'thumb',
                         ...array_keys(RvMedia::getSizes()),
                     ]));
+                } else {
+                    // Ensure a consistent structure so the frontend gallery refresh never receives null.
+                    $originalProduct->image_with_sizes = ['origin' => [], 'thumb' => []];
                 }
 
                 $originalProduct->errorMessage = __('Please select attributes');
@@ -407,9 +412,9 @@ class PublicProductController extends BaseController
             ->setData(
                 Theme::scope(
                     'ecommerce.includes.up-sale-products',
-                    compact('products', 'parentProduct'),
+                    compact('products', 'parentProduct', 'product'),
                     'plugins/ecommerce::themes.includes.up-sale-products'
-                )->content()
+                )->content() ?: ' '
             );
     }
 
@@ -425,9 +430,9 @@ class PublicProductController extends BaseController
             ->setData(
                 Theme::scope(
                     'ecommerce.includes.cross-sale-products',
-                    compact('products', 'parentProduct'),
+                    compact('products', 'parentProduct', 'product'),
                     'plugins/ecommerce::themes.includes.cross-sale-products'
-                )->content()
+                )->content() ?: ' '
             );
     }
 

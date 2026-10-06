@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Információs üzenet megjelenítése, amely tájékoztatja az ügyfeleket azokról a feltételekről, amelyeket a rendelés leadásával elfogadnak.',
       'hide_customer_info_at_checkout' => 'Ügyfél információk elrejtése a fizetésnél',
       'hide_customer_info_at_checkout_helper' => 'Az ügyfélfiók-információk és a kijelentkezés gomb elrejtése a fizetési oldalon. Ha engedélyezve van, a bejelentkezett ügyfelek nem látják a fiókadataikat.',
+      'enable_order_notes_at_checkout' => 'Rendelési megjegyzések engedélyezése a pénztárban',
+      'enable_order_notes_at_checkout_helper' => 'Ha engedélyezve van, a vásárlók opcionális megjegyzéseket adhatnak hozzá rendelésükhöz a pénztár oldalon (pl. speciális szállítási utasítások).',
     ],
   ],
   'return' =>

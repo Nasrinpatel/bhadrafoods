@@ -15,6 +15,12 @@
             </p>
         </x-slot>
 
+        @if (isset($minimumAmount) && isset($orderAmount) && (float) $orderAmount < (float) $minimumAmount)
+            <div class="alert alert-warning my-2">
+                {{ trans('plugins/razorpay::razorpay.minimum_amount_warning', ['amount' => format_price($minimumAmount)]) }}
+            </div>
+        @endif
+
         @if ($errorMessage)
             <div class="text-danger my-2">
                 {!! BaseHelper::clean($errorMessage) !!}
@@ -67,7 +73,7 @@
                     $('head')[0].appendChild(script);
 
                     return result.promise();
-                }
+                };
 
                 var callRazorPayScript = function() {
                     loadExternalScript('https://checkout.razorpay.com/v1/checkout.js').then(function() {
@@ -134,7 +140,47 @@
                         });
                         window.rzpay.open();
                     });
-                }
+                };
+
+                /*
+                 * Persist the buyer's address to the order BEFORE opening the Razorpay popup.
+                 * In this (website_embedded) mode the popup is paid FIRST and the checkout form
+                 * submits afterwards; if the buyer pays but never returns, the address would
+                 * otherwise never be saved. This mirrors the checkout save-information step so a
+                 * captured payment always has its shipping address on the order.
+                 */
+                @php
+                    $rzpSaveInformationUrl = '';
+                    try {
+                        $rzpCheckoutToken = \Botble\Ecommerce\Facades\OrderHelper::getOrderSessionToken();
+                        if ($rzpCheckoutToken) {
+                            $rzpSaveInformationUrl = route('public.checkout.save-information', $rzpCheckoutToken);
+                        }
+                    } catch (\Throwable $rzpException) {
+                        $rzpSaveInformationUrl = '';
+                    }
+                @endphp
+                var persistAddressThenCheckout = function(form, done) {
+                    var saveUrl = '{{ $rzpSaveInformationUrl }}';
+
+                    if (!saveUrl) {
+                        done();
+                        return;
+                    }
+
+                    $.ajax({
+                        url: saveUrl,
+                        method: 'POST',
+                        processData: false,
+                        contentType: false,
+                        data: new FormData(form.get(0)),
+                        timeout: 10000,
+                        /* Proceed to payment whether the save succeeds, fails or times out - never block checkout. */
+                        complete: function() {
+                            done();
+                        }
+                    });
+                };
 
                 $(document).off('click', '.payment-checkout-btn').on('click', '.payment-checkout-btn', function(event) {
                     event.preventDefault();
@@ -179,10 +225,12 @@
                         });
                     } else if (method === 'razorpay') {
 
-                        callRazorPayScript();
+                        persistAddressThenCheckout(form, function() {
+                            callRazorPayScript();
 
-                        _self.removeAttr('disabled');
-                        _self.html(submitInitialText);
+                            _self.removeAttr('disabled');
+                            _self.html(submitInitialText);
+                        });
                     } else {
                         form.submit();
                     }
