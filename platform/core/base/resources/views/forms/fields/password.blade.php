@@ -21,7 +21,7 @@
             id="{{ $name }}"
             {!! Html::attributes($options['attr']) !!}
             autocomplete="new-password"
-            @if (!empty($options['value']) && BaseHelper::hasDemoModeEnabled())
+            @if (!empty($options['value']))
                 value="{{ $options['value'] }}"
             @endif
             data-bb-password

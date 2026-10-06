@@ -5,8 +5,8 @@
                 'rtl' => BaseHelper::siteLanguageDirection() == 'rtl',
                 'appendArrows' => '.ec-cross-sale-arrows',
                 'arrows' => true,
-                'prevArrow' => '<button type="button" class="slick-prev slick-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>',
-                'nextArrow' => '<button type="button" class="slick-next slick-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>',
+                'prevArrow' => '<button type="button" class="slick-prev slick-arrow" aria-label="' . __('Previous') . '"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>',
+                'nextArrow' => '<button type="button" class="slick-next slick-arrow" aria-label="' . __('Next') . '"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>',
                 'dots' => false,
                 'autoplay' => false,
                 'infinite' => false,
@@ -70,6 +70,9 @@
                                     $salePrice = $productPrice->getPrice();
                                     $originalPrice = $productPrice->getPriceOriginal();
                                     $hasDiscount = $salePrice < $originalPrice;
+                                    $shouldShowPrice =
+                                        (! EcommerceHelper::hideProductPrice() || EcommerceHelper::isCartEnabled())
+                                        && (! EcommerceHelper::hideProductPriceWhenZero() || $salePrice > 0);
                                 @endphp
                                 <div class="ec-cross-sale-slide">
                                     <div class="ec-cross-sale-card">
@@ -93,12 +96,14 @@
                                                         {{ $product->name }}
                                                     </a>
                                                 </h3>
-                                                <div class="ec-cross-sale-price">
-                                                    <span class="ec-cross-sale-price-current">{{ format_price($salePrice) }}</span>
-                                                    @if($hasDiscount)
-                                                        <span class="ec-cross-sale-price-old">{{ format_price($originalPrice) }}</span>
-                                                    @endif
-                                                </div>
+                                                @if ($shouldShowPrice)
+                                                    <div class="ec-cross-sale-price">
+                                                        <span class="ec-cross-sale-price-current">{{ format_price($salePrice) }}</span>
+                                                        @if($hasDiscount)
+                                                            <span class="ec-cross-sale-price-old">{{ format_price($originalPrice) }}</span>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                                 @if(EcommerceHelper::isCartEnabled())
                                                     <button
                                                         type="button"

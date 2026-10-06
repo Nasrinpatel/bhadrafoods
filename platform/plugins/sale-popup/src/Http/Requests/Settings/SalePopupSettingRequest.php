@@ -27,6 +27,7 @@ class SalePopupSettingRequest extends Request
             'show_close_button' => $onOffRule,
             'show_quick_view_button' => $onOffRule,
             'show_on_mobile' => $onOffRule,
+            'hide_duration_after_closed' => ['sometimes', 'required', 'numeric', 'min:0'],
             'display_pages' => ['sometimes', 'required', 'array', Rule::in(array_keys($salePopupHelper->displayPages()))],
         ];
     }

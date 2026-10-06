@@ -27,7 +27,7 @@ class RegisterController extends BaseController
 
     public function __construct()
     {
-        $this->middleware('customer.guest');
+        $this->middleware('customer.guest')->except(['confirm', 'resendConfirmation']);
     }
 
     public function showRegistrationForm()
@@ -37,6 +37,8 @@ class RegisterController extends BaseController
         $title = __('Register');
         SeoHelper::setTitle(theme_option('ecommerce_register_seo_title') ?: $title)
             ->setDescription(theme_option('ecommerce_register_seo_description'));
+
+        SeoHelper::meta()->addMeta('robots', 'noindex, nofollow');
 
         Theme::breadcrumb()->add($title, route('customer.register'));
 
@@ -101,8 +103,33 @@ class RegisterController extends BaseController
 
         return $this
             ->httpResponse()
-            ->setNextUrl($this->redirectPath())
+            ->setNextUrl($this->intendedUrl($this->redirectPath()))
             ->setMessage(__('Registered successfully!'));
+    }
+
+    /**
+     * Consume the URL the customer was heading to before being sent to register/login
+     * (e.g. checkout), falling back to $default when there is none. Mirrors what
+     * redirect()->intended() does for the login flow, which registration cannot use
+     * because it returns a BaseHttpResponse instead of a redirect.
+     */
+    protected function intendedUrl(string $default): string
+    {
+        $intended = session()->pull('url.intended');
+
+        if (! $intended || ! is_string($intended)) {
+            return $default;
+        }
+
+        // Only follow same-host targets, so a crafted ?redirect= cannot bounce the
+        // customer off-site right after authenticating.
+        $host = parse_url($intended, PHP_URL_HOST);
+
+        if ($host && $host !== request()->getHost()) {
+            return $default;
+        }
+
+        return $intended;
     }
 
     protected function create(array $data)
@@ -144,12 +171,16 @@ class RegisterController extends BaseController
 
         return $this
             ->httpResponse()
-            ->setNextUrl(route('customer.overview'))
+            ->setNextUrl($this->intendedUrl(route('customer.overview')))
             ->setMessage(__('You successfully confirmed your email address.'));
     }
 
     public function resendConfirmation(Request $request)
     {
+        if (! EcommerceHelper::isEnableEmailVerification()) {
+            abort(404);
+        }
+
         /**
          * @var Customer $customer
          */
@@ -159,13 +190,22 @@ class RegisterController extends BaseController
             return $this
                 ->httpResponse()
                 ->setError()
+                ->setNextUrl(route('customer.login'))
                 ->setMessage(__('Cannot find this customer!'));
+        }
+
+        if ($customer->confirmed_at) {
+            return $this
+                ->httpResponse()
+                ->setNextUrl(route('customer.login'))
+                ->setMessage(__('Your email has already been verified.'));
         }
 
         $customer->sendEmailVerificationNotification();
 
         return $this
             ->httpResponse()
+            ->setNextUrl(route('customer.login'))
             ->setMessage(__('We sent you another confirmation email. You should receive it shortly.'));
     }
 }

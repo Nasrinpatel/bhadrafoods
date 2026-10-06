@@ -235,7 +235,7 @@ class MediaSettingForm extends SettingForm
                 CheckboxFieldOption::make()
                     ->label(trans('core/setting::setting.media.do_spaces_cdn_enabled'))
                     ->helperText(trans('core/setting::setting.media.do_spaces_cdn_enabled_helper'))
-                    ->checked((bool) setting('media_do_spaces_cdn_enabled'))
+                    ->value((bool) setting('media_do_spaces_cdn_enabled'))
             )
             ->add(
                 'media_do_spaces_cdn_custom_domain',

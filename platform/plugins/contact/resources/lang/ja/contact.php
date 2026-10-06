@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => '私たちの返信:',
         'admin_reply_additional_questions' => '追加のご質問がある場合は、このメールに返信するか、再度お問い合わせください。',
         'admin_reply_best_regards' => 'よろしくお願いいたします、',
-        'admin_reply_team' => '{{ site_title }}チーム',
+        'admin_reply_team' => ':site_titleチーム',
         'notice_title' => '新しい連絡先メッセージ',
         'notice_greeting' => '管理者様',
         'notice_message_details' => 'メッセージの詳細',
@@ -177,4 +177,6 @@ return [
     'subject_placeholder' => '主題',
     'your_message' => 'あなたのメッセージ',
     'agree_terms_privacy' => '利用規約とプライバシーポリシーに同意します',
+    'agree_terms_privacy_link' => ':link に同意します',
+    'terms_and_privacy_policy' => '利用規約とプライバシーポリシー',
 ];

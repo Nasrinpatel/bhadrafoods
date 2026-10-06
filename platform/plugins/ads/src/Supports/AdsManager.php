@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class AdsManager
 {
+    /**
+     * @var Collection<int, Ads>
+     */
     protected Collection $data;
 
     protected bool $loaded = false;
@@ -51,6 +54,9 @@ class AdsManager
         return $this;
     }
 
+    /**
+     * @return Collection<int, Ads>
+     */
     protected function read(array $with): Collection
     {
         $defaultWith = ['metadata'];
@@ -101,6 +107,9 @@ class AdsManager
         return view('plugins/ads::partials.ad-display', compact('data', 'attributes'))->render();
     }
 
+    /**
+     * @return Collection<int, Ads>
+     */
     public function getData(bool $isLoad = false, bool $isNotExpired = false): Collection
     {
         if ($isLoad || ! isset($this->data)) {
@@ -141,6 +150,10 @@ class AdsManager
         return $ads;
     }
 
+    /**
+     * @param Collection<int, Ads> $data
+     * @return Collection<int, Ads>
+     */
     protected function filterExpired(Collection $data): Collection
     {
         return $data

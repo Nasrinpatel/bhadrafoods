@@ -13,6 +13,7 @@ use Botble\Base\Supports\Pdf;
 use Botble\Ecommerce\Enums\OrderAddressTypeEnum;
 use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
 use Botble\Ecommerce\Enums\OrderStatusEnum;
+use Botble\Ecommerce\Enums\ProductTypeEnum;
 use Botble\Ecommerce\Enums\ShippingMethodEnum;
 use Botble\Ecommerce\Events\OrderCancelledEvent;
 use Botble\Ecommerce\Events\OrderCompletedEvent;
@@ -52,6 +53,7 @@ use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Models\Payment;
 use Botble\Payment\Supports\PaymentFeeHelper;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -105,6 +107,33 @@ class OrderHelper
             /**
              * @var Order $order
              */
+
+            // Gateways can report the same payment more than once (return-URL callback plus
+            // webhook, or a webhook re-delivery). Finalize each order only once so events
+            // fire once and stock is decremented exactly once.
+            if ($order->is_finished) {
+                continue;
+            }
+
+            // Adopt a completed payment that was linked to the order but never written back
+            // onto Order.payment_id. Gateway callback/webhook paths (e.g. Razorpay) can create
+            // and link a Payment (Payment.order_id + status = completed, so it shows in
+            // Transactions) without setting the order's own payment_id column. Without this,
+            // the guard below skips finalization and the paid order is stranded in Incomplete
+            // Orders. Only fills a blank; never overrides an existing link.
+            if (! $order->payment_id && is_plugin_active('payment')) {
+                $linkedPayment = Payment::query()
+                    ->where('order_id', $order->getKey())
+                    ->where('status', PaymentStatusEnum::COMPLETED)
+                    ->latest('id')
+                    ->first();
+
+                if ($linkedPayment) {
+                    $order->payment_id = $linkedPayment->getKey();
+                    $order->save();
+                }
+            }
+
             if (
                 (float) $order->amount
                 && (is_plugin_active('payment') && ! empty(PaymentMethods::methods()) && ! $order->payment_id)
@@ -161,6 +190,17 @@ class OrderHelper
                     }
                 }
             }
+
+            // Defense-in-depth: never finalize an order without a shipping address.
+            // The address is normally persisted earlier via the save-shipping-information
+            // AJAX, but that step is session-bound and can be skipped (fast click, autofill,
+            // broken JS, lost guest session, or a redirect/webhook payment flow that finalizes
+            // by token in a context with no session). When that happens the order finalizes
+            // "paid but address-less" (admin shows "Don't have an account yet", no shipping
+            // block). This guard backfills a shipping row from any surviving local source
+            // before is_finished is set. It is purely additive — it only creates a row when
+            // none exists and never overwrites a populated one.
+            $this->ensureShippingAddressBackfilled($order);
 
             event(new OrderPlacedEvent($order));
 
@@ -304,11 +344,16 @@ class OrderHelper
         return $orders;
     }
 
-    public function validateAndReserveStock(array $cartItems): array
+    /**
+     * Validate cart quantities against live stock under a row lock so concurrent checkouts
+     * read consistent numbers. Stock is NOT deducted here: it is decremented exactly once
+     * when the order is finalized (see decreaseProductQuantity()). Deducting at checkout as
+     * well double-counted every order and leaked stock whenever a gateway payment was
+     * cancelled, failed, or the checkout form was re-submitted.
+     */
+    public function validateStock(array $cartItems): array
     {
         return DB::transaction(function () use ($cartItems) {
-            $reservedItems = [];
-
             foreach ($cartItems as $item) {
                 $product = Product::query()
                     ->where('id', $item['product_id'])
@@ -320,8 +365,6 @@ class OrderHelper
                 }
 
                 if ($product->isOutOfStock()) {
-                    $this->restoreReservedStock($reservedItems);
-
                     return [
                         'success' => false,
                         'message' => __('Product :product is out of stock!', ['product' => $product->original_product->name]),
@@ -329,35 +372,23 @@ class OrderHelper
                     ];
                 }
 
-                if ($product->with_storehouse_management && ! $product->allow_checkout_when_out_of_stock) {
-                    if ($product->quantity < $item['qty']) {
-                        $this->restoreReservedStock($reservedItems);
-
-                        return [
-                            'success' => false,
-                            'message' => __('Product :product only has :quantity item(s) left in stock, but you are trying to order :requested!', [
-                                'product' => $product->original_product->name,
-                                'quantity' => $product->quantity,
-                                'requested' => $item['qty'],
-                            ]),
-                            'product' => $product,
-                        ];
-                    }
-
-                    $product->quantity -= $item['qty'];
-                    $product->save();
-
-                    $reservedItems[] = [
-                        'product_id' => $product->id,
-                        'qty' => $item['qty'],
+                if (
+                    $product->with_storehouse_management
+                    && ! $product->allow_checkout_when_out_of_stock
+                    && $product->quantity < $item['qty']
+                ) {
+                    return [
+                        'success' => false,
+                        'message' => __('Product :product only has :quantity item(s) left in stock, but you are trying to order :requested!', [
+                            'product' => $product->original_product->name,
+                            'quantity' => $product->quantity,
+                            'requested' => $item['qty'],
+                        ]),
+                        'product' => $product,
                     ];
-
-                    event(new ProductQuantityUpdatedEvent($product));
                 }
 
                 if ($product->minimum_order_quantity > 0 && $item['qty'] < $product->minimum_order_quantity) {
-                    $this->restoreReservedStock($reservedItems);
-
                     return [
                         'success' => false,
                         'message' => __('Minimum order quantity of product :product is :quantity, you need to buy more :more to place an order! ', [
@@ -370,8 +401,6 @@ class OrderHelper
                 }
 
                 if ($product->maximum_order_quantity > 0 && $item['qty'] > $product->maximum_order_quantity) {
-                    $this->restoreReservedStock($reservedItems);
-
                     return [
                         'success' => false,
                         'message' => __('Maximum order quantity of product :product is :quantity! ', [
@@ -383,10 +412,22 @@ class OrderHelper
                 }
             }
 
-            return ['success' => true, 'message' => null, 'product' => null, 'reserved_items' => $reservedItems];
+            return ['success' => true, 'message' => null, 'product' => null];
         });
     }
 
+    /**
+     * @deprecated Use validateStock(). Kept for third-party plugins calling the old name.
+     *             No stock is reserved any more, so reserved_items is always empty.
+     */
+    public function validateAndReserveStock(array $cartItems): array
+    {
+        return $this->validateStock($cartItems) + ['reserved_items' => []];
+    }
+
+    /**
+     * @deprecated Checkout no longer reserves stock, so there is nothing to restore.
+     */
     public function restoreReservedStock(array $reservedItems): void
     {
         if (empty($reservedItems)) {
@@ -479,6 +520,7 @@ class OrderHelper
                     'product_options_text' => $digitalProduct->product_options_implode,
                     'product_options_array' => $digitalProduct->product_options_array,
                     'license_code' => $digitalProduct->license_code,
+                    'license_codes' => $digitalProduct->license_codes_array,
                 ];
             }
         }
@@ -488,7 +530,8 @@ class OrderHelper
             'store_phone' => get_ecommerce_setting('store_phone'),
             'order_id' => $order->code,
             'order_token' => $order->token,
-            'order_note' => $order->description,
+            // Customer-entered plain text: escape it, email templates render with autoescape off
+            'order_note' => e($order->description),
             'customer_name' => BaseHelper::clean($order->user->name ?: $order->address->name),
             'customer_email' => $order->user->email ?: $order->address->email,
             'customer_phone' => $order->user->phone ?: $order->address->phone,
@@ -744,20 +787,27 @@ class OrderHelper
 
     public function processHistoryVariables(OrderHistory|ShipmentHistory $history): ?string
     {
-        $variables = [
-            'order_id' => Html::link(
-                route('orders.edit', $history->order->id),
-                $history->order->code . ' ' . BaseHelper::renderIcon('ti ti-external-link'),
+        $order = $history->order;
+        $hasOrder = $order && $order->getKey();
+
+        $orderIdVariable = $hasOrder
+            ? Html::link(
+                route('orders.edit', $order->getKey()),
+                $order->code . ' ' . BaseHelper::renderIcon('ti ti-external-link'),
                 ['target' => '_blank'],
                 null,
                 false
-            )
-                ->toHtml(),
+            )->toHtml()
+            : ($order && $order->code ? BaseHelper::clean($order->code) : '&mdash;');
+
+        $variables = [
+            'order_id' => $orderIdVariable,
             'user_name' => $history->user_id === 0 ? trans('plugins/ecommerce::order.system') :
                 BaseHelper::clean(
                     $history->user ? $history->user->name : (
-                        $history->order->user->name ?:
-                        $history->order->address->name
+                        $hasOrder && $order->user && $order->user->name
+                            ? $order->user->name
+                            : ($hasOrder && $order->address ? $order->address->name : '')
                     )
                 ),
         ];
@@ -789,6 +839,30 @@ class OrderHelper
         return $data;
     }
 
+    public function getCheckoutSuccessMessage(array $paymentData): string
+    {
+        $paymentStatus = null;
+
+        if (is_plugin_active('payment') && ($chargeId = Arr::get($paymentData, 'charge_id'))) {
+            $paymentStatus = Payment::query()
+                ->where('charge_id', $chargeId)
+                ->value('status');
+        }
+
+        if ($paymentStatus instanceof PaymentStatusEnum) {
+            $paymentStatus = $paymentStatus->getValue();
+        }
+
+        $paymentMethod = Arr::get($paymentData, 'type');
+
+        return match (true) {
+            $paymentStatus === PaymentStatusEnum::COMPLETED => trans('plugins/ecommerce::order.order_placed_and_paid_successfully'),
+            $paymentMethod === PaymentMethodEnum::COD => trans('plugins/ecommerce::order.order_placed_successfully_cod'),
+            $paymentMethod === PaymentMethodEnum::BANK_TRANSFER => trans('plugins/ecommerce::order.order_placed_successfully_bank_transfer'),
+            default => trans('plugins/ecommerce::order.order_placed_successfully_payment_pending'),
+        };
+    }
+
     public function getOrderSessionToken(): string
     {
         if (session()->has('tracked_start_checkout')) {
@@ -799,6 +873,45 @@ class OrderHelper
         }
 
         return $token;
+    }
+
+    /**
+     * Whether every order placed under this checkout token is already finished, cancelled
+     * or paid, i.e. the token has nothing left to pay for.
+     */
+    public function isCheckoutTokenSpent(?string $token): bool
+    {
+        if (! $token) {
+            return false;
+        }
+
+        $orders = Order::query()->where('token', $token)->get();
+
+        return $orders->isNotEmpty() && $orders->every(fn (Order $order) => $this->isOrderLocked($order));
+    }
+
+    /**
+     * Drop a checkout session whose order was completed outside this browser session.
+     *
+     * Only the success page clears the checkout token and cart. When a gateway webhook
+     * finalizes the order instead (the buyer paid, then closed the tab or never came back
+     * from their UPI/bank app), the buyer's session keeps the spent token and the old cart.
+     * Their next purchase then runs on that token: the gateway charge is matched to the old,
+     * already-paid order and the new items are never saved anywhere, or the old items get
+     * re-added on top of the new ones. Clearing it here is exactly what the success page
+     * would have done, so the next checkout starts on a fresh token and an empty cart.
+     */
+    public function discardSpentCheckoutSession(): bool
+    {
+        $token = session('tracked_start_checkout');
+
+        if (! $this->isCheckoutTokenSpent($token)) {
+            return false;
+        }
+
+        $this->clearSessions($token);
+
+        return true;
     }
 
     public function getOrderSessionData(?string $token = null): array
@@ -1068,6 +1181,139 @@ class OrderHelper
         return $this->checkAndCreateOrderAddress($addressData, $sessionData);
     }
 
+    /**
+     * Ensure a finalized order always has a shipping address row.
+     *
+     * Only runs when the SHIPPING row is genuinely missing. Recovers contact/address
+     * data from the first available local source, in priority order:
+     *   1. The order's BILLING address row (often saved when shipping was skipped).
+     *   2. The checkout session data keyed by the order token (survives same-request flows).
+     *   3. The linked customer's default/earliest saved address (logged-in buyers).
+     *   4. The linked payment record's metadata (gateways that persist contact there).
+     *
+     * Purely additive: creates the row only when none exists; never overwrites or deletes.
+     */
+    protected function ensureShippingAddressBackfilled(Order $order): void
+    {
+        $hasShippingAddress = OrderAddress::query()
+            ->where('order_id', $order->getKey())
+            ->where('type', OrderAddressTypeEnum::SHIPPING)
+            ->exists();
+
+        if ($hasShippingAddress) {
+            return;
+        }
+
+        $addressKeys = ['name', 'phone', 'email', 'country', 'state', 'city', 'address', 'zip_code'];
+
+        // Digital-only orders intentionally carry only minimal contact (name/email/phone)
+        // and no physical address — see the digital branch in checkAndCreateOrderAddress().
+        // Mirror that here so the backfill never adds a shipping address the checkout flow
+        // would have omitted. An order needs shipping when digital products are unsupported
+        // or it contains at least one non-digital product.
+        $requiresShipping = ! EcommerceHelper::isEnabledSupportDigitalProducts()
+            || $order->products()->where('product_type', '!=', ProductTypeEnum::DIGITAL)->exists();
+
+        if (! $requiresShipping) {
+            $addressKeys = ['name', 'phone', 'email'];
+        }
+
+        $data = [];
+
+        // 1. Billing row on the same order.
+        $billing = OrderAddress::query()
+            ->where('order_id', $order->getKey())
+            ->where('type', OrderAddressTypeEnum::BILLING)
+            ->first();
+
+        if ($billing) {
+            $data = Arr::only($billing->toArray(), $addressKeys);
+        }
+
+        // 2. Checkout session data (still present in same-request payment flows).
+        if (empty($data['name']) && $order->token) {
+            $sessionData = $this->getOrderSessionData($order->token);
+            foreach ($addressKeys as $key) {
+                if (empty($data[$key]) && ! empty($sessionData[$key])) {
+                    $data[$key] = $sessionData[$key];
+                }
+            }
+        }
+
+        // 3. Customer's saved address (logged-in buyers).
+        if (empty($data['name']) && $order->user_id) {
+            $customerAddress = Address::query()
+                ->where('customer_id', $order->user_id)
+                ->orderByDesc('is_default')
+                ->orderBy('id')
+                ->first();
+
+            if ($customerAddress) {
+                foreach ($addressKeys as $key) {
+                    if (empty($data[$key]) && ! empty($customerAddress->{$key})) {
+                        $data[$key] = $customerAddress->{$key};
+                    }
+                }
+            }
+        }
+
+        // 4. Payment metadata (gateways that persist customer contact there).
+        if (empty($data['name']) && $order->payment_id) {
+            $payment = Payment::query()->find($order->payment_id);
+            $metadata = $payment ? (array) $payment->metadata : [];
+            $map = [
+                'name' => ['customer_name', 'name'],
+                'email' => ['customer_email', 'email'],
+                'phone' => ['customer_phone', 'phone'],
+            ];
+
+            foreach ($map as $field => $candidates) {
+                if (! empty($data[$field])) {
+                    continue;
+                }
+
+                foreach ($candidates as $candidate) {
+                    if (! empty($metadata[$candidate])) {
+                        $data[$field] = $metadata[$candidate];
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        $data = $this->cleanData(array_filter($data, fn ($value) => $value !== null && $value !== ''));
+
+        // Need at least a name or email to make the row meaningful.
+        if (empty($data['name']) && empty($data['email'])) {
+            Log::warning('[ec_order_addresses] Finalizing order without a shipping address; no local source to backfill', [
+                'order_id' => $order->getKey(),
+                'order_code' => $order->code,
+                'user_id' => $order->user_id,
+                'payment_id' => $order->payment_id,
+            ]);
+
+            return;
+        }
+
+        $data['order_id'] = $order->getKey();
+        $data['type'] = OrderAddressTypeEnum::SHIPPING;
+
+        OrderAddress::query()->updateOrCreate(
+            [
+                'order_id' => $order->getKey(),
+                'type' => OrderAddressTypeEnum::SHIPPING,
+            ],
+            $data
+        );
+
+        Log::warning('[ec_order_addresses] Backfilled missing shipping address at order finalize', [
+            'order_id' => $order->getKey(),
+            'order_code' => $order->code,
+            'source_fields' => array_keys($data),
+        ]);
+    }
+
     public function checkAndCreateOrderAddress(array $addressData, array $sessionData): array
     {
         $addressData = $this->cleanData($addressData);
@@ -1094,6 +1340,11 @@ class OrderHelper
                     $sessionData['created_order_address'] = true;
                     $sessionData['created_order_address_id'] = $createdOrderAddress->getKey();
                 } else {
+                    Log::warning('[ec_order_addresses] Deleting shipping address row: digital-only order has empty name and email', [
+                        'order_id' => $createdOrderId,
+                        'session_address_id' => Arr::get($sessionData, 'address_id'),
+                    ]);
+
                     OrderAddress::query()
                         ->where([
                             'order_id' => $createdOrderId,
@@ -1109,6 +1360,29 @@ class OrderHelper
             if ($createdOrderAddress) {
                 $sessionData['created_order_address'] = true;
                 $sessionData['created_order_address_id'] = $createdOrderAddress->getKey();
+            }
+        } elseif ($createdOrderId = Arr::get($sessionData, 'created_order_id')) {
+            // Skip is silent in older versions — log so missing-address bugs are debuggable.
+            // Only log when the order genuinely lacks a shipping row: the empty-addressData case
+            // also fires on the FINAL postCheckout for normal flows (the address was already
+            // created during the address-information step, so silently skipping is correct here).
+            $hasShippingAddress = OrderAddress::query()
+                ->where('order_id', $createdOrderId)
+                ->where('type', OrderAddressTypeEnum::SHIPPING)
+                ->exists();
+
+            if (! $hasShippingAddress) {
+                // Debug, not warning: this fires on the normal "billing same as shipping"
+                // flow, where the address arrives nested under billing_address (no top-level
+                // name) and the shipping row is created later by ensureShippingAddressBackfilled
+                // at finalize. The genuine "finalized with no address source" case is warned
+                // separately in that method - so this is diagnostic noise, not a fault.
+                Log::debug('[ec_order_addresses] Skipping shipping address creation: empty name in addressData and no existing row', [
+                    'order_id' => $createdOrderId,
+                    'session_address_id' => Arr::get($sessionData, 'address_id'),
+                    'has_address_data' => ! empty($addressData),
+                    'address_keys' => $addressData ? array_keys($addressData) : [],
+                ]);
             }
         }
 
@@ -1215,6 +1489,13 @@ class OrderHelper
         $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
+            // Silent failure in older versions — log so missing-address bugs are debuggable.
+            Log::warning('[ec_order_addresses] Address validation failed; row not created', [
+                'order_id' => Arr::get($data, 'order_id'),
+                'errors' => $validator->errors()->toArray(),
+                'data_keys' => array_keys($data),
+            ]);
+
             return false;
         }
 
@@ -1246,13 +1527,25 @@ class OrderHelper
 
     public function processOrderProductData(array|Collection $products, array $sessionData): array
     {
+        // Same guard as createOrUpdateIncompleteOrder(): the block below rewrites and deletes
+        // the order line items from the live cart, so a paid order must be left untouched.
+        $processingOrder = Order::query()->find(Arr::get($sessionData, 'created_order_id'));
+
+        if ($processingOrder && $this->isOrderLocked($processingOrder)) {
+            return $sessionData;
+        }
+
         $createdOrderProduct = Arr::get($sessionData, 'created_order_product');
+
+        if (is_string($createdOrderProduct) && $createdOrderProduct !== '') {
+            $createdOrderProduct = Carbon::parse($createdOrderProduct);
+        }
 
         $cartItems = $products['products']->pluck('cartItem');
 
         $lastUpdatedAt = Cart::instance('cart')->getLastUpdatedAt();
 
-        if (! $createdOrderProduct || ! $createdOrderProduct->eq($lastUpdatedAt)) {
+        if (! $createdOrderProduct instanceof CarbonInterface || ! $createdOrderProduct->eq($lastUpdatedAt)) {
             $orderProducts = OrderProduct::query()
                 ->where('order_id', $sessionData['created_order_id'])
                 ->get();
@@ -1267,7 +1560,7 @@ class OrderHelper
                     'product_name' => $cartItem->name,
                     'product_image' => $cartItem->options['image'],
                     'qty' => $cartItem->qty,
-                    'weight' => $productByCartItem->weight * $cartItem->qty,
+                    'weight' => $productByCartItem->weight,
                     'price' => EcommerceHelper::roundPrice($cartItem->price),
                     'tax_amount' => $cartItem->taxTotal,
                     'options' => [],
@@ -1340,6 +1633,10 @@ class OrderHelper
         $createdOrder = Arr::get($sessionData, 'created_order');
         $createdOrderId = Arr::get($sessionData, 'created_order_id');
 
+        if (is_string($createdOrder) && $createdOrder !== '') {
+            $createdOrder = Carbon::parse($createdOrder);
+        }
+
         $lastUpdatedAt = Cart::instance('cart')->getLastUpdatedAt();
 
         $paymentFee = 0;
@@ -1362,7 +1659,7 @@ class OrderHelper
         ], $generalData);
 
         if ($createdOrder && $createdOrderId) {
-            if ($order && (is_string($createdOrder) || ! $createdOrder->eq($lastUpdatedAt))) {
+            if ($order && (! $createdOrder instanceof CarbonInterface || ! $createdOrder->eq($lastUpdatedAt))) {
                 $order->fill($data);
             }
         }
@@ -1604,6 +1901,17 @@ class OrderHelper
 
     public function createOrUpdateIncompleteOrder(array $data, ?Order $order = null): Order|null|false
     {
+        // Guard: never rewrite an order that is already completed back to "incomplete".
+        // Re-opening the checkout page with an existing order token, or clicking the
+        // "Recover Cart" link, funnels through here and would otherwise force
+        // is_finished = false on an order that a gateway webhook/callback already
+        // finalized - stranding a paid order in Incomplete Orders (and, on the recover
+        // path, overwriting its items/total from the live cart). If the order is already
+        // finished, cancelled, or has a completed payment linked to it, leave it untouched.
+        if ($order && $this->isOrderLocked($order)) {
+            return $order;
+        }
+
         $data['is_finished'] = false;
 
         if ($order) {
@@ -1625,6 +1933,42 @@ class OrderHelper
         do_action('ecommerce_create_order_from_data', $data, $order);
 
         return $order;
+    }
+
+    /**
+     * An order is "locked" once it is finished, cancelled, or a completed payment is linked
+     * to it. Nothing in the checkout flow may rewrite such an order from the live cart.
+     *
+     * Paid: the buyer can come back to checkout in the same session after paying (back
+     * button, a second tab left open, or they keep shopping and reopen checkout), and
+     * rebuilding the order from the newer cart would inflate the stored total while the
+     * gateway keeps the amount that was actually captured.
+     *
+     * Cancelled: cancelling restocks the products and emails the buyer, but leaves
+     * is_finished = false. Rebuilding would quietly put the order back to pending and
+     * resell stock that was already returned.
+     */
+    public function isOrderLocked(Order $order): bool
+    {
+        return $order->is_finished
+            || $order->status == OrderStatusEnum::CANCELED
+            || $this->hasCompletedPayment($order);
+    }
+
+    protected function hasCompletedPayment(Order $order): bool
+    {
+        if (! is_plugin_active('payment')) {
+            return false;
+        }
+
+        if ($order->payment_id && $order->payment && $order->payment->status == PaymentStatusEnum::COMPLETED) {
+            return true;
+        }
+
+        return Payment::query()
+            ->where('order_id', $order->getKey())
+            ->where('status', PaymentStatusEnum::COMPLETED)
+            ->exists();
     }
 
     public function captureFootprints(Order $order): void

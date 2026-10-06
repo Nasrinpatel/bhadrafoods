@@ -174,7 +174,11 @@ class ThemeSupport
 
     public static function registerPreloader(): void
     {
-        add_filter(THEME_FRONT_HEADER, function (?string $html): string {
+        // Render the preloader right after the opening <body> tag. Hooking it to
+        // THEME_FRONT_HEADER would place the markup inside <head>, where block-level
+        // elements like <div> are invalid HTML and can cause browsers to close the
+        // head early (dropping GTM scripts, hreflang links and other metadata).
+        add_filter(THEME_FRONT_BODY, function (?string $html): string {
             if (theme_option('preloader_enabled', 'no') != 'yes') {
                 return $html;
             }
@@ -1024,14 +1028,19 @@ class ThemeSupport
 
     public static function formatDate(CarbonInterface|string|int|null $date, ?string $format = null): ?string
     {
-        $format = $format ?: theme_option('date_format');
+        return BaseHelper::formatDate($date, $format ?: self::getDateFormat(), true);
+    }
+
+    public static function getDateFormat(?string $defaultFormat = null): string
+    {
+        $format = theme_option('date_format');
         $supportedDateFormats = self::supportedDateFormats();
 
         if (! $format || ! in_array($format, $supportedDateFormats)) {
-            $format = Arr::first($supportedDateFormats);
+            $format = $defaultFormat ?: Arr::first($supportedDateFormats);
         }
 
-        return BaseHelper::formatDate($date, $format, true);
+        return $format;
     }
 
     public static function renderGoogleTagManagerScript(): string

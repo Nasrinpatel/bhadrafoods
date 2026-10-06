@@ -46,7 +46,7 @@
                         <option
                             value="{{ $address->id }}"
                             @selected($oldSessionAddressId == $address->id)
-                        >{{ $address->full_address }}</option>
+                        >{{ $address->name ? $address->name . ' - ' : '' }}{{ $address->full_address }}</option>
                     @endforeach
                 </select>
                 <x-core::icon name="ti ti-chevron-down" />

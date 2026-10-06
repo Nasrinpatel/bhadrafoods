@@ -36,10 +36,12 @@ return [
     'test_payment' => '首先在測試模式下進行測試付款',
     'check_status' => '檢查訂單狀態是否更新為「已完成」',
     'verify_webhook' => '如果訂單仍為「未完成」,請驗證您的 webhook 配置',
-    'check_logs' => '檢查 storage/logs/payment-*.log 中的付款日誌以進行除錯',
+    'check_logs' => '檢查 Payments > Payment Logs (admin panel) 中的付款日誌以進行除錯',
     'troubleshooting' => '疑難排解提示:',
     'ssl_required' => '確保您的網站具有有效的 SSL 憑證 (HTTPS)',
     'public_url' => '驗證 webhook URL 可公開存取(非 localhost)',
     'firewall_check' => '檢查沒有防火牆阻擋 Razorpay webhook 請求',
     'live_mode' => '對於生產環境,請確保 Razorpay 處於正式模式,而非測試模式',
+    'minimum_amount_error' => '訂單金額低於 Razorpay 允許的最低金額（:amount）。請在購物車中添加更多商品。',
+    'minimum_amount_warning' => 'Razorpay 要求最低訂單金額為 :amount。您當前的訂單總額低於此最低金額。',
 ];

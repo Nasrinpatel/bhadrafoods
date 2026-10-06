@@ -284,10 +284,18 @@ class Ecommerce {
                 })
             })
             .on('click', '.bb-product-filter-link', (e) => {
-                e.preventDefault()
-
                 const currentTarget = $(e.currentTarget)
                 const form = currentTarget.closest('form')
+
+                // The category tree is also rendered outside the shop filter, for example in a
+                // homepage sidebar. There is no filter form to submit there, so the link is just
+                // a link to the category page - let the browser follow it.
+                if (!form.length) {
+                    return
+                }
+
+                e.preventDefault()
+
                 const parent = currentTarget.closest('.bb-product-filter')
                 const categoryId = currentTarget.data('id')
 
@@ -564,7 +572,7 @@ class Ecommerce {
                     method: 'POST',
                     data: EcommerceApp.getAjaxData(data, $form),
                     dataType: 'json',
-                    beforeSend: () => currentTarget.addClass('btn-loading'),
+                    beforeSend: () => currentTarget.addClass('btn-loading').prop('disabled', true),
                     success: ({ error, message, data }) => {
                         if (error) {
                             EcommerceApp.showError(message)
@@ -608,7 +616,7 @@ class Ecommerce {
                         }
                     },
                     error: (error) => EcommerceApp.handleError(error),
-                    complete: () => currentTarget.removeClass('btn-loading'),
+                    complete: () => currentTarget.removeClass('btn-loading').prop('disabled', false),
                 })
             })
             .on('click', '[data-bb-toggle="remove-from-cart"]', (e) => {
@@ -853,9 +861,7 @@ class Ecommerce {
         if (!onlyQuickView) {
             const $gallery = $(document).find('.bb-product-gallery-images')
 
-            if (!$gallery.length) {
-                return
-            }
+            if ($gallery.length) {
 
             const $thumbnails = $(document).find('.bb-product-gallery-thumbnails')
 
@@ -964,90 +970,195 @@ class Ecommerce {
                 videoElement.play()
 
                 $button.closest('.bb-product-video').addClass('bb-product-video-playing')
+            })
 
-                videoElement.addEventListener('ended', () => {
-                    $button.closest('.bb-product-video').removeClass('bb-product-video-playing')
-                    videoElement.currentTime = 0;
-                    videoElement.pause();
-                });
+            // When the theme option enables native `controls`, playback can start or stop
+            // from the control bar or a click on the video itself - the overlay button
+            // state must follow the element's real play/pause events, not only the
+            // trigger button. Without `controls`, only the trigger button and the slider
+            // autoplay drive playback, so the overlay is left alone to keep the muted
+            // autoplay behavior. Media events do not bubble, so listen in the capture phase.
+            if (!window.bbProductVideoEventsBound) {
+                window.bbProductVideoEventsBound = true
 
-                videoElement.addEventListener('pause', () => {
-                    if (videoElement.ended) return;
-                    $button.closest('.bb-product-video').removeClass('bb-product-video-playing')
-                });
+                document.addEventListener(
+                    'play',
+                    (e) => {
+                        if (e.target.controls) {
+                            $(e.target).closest('.bb-product-video').addClass('bb-product-video-playing')
+                        }
+                    },
+                    true
+                )
+
+                document.addEventListener(
+                    'pause',
+                    (e) => {
+                        if (e.target.controls && !e.target.ended) {
+                            $(e.target).closest('.bb-product-video').removeClass('bb-product-video-playing')
+                        }
+                    },
+                    true
+                )
+
+                document.addEventListener(
+                    'ended',
+                    (e) => {
+                        const $wrapper = $(e.target).closest('.bb-product-video')
+
+                        if ($wrapper.length) {
+                            e.target.currentTime = 0
+                            e.target.pause()
+                            $wrapper.removeClass('bb-product-video-playing')
+                        }
+                    },
+                    true
+                )
+            }
+
+            // Lazy YouTube/Vimeo: swap the thumbnail facade for the real iframe on click.
+            // Keeps the heavy embed player (and its third-party JS) off the page until the
+            // visitor actually wants to watch, cutting initial load CPU/network significantly.
+            $(document).on('click', '.bb-product-video-facade', function (e) {
+                e.preventDefault()
+
+                const $facade = $(e.currentTarget)
+                const src = $facade.data('src')
+
+                if (!src) {
+                    return
+                }
+
+                const iframe = document.createElement('iframe')
+                iframe.setAttribute('src', src)
+                iframe.setAttribute('frameborder', '0')
+                iframe.setAttribute(
+                    'allow',
+                    'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                )
+                iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
+                iframe.setAttribute('allowfullscreen', '')
+                iframe.setAttribute('title', $facade.data('title') || '')
+                iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'
+
+                $facade.replaceWith(iframe)
             })
 
             if ($gallery.length) {
-                $gallery.map((index, item) => {
+                $gallery.each((index, item) => {
                     const $item = $(item)
+
                     if ($item.hasClass('slick-initialized')) {
                         $item.slick('unslick')
                     }
 
-                    $item.slick({
-                        slidesToShow: 1,
-                        slidesToScroll: 1,
-                        arrows: false,
-                        dots: false,
-                        infinite: false,
-                        fade: true,
-                        lazyLoad: 'ondemand',
-                        asNavFor: '.bb-product-gallery-thumbnails',
-                        rtl: this.isRtl(),
-                    })
+                    $item.removeClass('slick-initialized slick-slider slick-vertical slick-dotted')
+
+                    if (!$item.children().length) {
+                        return
+                    }
+
+                    try {
+                        $item.slick({
+                            slidesToShow: 1,
+                            slidesToScroll: 1,
+                            arrows: false,
+                            dots: false,
+                            infinite: false,
+                            fade: true,
+                            lazyLoad: 'ondemand',
+                            asNavFor: '.bb-product-gallery-thumbnails',
+                            rtl: this.isRtl(),
+                        })
+                    } catch (e) {
+                        console.warn('Slick gallery init failed', e)
+                    }
                 })
             }
 
             if ($thumbnails.length) {
-                let isVertical = $thumbnails.data('vertical') === 1
+                $thumbnails.each((index, item) => {
+                    const $item = $(item)
 
-                if (window.innerWidth < 768) {
-                    isVertical = false
-                }
+                    if ($item.hasClass('slick-initialized')) {
+                        $item.slick('unslick')
+                    }
 
-                $thumbnails.slick({
-                    slidesToShow: 6,
-                    slidesToScroll: 1,
-                    asNavFor: '.bb-product-gallery-images',
-                    focusOnSelect: true,
-                    infinite: false,
-                    rtl: this.isRtl() && ! isVertical,
-                    vertical: isVertical,
-                    verticalSwiping: isVertical,
-                    prevArrow:
-                        '<button class="slick-prev slick-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 6l-6 6l6 6" /></svg></button>',
-                    nextArrow:
-                        '<button class="slick-next slick-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 6l6 6l-6 6" /></svg></button>',
-                    responsive: [
-                        {
-                            breakpoint: 768,
-                            settings: {
-                                slidesToShow: 4,
-                            },
-                        },
-                    ],
+                    $item.removeClass('slick-initialized slick-slider slick-vertical slick-dotted')
+
+                    if (!$item.children().length) {
+                        return
+                    }
+
+                    let isVertical = $item.data('vertical') === 1
+
+                    if (window.innerWidth < 768) {
+                        isVertical = false
+                    }
+
+                    try {
+                        $item.slick({
+                            slidesToShow: 6,
+                            slidesToScroll: 1,
+                            asNavFor: '.bb-product-gallery-images',
+                            focusOnSelect: true,
+                            infinite: false,
+                            rtl: this.isRtl() && ! isVertical,
+                            vertical: isVertical,
+                            verticalSwiping: isVertical,
+                            prevArrow:
+                                '<button class="slick-prev slick-arrow" aria-label="Previous"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 6l-6 6l6 6" /></svg></button>',
+                            nextArrow:
+                                '<button class="slick-next slick-arrow" aria-label="Next"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 6l6 6l-6 6" /></svg></button>',
+                            responsive: [
+                                {
+                                    breakpoint: 768,
+                                    settings: {
+                                        slidesToShow: 4,
+                                    },
+                                },
+                            ],
+                        })
+                    } catch (e) {
+                        console.warn('Slick thumbnails init failed', e)
+                    }
                 })
             }
 
             this.initLightGallery($gallery)
 
             EcommerceApp.updateLazyLoad()
+            }
         }
 
         const $quickViewGallery = $(document).find('.bb-quick-view-gallery-images')
 
         if ($quickViewGallery.length) {
-            if ($quickViewGallery.hasClass('slick-initialized')) {
-                $quickViewGallery.slick('unslick')
-            }
+            $quickViewGallery.each((index, item) => {
+                const $item = $(item)
 
-            $quickViewGallery.slick({
-                slidesToShow: 1,
-                slidesToScroll: 1,
-                dots: false,
-                arrows: true,
-                adaptiveHeight: false,
-                rtl: this.isRtl(),
+                if ($item.hasClass('slick-initialized')) {
+                    $item.slick('unslick')
+                }
+
+                $item.removeClass('slick-initialized slick-slider slick-vertical slick-dotted')
+
+                if (!$item.children().length) {
+                    return
+                }
+
+                try {
+                    $item.slick({
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                        dots: false,
+                        arrows: true,
+                        adaptiveHeight: false,
+                        rtl: this.isRtl(),
+                    })
+                } catch (e) {
+                    console.warn('Slick quick-view init failed', e)
+                }
             })
         }
 
@@ -1145,7 +1256,9 @@ class Ecommerce {
             (price[1] ? currencies.decimal_separator + price[1] : '')
 
         if (currencies.show_symbol_or_title) {
-            price = currencies.is_prefix_symbol ? priceUnit + price : price + priceUnit
+            const space = priceUnit && currencies.space_between_price_and_currency ? ' ' : ''
+
+            price = currencies.is_prefix_symbol ? priceUnit + space + price : price + space + priceUnit
         }
 
         return price
@@ -1502,182 +1615,233 @@ class Ecommerce {
         })
     }
 
-    onChangeProductAttribute = () => {
-        if (! window.onBeforeChangeSwatches || typeof window.onBeforeChangeSwatches !== 'function') {
-            /**
-             * @param {Array<Number>} data
-             * @param {jQuery} element
-             */
-            window.onBeforeChangeSwatches = (data, element) => {
-                const form = element.closest('form')
+    /**
+     * Default handler invoked before a swatch change AJAX fires.
+     * Called unconditionally by change-product-swatches.js; user hook
+     * window.onBeforeChangeSwatches runs after this (additive).
+     *
+     * @param {Array<Number>} data
+     * @param {jQuery} element
+     */
+    defaultOnBeforeChangeSwatches = (data, element) => {
+        const form = element.closest('form')
 
-                if (data) {
-                    form.find('button[type="submit"]').prop('disabled', true)
-                    form.find('button[data-bb-toggle="add-to-cart"]').prop('disabled', true)
-                }
-            }
-        }
-
-        if (! window.onChangeSwatchesSuccess || typeof window.onChangeSwatchesSuccess !== 'function') {
-            /**
-             * @param {{data: Object, error: Boolean, message: String}} response
-             * @param {jQuery} element
-             */
-            window.onChangeSwatchesSuccess = (response, element) => {
-                if (!response) {
-                    return
-                }
-
-                const $product = $('.bb-product-detail')
-                const $form = element.closest('form')
-                const $button = $form.find('button[type="submit"]')
-                const $quantity = $form.find('input[name="qty"]')
-                const $available = $product.find('.number-items-available')
-                const $sku = $product.find('[data-bb-value="product-sku"]')
-
-                const { error, data } = response
-
-                if (error) {
-                    $button.prop('disabled', true)
-                    $quantity.prop('disabled', true)
-
-                    $form.find('input[name="id"]').val('')
-
-                    return
-                }
-
-                $button.prop('disabled', false)
-                $quantity.prop('disabled', false)
-                $form.find('input[name="id"]').val(data.id)
-
-                $product.find('[data-bb-value="product-price"]').text(data.display_sale_price)
-
-                if (data.sale_price !== data.price) {
-                    $product.find('[data-bb-value="product-original-price"]').text(data.display_price).show()
-                } else {
-                    $product.find('[data-bb-value="product-original-price"]').hide()
-                }
-
-                if (data.sku) {
-                    $sku.text(data.sku)
-                    $sku.closest('div').show()
-                } else {
-                    $sku.closest('div').hide()
-                }
-
-                if (data.error_message) {
-                    $button.prop('disabled', true)
-                    $quantity.prop('disabled', true)
-
-                    $available.html(`<span class='text-danger'>${data.error_message}</span>`).show()
-                } else if (data.warning_message) {
-                    $available.html(`<span class='text-warning fw-medium fs-6'>${data.warning_message}</span>`).show()
-                } else if (data.success_message) {
-                    $available.html(`<span class='text-success'>${data.success_message}</span>`).show()
-                } else {
-                    $available.html('').hide()
-                }
-
-                $product.find('.bb-product-attribute-swatch-item').removeClass('disabled')
-                $product.find('.bb-product-attribute-swatch-list select option').prop('disabled', false)
-
-                const unavailableAttributeIds = data.unavailable_attribute_ids || []
-
-                if (unavailableAttributeIds.length) {
-                    unavailableAttributeIds.map((id) => {
-                        let $swatchItem = $product.find(`.bb-product-attribute-swatch-item[data-id="${id}"]`)
-
-                        if ($swatchItem.length) {
-                            $swatchItem.addClass('disabled')
-                            $swatchItem.find('input').prop('checked', false)
-                        } else {
-                            $swatchItem = $product.find(`.bb-product-attribute-swatch-list select option[data-id="${id}"]`)
-
-                            if ($swatchItem.length) {
-                                $swatchItem.prop('disabled', true)
-                            }
-                        }
-                    })
-                }
-
-                let imageHtml = ''
-                let thumbHtml = ''
-
-                const siteConfig = window.siteConfig || {}
-
-                if (!data.image_with_sizes.origin.length) {
-                    data.image_with_sizes.origin.push(siteConfig.img_placeholder)
-                } else {
-                    data.image_with_sizes.origin.forEach(function(item) {
-                        imageHtml += `
-                    <a href='${item}'>
-                        <img src='${item}' alt='${data.name}'>
-                    </a>
-                `
-                    })
-                }
-
-                if (!data.image_with_sizes.thumb.length) {
-                    data.image_with_sizes.thumb.push(siteConfig.img_placeholder)
-                } else {
-                    data.image_with_sizes.thumb.forEach(function(item) {
-                        thumbHtml += `
-                    <div>
-                        <img src='${item}' alt='${data.name}'>
-                    </div>
-                `
-                    })
-                }
-
-                const $galleryImages = $product.find('.bb-product-gallery')
-                const $existingGalleryImages = $galleryImages.find('.bb-product-gallery-images')
-                const $existingThumbnails = $galleryImages.find('.bb-product-gallery-thumbnails')
-
-                const existingVideoElements = $existingGalleryImages.find('.bb-product-video').clone()
-                const existingVideoThumbnails = $existingThumbnails.find('.video-thumbnail').clone()
-
-                let finalImageHtml = imageHtml
-                let finalThumbHtml = thumbHtml
-
-                if (existingVideoElements.length > 0) {
-                    existingVideoElements.each(function() {
-                        finalImageHtml += $(this)[0].outerHTML
-                    })
-                }
-
-                if (existingVideoThumbnails.length > 0) {
-                    existingVideoThumbnails.each(function() {
-                        finalThumbHtml += `<div>${$(this)[0].outerHTML}</div>`
-                    })
-                }
-
-                const $thumbnails = $galleryImages.find('.bb-product-gallery-thumbnails')
-                if ($.fn.slick && $thumbnails.length && $thumbnails.hasClass('slick-initialized')) {
-                    $thumbnails.slick('unslick')
-                }
-                $thumbnails.html(finalThumbHtml)
-
-                const $quickViewGalleryImages = $(document).find('.bb-quick-view-gallery-images')
-
-                if ($quickViewGalleryImages.length) {
-                    if ($.fn.slick && $quickViewGalleryImages.hasClass('slick-initialized')) {
-                        $quickViewGalleryImages.slick('unslick')
-                    }
-                    $quickViewGalleryImages.html(finalImageHtml)
-                }
-
-                const $galleryImagesSlider = $galleryImages.find('.bb-product-gallery-images')
-                if ($.fn.slick && $galleryImagesSlider.length && $galleryImagesSlider.hasClass('slick-initialized')) {
-                    $galleryImagesSlider.slick('unslick')
-                }
-                $galleryImagesSlider.html(finalImageHtml)
-
-                if (typeof EcommerceApp !== 'undefined') {
-                    EcommerceApp.initProductGallery()
-                }
-            }
+        if (data) {
+            form.find('button[type="submit"]').prop('disabled', true)
+            form.find('button[data-bb-toggle="add-to-cart"]').prop('disabled', true)
         }
     }
+
+    /**
+     * Default handler invoked on successful swatch change AJAX.
+     * Updates price, SKU, stock, disabled attributes, and the main product
+     * gallery (images + thumbs + quick-view). Called unconditionally by
+     * change-product-swatches.js; user hook window.onChangeSwatchesSuccess
+     * runs after this (additive).
+     *
+     * @param {{data: Object, error: Boolean, message: String}} response
+     * @param {jQuery} element
+     */
+    defaultOnChangeSwatchesSuccess = (response, element) => {
+        if (!response) {
+            return
+        }
+
+        // Scope to the product container that triggered the change (main page or quick-view modal),
+        // so changing a variation inside the quick view does not rewrite the gallery of the page behind it.
+        let $product = element && element.length ? element.closest('.bb-product-detail') : $()
+        if (!$product.length) {
+            $product = $('.bb-product-detail').first()
+        }
+        const $form = element.closest('form')
+        const $button = $form.find('button[type="submit"]')
+        const $quantity = $form.find('input[name="qty"]')
+        const $available = $product.find('.number-items-available')
+        const $sku = $product.find('[data-bb-value="product-sku"]')
+
+        const { error, data } = response
+
+        if (error) {
+            $button.prop('disabled', true)
+            $quantity.prop('disabled', true)
+
+            $form.find('input[name="id"]').val('')
+
+            return
+        }
+
+        $button.prop('disabled', false)
+        $quantity.prop('disabled', false)
+        $form.find('input[name="id"]').val(data.id)
+
+        $product.find('[data-bb-value="product-price"]').text(data.display_sale_price)
+
+        if (data.sale_price !== data.price) {
+            $product.find('[data-bb-value="product-original-price"]').text(data.display_price).show()
+        } else {
+            $product.find('[data-bb-value="product-original-price"]').hide()
+        }
+
+        if (data.sku) {
+            $sku.text(data.sku)
+            $sku.closest('div').show()
+        } else {
+            $sku.closest('div').hide()
+        }
+
+        if (data.error_message) {
+            $button.prop('disabled', true)
+            $quantity.prop('disabled', true)
+
+            $available.html(`<span class='text-danger'>${data.error_message}</span>`).show()
+        } else if (data.warning_message) {
+            $available.html(`<span class='text-warning fw-medium fs-6'>${data.warning_message}</span>`).show()
+        } else if (data.success_message) {
+            $available.html(`<span class='text-success'>${data.success_message}</span>`).show()
+        } else {
+            $available.html('').hide()
+        }
+
+        $product.find('.bb-product-attribute-swatch-item').removeClass('disabled')
+        $product.find('.bb-product-attribute-swatch-list select option').prop('disabled', false)
+
+        const unavailableAttributeIds = data.unavailable_attribute_ids || []
+
+        if (unavailableAttributeIds.length) {
+            unavailableAttributeIds.map((id) => {
+                let $swatchItem = $product.find(`.bb-product-attribute-swatch-item[data-id="${id}"]`)
+
+                if ($swatchItem.length) {
+                    $swatchItem.addClass('disabled')
+                    $swatchItem.find('input').prop('checked', false)
+                } else {
+                    $swatchItem = $product.find(`.bb-product-attribute-swatch-list select option[data-id="${id}"]`)
+
+                    if ($swatchItem.length) {
+                        $swatchItem.prop('disabled', true)
+                    }
+                }
+            })
+        }
+
+        let imageHtml = ''
+        let thumbHtml = ''
+
+        const siteConfig = window.siteConfig || {}
+        const placeholder = $product.find('.bb-product-gallery').data('placeholder') || siteConfig.img_placeholder
+
+        // Guard against variations/combinations that return no image set (image_with_sizes can be null
+        // when images live only on variations and an incomplete/invalid attribute combo is selected).
+        if (!data.image_with_sizes) {
+            data.image_with_sizes = { origin: [], thumb: [] }
+        }
+
+        if (!data.image_with_sizes.origin.length && placeholder) {
+            data.image_with_sizes.origin.push(placeholder)
+        }
+
+        data.image_with_sizes.origin.forEach(function(item) {
+            imageHtml += `
+            <a href='${item}'>
+                <img src='${item}' alt='${data.name}'>
+            </a>
+        `
+        })
+
+        if (!data.image_with_sizes.thumb.length && placeholder) {
+            data.image_with_sizes.thumb.push(placeholder)
+        }
+
+        data.image_with_sizes.thumb.forEach(function(item) {
+            thumbHtml += `
+            <div>
+                <img src='${item}' alt='${data.name}'>
+            </div>
+        `
+        })
+
+        const $galleryImages = $product.find('.bb-product-gallery')
+        const $existingGalleryImages = $galleryImages.find('.bb-product-gallery-images')
+        const $existingThumbnails = $galleryImages.find('.bb-product-gallery-thumbnails')
+
+        const existingVideoElements = $existingGalleryImages.find('.bb-product-video').clone()
+        const existingVideoThumbnails = $existingThumbnails.find('.video-thumbnail').clone()
+
+        let videoImageHtml = ''
+        let videoThumbHtml = ''
+
+        if (existingVideoElements.length > 0) {
+            existingVideoElements.each(function() {
+                videoImageHtml += $(this)[0].outerHTML
+            })
+        }
+
+        if (existingVideoThumbnails.length > 0) {
+            existingVideoThumbnails.each(function() {
+                videoThumbHtml += `<div>${$(this)[0].outerHTML}</div>`
+            })
+        }
+
+        const videoPosition = $galleryImages.data('video-position') || 'bottom'
+        let finalImageHtml = ''
+        let finalThumbHtml = ''
+
+        const $tempImages = $('<div>').html(imageHtml)
+        const imageItems = $tempImages.children().toArray().map(el => el.outerHTML)
+        const $tempThumbs = $('<div>').html(thumbHtml)
+        const thumbItems = $tempThumbs.children().toArray().map(el => el.outerHTML)
+
+        if (videoPosition === 'top' || (videoPosition === 'after_first_image' && imageItems.length === 0)) {
+            finalImageHtml = videoImageHtml + imageHtml
+            finalThumbHtml = videoThumbHtml + thumbHtml
+        } else if (videoPosition === 'after_first_image' && imageItems.length > 0) {
+            finalImageHtml = imageItems[0] + videoImageHtml + imageItems.slice(1).join('')
+            finalThumbHtml = (thumbItems[0] || '') + videoThumbHtml + thumbItems.slice(1).join('')
+        } else if (videoPosition === 'before_last_image' && imageItems.length > 1) {
+            finalImageHtml = imageItems.slice(0, -1).join('') + videoImageHtml + imageItems.slice(-1).join('')
+            finalThumbHtml = thumbItems.slice(0, -1).join('') + videoThumbHtml + thumbItems.slice(-1).join('')
+        } else {
+            finalImageHtml = imageHtml + videoImageHtml
+            finalThumbHtml = thumbHtml + videoThumbHtml
+        }
+
+        const $thumbnails = $galleryImages.find('.bb-product-gallery-thumbnails')
+        if ($.fn.slick && $thumbnails.length && $thumbnails.hasClass('slick-initialized')) {
+            $thumbnails.slick('unslick')
+        }
+        $thumbnails.html(finalThumbHtml)
+
+        const $quickViewGalleryImages = $product.find('.bb-quick-view-gallery-images')
+
+        if ($quickViewGalleryImages.length) {
+            if ($.fn.slick && $quickViewGalleryImages.hasClass('slick-initialized')) {
+                $quickViewGalleryImages.slick('unslick')
+            }
+            $quickViewGalleryImages.html(finalImageHtml)
+        }
+
+        const $galleryImagesSlider = $galleryImages.find('.bb-product-gallery-images')
+        if ($.fn.slick && $galleryImagesSlider.length && $galleryImagesSlider.hasClass('slick-initialized')) {
+            $galleryImagesSlider.slick('unslick')
+        }
+        $galleryImagesSlider.html(finalImageHtml)
+
+        // When in quick-view modal, skip main-page gallery reinit to avoid
+        // rewriting the page behind the modal — only refresh the quick-view gallery.
+        if (!$quickViewGalleryImages.length) {
+            if (typeof EcommerceApp !== 'undefined') {
+                EcommerceApp.initProductGallery()
+            }
+        } else if (typeof EcommerceApp !== 'undefined') {
+            EcommerceApp.initProductGallery(true)
+        }
+    }
+
+    // Retained as a no-op for backward compatibility. Default swatch handlers
+    // are now class methods (defaultOnBeforeChangeSwatches / defaultOnChangeSwatchesSuccess)
+    // invoked directly by change-product-swatches.js. The window.* hooks remain
+    // available as additive user extension points.
+    onChangeProductAttribute = () => {}
 
     handleUpdateCart = (element) => {
         let form

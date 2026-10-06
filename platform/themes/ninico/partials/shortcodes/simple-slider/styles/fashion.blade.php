@@ -1,5 +1,5 @@
 <div class="slider-pagination-2 p-relative">
-    <div class="swiper-containers slidertwo-active">
+    <div class="swiper-containers slidertwo-active" data-autoplay-speed="{{ $autoplaySpeed }}">
         <div class="swiper-wrapper">
             @foreach($sliders as $slider)
                 <div class="swiper-slide slider-bg" @if ($shortcode->background_color) style="background-color: {{ $shortcode->background_color }} !important;" @endif>

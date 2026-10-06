@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Najprv vykonajte testovaciu platbu v testovacom režime',
     'check_status' => 'Skontrolujte, či sa stav objednávky aktualizuje na "Dokončené"',
     'verify_webhook' => 'Ak objednávky zostávajú "Neúplné", overte konfiguráciu webhooku',
-    'check_logs' => 'Skontrolujte protokoly platieb v storage/logs/payment-*.log na ladenie',
+    'check_logs' => 'Skontrolujte protokoly platieb v Payments > Payment Logs (admin panel) na ladenie',
     'troubleshooting' => 'Tipy na riešenie problémov:',
     'ssl_required' => 'Uistite sa, že vaša stránka má platný SSL certifikát (HTTPS)',
     'public_url' => 'Overte, že URL webhooku je verejne prístupná (nie localhost)',
     'firewall_check' => 'Skontrolujte, že žiadny firewall neblokuje požiadavky webhooku Razorpay',
     'live_mode' => 'Pre produkciu sa uistite, že Razorpay je v živom režime, nie v testovacom režime',
+    'minimum_amount_error' => 'Suma objednávky je nižšia ako minimálna suma povolená Razorpay (:amount). Pridajte prosím ďalšie položky do košíka.',
+    'minimum_amount_warning' => 'Razorpay vyžaduje minimálnu sumu objednávky :amount. Aktuálna celková suma vašej objednávky je pod týmto minimom.',
 ];

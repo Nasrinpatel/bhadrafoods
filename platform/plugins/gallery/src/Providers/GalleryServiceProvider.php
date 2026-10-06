@@ -3,6 +3,9 @@
 namespace Botble\Gallery\Providers;
 
 use Botble\Base\Facades\DashboardMenu;
+use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
+use Botble\Base\Forms\Fields\OnOffCheckboxField;
+use Botble\Base\Rules\OnOffRule;
 use Botble\Base\Supports\DashboardMenuItem;
 use Botble\Base\Supports\ServiceProvider;
 use Botble\Base\Traits\LoadAndPublishDataTrait;
@@ -15,6 +18,7 @@ use Botble\Gallery\Repositories\Interfaces\GalleryInterface;
 use Botble\Gallery\Repositories\Interfaces\GalleryMetaInterface;
 use Botble\LanguageAdvanced\Supports\LanguageAdvancedManager;
 use Botble\SeoHelper\Facades\SeoHelper;
+use Botble\Sitemap\Forms\Settings\SitemapSettingForm;
 use Botble\Slug\Facades\SlugHelper;
 use Botble\Theme\Events\ThemeRoutingBeforeEvent;
 use Botble\Theme\Facades\SiteMapManager;
@@ -54,6 +58,23 @@ class GalleryServiceProvider extends ServiceProvider
 
         $this->app['events']->listen(ThemeRoutingBeforeEvent::class, function (): void {
             SiteMapManager::registerKey(['galleries']);
+        });
+
+        SitemapSettingForm::beforeRendering(function (SitemapSettingForm $form): void {
+            $form->add(
+                'sitemap_galleries_enabled',
+                OnOffCheckboxField::class,
+                CheckboxFieldOption::make()
+                    ->label(trans('packages/sitemap::sitemap.settings.enable_galleries_sitemap'))
+                    ->value(setting('sitemap_galleries_enabled', true))
+                    ->helperText(trans('packages/sitemap::sitemap.settings.enable_galleries_sitemap_help'))
+            );
+        });
+
+        add_filter('sitemap_settings_validation_rules', function (array $rules): array {
+            $rules['sitemap_galleries_enabled'] = [new OnOffRule()];
+
+            return $rules;
         });
 
         SlugHelper::registering(function (): void {

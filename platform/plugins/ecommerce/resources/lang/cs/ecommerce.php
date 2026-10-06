@@ -121,6 +121,7 @@ return [
     'apply' => 'Použít',
     'available' => 'Dostupné',
     'back_to_return_requests' => 'Zpět na žádosti o vrácení',
+    'backorder_warning' => 'Upozornění: Tento produkt je na objednávku a dodání může trvat déle.',
     'choose_reason' => 'Vyberte důvod',
     'clear' => 'Vymazat',
     'clear_all_filters' => 'Vymazat všechny filtry',
@@ -191,4 +192,6 @@ return [
     'checkout' => 'Pokladna',
     'complete_order' => 'Dokončit objednávku',
     'agree_terms_and_policy_error' => 'Musíte souhlasit s obchodními podmínkami a zásadami ochrany osobních údajů.',
+    'optional' => 'Volitelné',
+
 ];

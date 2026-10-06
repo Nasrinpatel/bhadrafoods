@@ -88,37 +88,47 @@
 
                                 $cartId = $productVariation->is_variation ? $productVariation->id : $product->id;
                             @endphp
-                            <div class="ec-upsell-bundle-item @if($product->variations->isNotEmpty()) has-variations @endif" data-product-id="{{ $product->id }}" data-upsale-bundle-item>
+                            <div
+                                @class([
+                                    'ec-upsell-bundle-item',
+                                    'has-variations' => $product->variations->isNotEmpty(),
+                                    'is-locked' => ! $parentProductInCart,
+                                ])
+                                data-product-id="{{ $product->id }}"
+                                data-upsale-bundle-item
+                                @unless($parentProductInCart)
+                                    title="{{ trans('plugins/ecommerce::products.up_sale.unlock_discount', ['product' => $parentProduct->name]) }}"
+                                @endunless
+                            >
                                 <div class="ec-upsell-bundle-item-inner">
                                     <div class="ec-upsell-bundle-checkbox">
                                         <input
                                             type="checkbox"
                                             class="ec-upsell-checkbox"
                                             data-upsale-checkbox
+                                            aria-label="{{ __('Select :name', ['name' => $product->name]) }}"
                                             data-id="{{ $cartId }}"
                                             data-price="{{ $displayPrice }}"
                                             data-name="{{ $product->name }}"
                                             data-bundle-discount="{{ $bundleDiscountPrice }}"
                                             data-bundle-discount-type="{{ $isPercentDiscount ? 'percent' : 'fixed' }}"
-                                            @if($parentProductInCart) checked @endif
-                                            @disabled(!$parentProductInCart)
+                                            @checked($parentProductInCart)
+                                            @disabled(! $parentProductInCart)
                                         >
-                                        <span class="ec-upsell-checkmark"></span>
+                                        <span class="ec-upsell-checkmark">
+                                            @unless($parentProductInCart)
+                                                <svg class="ec-upsell-lock-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                </svg>
+                                            @endunless
+                                        </span>
                                     </div>
 
                                     <div class="ec-upsell-bundle-thumb">
                                         <a href="{{ $product->url }}">
                                             {{ RvMedia::image($productImage, $product->name, 'thumb', true) }}
                                         </a>
-                                        @if($bundleDiscountPrice > 0)
-                                            <span class="ec-upsell-discount-badge">
-                                                @if($isPercentDiscount)
-                                                    -{{ (int) $bundleDiscountPrice }}%
-                                                @else
-                                                    -{{ format_price($bundleDiscountPrice) }}
-                                                @endif
-                                            </span>
-                                        @endif
                                     </div>
 
                                     <div class="ec-upsell-bundle-info">
@@ -132,6 +142,17 @@
                                                 <span class="ec-upsell-price-original">{{ format_price($showOriginalPrice) }}</span>
                                             @endif
                                             <span class="ec-upsell-price-sale">{{ format_price($bundlePrice) }}</span>
+                                            @if($bundleDiscountPrice > 0)
+                                                {{-- Badge sits inline next to the sale price (was absolute on
+                                                     the thumb and clipped product images). --}}
+                                                <span class="ec-upsell-discount-badge ec-upsell-discount-badge--inline">
+                                                    @if($isPercentDiscount)
+                                                        -{{ (int) $bundleDiscountPrice }}%
+                                                    @else
+                                                        -{{ format_price($bundleDiscountPrice) }}
+                                                    @endif
+                                                </span>
+                                            @endif
                                         </div>
 
                                         @if($product->variations->isNotEmpty())
@@ -150,6 +171,7 @@
                                             type="button"
                                             class="ec-upsell-add-btn"
                                             data-upsale-add-btn
+                                            aria-label="{{ __('Add :name to cart', ['name' => $product->name]) }}"
                                             data-url="{{ route('public.cart.add-to-cart') }}"
                                             data-id="{{ $cartId }}"
                                             data-parent-product="{{ $parentProduct->slug }}"

@@ -15,6 +15,8 @@ use Botble\Media\Models\MediaFile;
 use Botble\Media\Models\MediaFolder;
 use Botble\Media\Services\ThumbnailService;
 use Botble\Media\Services\UploadsManager;
+use Botble\Media\Supports\ImageMemoryGuard;
+use Botble\Media\Supports\ResponsiveImageSrcset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -70,6 +72,8 @@ class RvMedia
             'global_actions' => route('media.global_actions'),
             'media_upload_from_editor' => route('media.files.upload.from.editor'),
             'download_url' => route('media.download_url'),
+            'folder_permissions' => route('media.folder_permissions.index', ['folder' => '__FOLDER_ID__']),
+            'folder_permissions_users' => route('media.folder_permissions.users'),
         ];
     }
 
@@ -482,7 +486,8 @@ class RvMedia
                 $rules = ['required'];
 
                 if (! $allowedToUploadAnyFileTypes) {
-                    $rules[] = ValidationFile::types(explode(',', $allowedMimeTypes));
+                    $allowedExtensions = explode(',', $allowedMimeTypes);
+                    $rules[] = ValidationFile::types($allowedExtensions);
                 }
 
                 $validator = Validator::make(['uploaded_file' => $fileUpload], [
@@ -491,11 +496,23 @@ class RvMedia
                     'uploaded_file.required' => trans('core/media::media.validation.uploaded_file_required'),
                     'uploaded_file.file' => trans('core/media::media.validation.uploaded_file_invalid_type'),
                     'uploaded_file.types' => trans('core/media::media.validation.uploaded_file_invalid_type'),
+                    'uploaded_file.uploaded' => $fileUpload instanceof UploadedFile
+                        ? $this->getUploadErrorMessage($fileUpload->getError())
+                        : trans('core/media::media.validation.upload_network_error'),
                 ], [
                     'uploaded_file' => trans('core/media::media.validation.attributes.uploaded_file'),
                 ]);
 
-                if ($validator->fails()) {
+                if (
+                    $validator->fails()
+                    && ! $allowedToUploadAnyFileTypes
+                    && in_array('avif', $allowedExtensions)
+                    && $this->isAvifFile($fileUpload->getRealPath())
+                ) {
+                    $validator = null;
+                }
+
+                if ($validator?->fails()) {
                     return [
                         'error' => true,
                         'message' => $validator->getMessageBag()->first(),
@@ -519,11 +536,11 @@ class RvMedia
 
             $maxSize = $this->getServerConfigMaxUploadFileSize();
 
-            if ($fileUpload->getSize() / 1024 > (int) $maxSize) {
+            if ($maxSize > 0 && $fileUpload->getSize() > $maxSize) {
                 return [
                     'error' => true,
                     'message' => trans('core/media::media.file_too_big_readable_size', [
-                        'size' => BaseHelper::humanFilesize($maxSize * 1024),
+                        'size' => BaseHelper::humanFilesize((int) $maxSize),
                     ]),
                 ];
             }
@@ -596,6 +613,18 @@ class RvMedia
             if ($this->canGenerateThumbnails($fileUpload->getMimeType())) {
                 $originalFilePath = $filePath;
 
+                $memoryGuard = ImageMemoryGuard::make($fileUpload->getRealPath());
+
+                if (! $memoryGuard->canProcess()) {
+                    return [
+                        'error' => true,
+                        'message' => trans('core/media::media.image_dimensions_too_large', [
+                            'dimensions' => $memoryGuard->getHumanReadableDimensions(),
+                            'megapixels' => $memoryGuard->getMegaPixels(),
+                        ]),
+                    ];
+                }
+
                 try {
                     $imageQuality = $this->getImageQuality();
                     $encoder = new AutoEncoder(quality: $imageQuality);
@@ -655,7 +684,7 @@ class RvMedia
             $file->alt = $file->name;
             $file->size = $data['size'] ?: $fileUpload->getSize();
 
-            $file->mime_type = $data['mime_type'];
+            $file->mime_type = $data['mime_type'] ?: 'application/octet-stream';
             $file->folder_id = $folderId;
             $file->user_id = Auth::guard()->check() ? Auth::guard()->id() : 0;
             $file->options = $request->input('options', []);
@@ -717,16 +746,10 @@ class RvMedia
 
     public function parseSize(int|string $size): float
     {
-        $unit = preg_replace('/[^bkmgtpezy]/i', '', $size); // Remove the non-unit characters from the size.
-        $size = (int) preg_replace('/[^0-9\.]/', '', $size); // Remove the non-numeric characters from the size.
-        if ($unit) {
-            return round($size * pow(1024, stripos('bkmgtpezy', $unit[0])));
-        }
-
-        return round($size);
+        return (float) ImageMemoryGuard::parseSize((string) $size);
     }
 
-    public function generateThumbnails(MediaFile $file, ?UploadedFile $fileUpload = null): bool
+    public function generateThumbnails(MediaFile $file, ?UploadedFile $fileUpload = null, bool $overrideExisting = false): bool
     {
         if (! $file->canGenerateThumbnails()) {
             return false;
@@ -734,6 +757,23 @@ class RvMedia
 
         if (! $this->isUsingCloud() && ! File::exists($this->getRealPath($file->url))) {
             return false;
+        }
+
+        // Decoding a very large image exhausts the memory limit, which is a fatal
+        // error that cannot be caught, so skip watermark & thumbnails for those files.
+        if (! $this->isUsingCloud()) {
+            $memoryGuard = ImageMemoryGuard::make($this->getRealPath($file->url));
+
+            if (! $memoryGuard->canProcess()) {
+                logger()->warning('Skipped generating thumbnails, image is too large to process.', [
+                    'file' => $file->url,
+                    'dimensions' => $memoryGuard->getHumanReadableDimensions(),
+                    'required_memory' => $memoryGuard->getRequiredMemory(),
+                    'memory_limit' => ini_get('memory_limit'),
+                ]);
+
+                return false;
+            }
         }
 
         $folderIds = json_decode(setting('media_folders_can_add_watermark', ''), true);
@@ -769,7 +809,7 @@ class RvMedia
             $dirName = File::dirname($file->url);
             $thumbnailPath = ($dirName === '.' || ! $dirName) ? $thumbnailFileName : $dirName . '/' . $thumbnailFileName;
 
-            if (! $this->isUsingCloud() && Storage::exists($thumbnailPath)) {
+            if (! $overrideExisting && ! $this->isUsingCloud() && Storage::exists($thumbnailPath)) {
                 continue;
             }
 
@@ -821,6 +861,10 @@ class RvMedia
                 $imageSource = $this->imageManager()->read($imageContent);
             } else {
                 if (! File::exists($watermarkPath)) {
+                    return false;
+                }
+
+                if (! ImageMemoryGuard::make($this->getRealPath($image))->canProcess()) {
                     return false;
                 }
 
@@ -902,6 +946,64 @@ class RvMedia
     public function isImage(string $mimeType): bool
     {
         return Str::startsWith($mimeType, 'image/');
+    }
+
+    public function isExecutableFileExtension(string $extension): bool
+    {
+        $dangerousExtensions = [
+            'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar',
+            'asp', 'aspx', 'jsp', 'jspx',
+            'cgi', 'pl', 'py', 'rb',
+            'sh', 'bash', 'zsh', 'bat', 'cmd', 'com', 'ps1',
+            'exe', 'dll', 'msi',
+            'htaccess', 'htpasswd',
+        ];
+
+        return in_array(strtolower($extension), $dangerousExtensions);
+    }
+
+    public function getUploadErrorMessage(int $errorCode): string
+    {
+        return match ($errorCode) {
+            UPLOAD_ERR_INI_SIZE => trans('core/media::media.validation.upload_err_ini_size', [
+                'size' => BaseHelper::humanFilesize((int) $this->getServerConfigMaxUploadFileSize()),
+            ]),
+            UPLOAD_ERR_FORM_SIZE => trans('core/media::media.validation.upload_err_form_size'),
+            UPLOAD_ERR_PARTIAL => trans('core/media::media.validation.upload_err_partial'),
+            UPLOAD_ERR_NO_FILE => trans('core/media::media.validation.uploaded_file_required'),
+            UPLOAD_ERR_NO_TMP_DIR => trans('core/media::media.validation.upload_err_no_tmp_dir'),
+            UPLOAD_ERR_CANT_WRITE => trans('core/media::media.validation.upload_err_cant_write'),
+            UPLOAD_ERR_EXTENSION => trans('core/media::media.validation.upload_err_extension'),
+            default => trans('core/media::media.validation.upload_err_unknown', ['code' => $errorCode]),
+        };
+    }
+
+    public function isAvifFile(string $path): bool
+    {
+        if (! is_file($path)) {
+            return false;
+        }
+
+        $handle = @fopen($path, 'rb');
+
+        if (! $handle) {
+            return false;
+        }
+
+        $header = @fread($handle, 12);
+        fclose($handle);
+
+        if ($header === false) {
+            return false;
+        }
+
+        if (strlen($header) < 12) {
+            return false;
+        }
+
+        // AVIF files have "ftyp" at bytes 4-7 and "avif" or "avis" at bytes 8-11
+        return substr($header, 4, 4) === 'ftyp'
+            && in_array(substr($header, 8, 4), ['avif', 'avis', 'mif1']);
     }
 
     public function isUsingCloud(): bool
@@ -1076,6 +1178,11 @@ class RvMedia
                 'filesystems.disks.public.root' => $this->getUploadPath(),
                 'filesystems.disks.public.url' => $this->getUploadURL(),
             ]);
+
+            // The public disk may already be resolved and cached with the default
+            // /storage path before this runs. Forget it so it is rebuilt with the
+            // customized upload path the next time it is used.
+            Storage::forgetDisk('public');
         }, 124);
 
         return $this;
@@ -1136,7 +1243,7 @@ class RvMedia
                 if (! $mimeType) {
                     $mimeTypeDetection = new MimeTypes();
 
-                    return Arr::first($mimeTypeDetection->getMimeTypes($fileExtension));
+                    return Arr::first($mimeTypeDetection->getMimeTypes($fileExtension)) ?: 'application/octet-stream';
                 }
 
                 return $mimeType;
@@ -1161,7 +1268,7 @@ class RvMedia
 
             $mimeTypeDetection = new MimeTypes();
 
-            return Arr::first($mimeTypeDetection->getMimeTypes($fileExtension));
+            return Arr::first($mimeTypeDetection->getMimeTypes($fileExtension)) ?: 'application/octet-stream';
         } catch (Throwable $exception) {
             logger()->error('Failed to get MIME type: ' . $exception->getMessage(), [
                 'url' => $url,
@@ -1182,7 +1289,19 @@ class RvMedia
             return false;
         }
 
-        return $this->isImage($mimeType) && ! in_array($mimeType, ['image/svg+xml', 'image/x-icon']);
+        if (! $this->isImage($mimeType) || in_array($mimeType, ['image/svg+xml', 'image/x-icon'])) {
+            return false;
+        }
+
+        if ($mimeType === 'image/avif') {
+            if ($this->getImageProcessingLibrary() === 'imagick' && extension_loaded('imagick')) {
+                return ! empty(\Imagick::queryFormats('AVIF'));
+            }
+
+            return function_exists('imageavif');
+        }
+
+        return true;
     }
 
     public function createFolder(string $folderSlug, int|string|null $parentId = 0, bool $force = false): int|string
@@ -1450,6 +1569,8 @@ class RvMedia
 
         $defaultImageUrl = $this->getDefaultImage(false, $size);
 
+        $originalUrl = $url;
+
         if (! $url) {
             $url = $defaultImageUrl;
         }
@@ -1464,6 +1585,26 @@ class RvMedia
             'data-bb-lazy' => $lazy ? 'true' : 'false',
             ...$attributes,
         ];
+
+        // Auto-inject srcset/sizes from registered RvMedia sizes with the same aspect ratio
+        // (WordPress-style responsive images). Respect author-provided srcset/sizes.
+        if (
+            $size
+            && $originalUrl
+            && ! isset($attributes['srcset'])
+            && ! Str::startsWith($url, ['data:image/'])
+        ) {
+            $srcset = ResponsiveImageSrcset::build($originalUrl, $size);
+            if ($srcset) {
+                $attributes['srcset'] = $srcset;
+                if (! isset($attributes['sizes'])) {
+                    $sizes = ResponsiveImageSrcset::sizes($size);
+                    if ($sizes) {
+                        $attributes['sizes'] = $sizes;
+                    }
+                }
+            }
+        }
 
         if (Str::startsWith($url, ['data:image/png;base64,', 'data:image/jpeg;base64,', 'data:image/jpg;base64,'])) {
             return Html::tag('img', '', [...$attributes, 'src' => $url, 'alt' => $alt]);
@@ -1524,7 +1665,10 @@ class RvMedia
                     $file->url
                 );
 
-                $this->generateThumbnails($file);
+                try {
+                    $this->generateThumbnails($file);
+                } catch (Throwable) {
+                }
             }
         }
 

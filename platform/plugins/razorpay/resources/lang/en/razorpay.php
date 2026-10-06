@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Make a test payment in Test Mode first',
     'check_status' => 'Check if the order status updates to "Completed"',
     'verify_webhook' => 'If orders remain "Incomplete", verify your webhook configuration',
-    'check_logs' => 'Check payment logs in storage/logs/payment-*.log for debugging',
+    'check_logs' => 'Check payment logs in Payments > Payment Logs (admin panel) for debugging',
     'troubleshooting' => 'Troubleshooting Tips:',
     'ssl_required' => 'Ensure your site has a valid SSL certificate (HTTPS)',
     'public_url' => 'Verify webhook URL is publicly accessible (not localhost)',
     'firewall_check' => 'Check that no firewall blocks Razorpay webhook requests',
     'live_mode' => 'For production, ensure Razorpay is in Live Mode, not Test Mode',
+    'minimum_amount_error' => 'Order amount is less than the minimum amount allowed by Razorpay (:amount). Please add more items to your cart.',
+    'minimum_amount_warning' => 'Razorpay requires a minimum order amount of :amount. Your current order total is below this minimum.',
 ];

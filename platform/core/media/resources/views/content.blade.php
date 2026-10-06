@@ -40,7 +40,7 @@
                             :action="true"
                             class="js-rv-media-change-filter"
                             data-type="filter"
-                            data-value="video"
+                            data-value="image"
                         >
                             <x-core::icon name="ti ti-photo" />
                             {{ trans('core/media::media.image') }}
@@ -52,7 +52,7 @@
                             :action="true"
                             class="js-rv-media-change-filter"
                             data-type="filter"
-                            data-value="document"
+                            data-value="video"
                         >
                             <x-core::icon name="ti ti-video" />
                             {{ trans('core/media::media.video') }}
@@ -63,7 +63,7 @@
                         :action="true"
                         class="js-rv-media-change-filter"
                         data-type="filter"
-                        data-value="image"
+                        data-value="document"
                     >
                         <x-core::icon name="ti ti-file" />
                         {{ trans('core/media::media.document') }}
@@ -385,6 +385,32 @@
                     </div>
                 </div>
             </main>
+            <div class="rv-media-status-bar d-none">
+                <span class="rv-media-status-bar-item js-status-folders d-none">
+                    <x-core::icon name="ti ti-folder" />
+                    <span class="js-status-folders-text"></span>
+                </span>
+                <span class="rv-media-status-bar-item js-status-files d-none">
+                    <x-core::icon name="ti ti-file" />
+                    <span class="js-status-files-text"></span>
+                </span>
+                <span class="rv-media-status-bar-item js-status-size d-none">
+                    <x-core::icon name="ti ti-database" />
+                    <span class="js-status-size-text"></span>
+                </span>
+                <span class="rv-media-status-bar-item js-status-images d-none">
+                    <x-core::icon name="ti ti-photo" />
+                    <span class="js-status-images-text"></span>
+                </span>
+                <span class="rv-media-status-bar-item js-status-videos d-none">
+                    <x-core::icon name="ti ti-video" />
+                    <span class="js-status-videos-text"></span>
+                </span>
+                <span class="rv-media-status-bar-item js-status-documents d-none">
+                    <x-core::icon name="ti ti-file-text" />
+                    <span class="js-status-documents-text"></span>
+                </span>
+            </div>
             <footer class="d-none rv-media-footer">
                 <x-core::button
                     type="button"
@@ -398,8 +424,11 @@
         <div class="rv-upload-progress hide-the-pane position-fixed bottom-0 end-0 ">
             <x-core::card>
                 <x-core::card.header class="position-relative">
-                    <h3 class="panel-title mb-0">{{ trans('core/media::media.upload_progress') }}</h3>
-                    <x-core::button class="close-pane position-absolute top-50 bg-primary text-white text-center p-0">
+                    <h3 class="panel-title mb-0 d-flex align-items-center gap-2">
+                        {{ trans('core/media::media.upload_progress') }}
+                        <span class="js-upload-summary fs-5 fw-normal"></span>
+                    </h3>
+                    <x-core::button class="close-pane btn-ghost-secondary btn-icon position-absolute top-50 p-0">
                         <x-core::icon
                             class="m-0"
                             name="ti ti-x"
@@ -943,17 +972,32 @@
 <x-core::custom-template id="rv_media_upload_progress_item">
     <x-core::table.body.row>
         <x-core::table.body.cell>
-            <span class="file-name">__fileName__</span>
-            <div class="file-error"></div>
+            <div class="rv-upload-file">
+                <span class="rv-upload-file-icon js-file-icon"></span>
+                <span class="rv-upload-file-body">
+                    <span class="file-name"></span>
+                    <span class="file-error small text-danger"></span>
+                </span>
+            </div>
         </x-core::table.body.cell>
-        <x-core::table.body.cell>
+        <x-core::table.body.cell class="rv-upload-size align-middle text-end text-secondary">
             <span class="file-size">__fileSize__</span>
         </x-core::table.body.cell>
-        <x-core::table.body.cell>
-            <span class="file-status text-__status__">__message__</span>
+        <x-core::table.body.cell class="rv-upload-status-cell align-middle text-end">
+            <span class="file-status"></span>
             <span class="progress-percent"></span>
         </x-core::table.body.cell>
     </x-core::table.body.row>
+</x-core::custom-template>
+
+{{-- Status glyphs cloned into each upload row by UploadService; rendered here so
+     they are inline SVGs that inherit the current colour. --}}
+<x-core::custom-template id="rv_media_upload_icons">
+    <span class="js-icon-uploading"><x-core::icon name="ti ti-loader-2" /></span>
+    <span class="js-icon-uploaded text-success"><x-core::icon name="ti ti-circle-check" /></span>
+    <span class="js-icon-error text-danger"><x-core::icon name="ti ti-alert-circle" /></span>
+    <span class="js-icon-canceled text-secondary"><x-core::icon name="ti ti-ban" /></span>
+    <span class="js-icon-retry"><x-core::icon name="ti ti-refresh" /></span>
 </x-core::custom-template>
 
 <x-core::custom-template id="rv_media_breadcrumb_item">
@@ -1020,6 +1064,48 @@
         style="display: block;max-width: 100%"
     >
 </x-core::custom-template>
+
+<x-core::modal
+    id="modal_folder_permissions"
+    :title="trans('core/media::media.manage_access')"
+    size="md"
+>
+    <div class="folder-permissions-container">
+        <div class="mb-3">
+            <label class="form-label">{{ trans('core/media::media.add_user_access') }}</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <select class="form-select" id="folder-permission-user-select">
+                        <option value="">{{ trans('core/media::media.select_user') }}</option>
+                    </select>
+                </div>
+                <div class="col-4">
+                    <select class="form-select" id="folder-permission-level-select">
+                        <option value="view">{{ trans('core/media::media.permission_view') }}</option>
+                        <option value="upload">{{ trans('core/media::media.permission_upload') }}</option>
+                        <option value="manage">{{ trans('core/media::media.permission_manage') }}</option>
+                    </select>
+                </div>
+                <div class="col-2">
+                    <x-core::button
+                        type="button"
+                        color="primary"
+                        id="btn-grant-folder-permission"
+                    >
+                        {{ trans('core/media::media.grant') }}
+                    </x-core::button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-0">
+            <label class="form-label">{{ trans('core/media::media.current_permissions') }}</label>
+            <div id="folder-permissions-list" class="list-group list-group-flush">
+                <div class="text-muted text-center py-3">{{ trans('core/media::media.loading') }}...</div>
+            </div>
+        </div>
+    </div>
+</x-core::modal>
 
 <div
     class="media-download-popup"

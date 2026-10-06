@@ -3,6 +3,8 @@
 @section('title', trans('plugins/ecommerce::customer-dashboard.address_books'))
 
 @section('content')
+    {!! apply_filters('ecommerce_customer_addresses_before_content', '') !!}
+
     <div class="bb-customer-content-wrapper">
         @if($addresses->isNotEmpty())
             <div class="dashboard-address">
@@ -51,4 +53,6 @@
             ])
         @endif
     </div>
+
+    {!! apply_filters('ecommerce_customer_addresses_after_content', '') !!}
 @endsection

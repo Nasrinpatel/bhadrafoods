@@ -1,6 +1,6 @@
 <link
     rel="stylesheet"
-    href="{{ asset('vendor/core/core/base/libraries/intl-tel-input/css/intlTelInput.min.css') }}"
+    href="{{ asset('vendor/core/core/base/libraries/intl-tel-input/css/intlTelInput-v2.min.css') }}"
 >
 
 <style>
@@ -107,7 +107,6 @@
         padding-right: 6px;
     }
 
-    /* RTL fixes for intl-tel-input dropdown */
     body[dir="rtl"] .iti__country-list {
         text-align: left;
     }
@@ -144,12 +143,10 @@
         }
     }
 
-    /* Dropdown container when appended to body */
     .iti--container {
         z-index: 9999;
     }
 
-    /* Dark mode support */
     [data-bs-theme="dark"] .iti__country-list,
     [data-bs-theme="dark"] .iti--container .iti__country-list,
     .dark-mode .iti__country-list,
@@ -310,6 +307,14 @@
                     config.onlyCountries = availableCountries;
                 }
 
+                /*
+                 * With a single allowed country there is nothing to pick, so keep the
+                 * flag from opening a one-item dropdown the customer can trip over.
+                 */
+                if (availableCountries && availableCountries.length === 1) {
+                    config.allowDropdown = false;
+                }
+
                 if (hasCountryCodeSelection) {
                     config.separateDialCode = true;
                     config.nationalMode = false;
@@ -324,6 +329,51 @@
                 if (itiContainer) {
                     const flagContainer = itiContainer.querySelector('.iti__flag-container');
                     if (flagContainer) {
+                        let suppressCompatibilityClick = false;
+
+                        flagContainer.addEventListener('pointerdown', function(e) {
+                            if (e.pointerType === 'mouse') {
+                                return;
+                            }
+                            const selectedFlag = itiContainer.querySelector('.iti__selected-flag');
+                            if (!selectedFlag) {
+                                return;
+                            }
+                            if (e.cancelable) {
+                                e.preventDefault();
+                            }
+                            e.stopPropagation();
+                            /*
+                             * Only take the gesture over when this tap is going to OPEN the list.
+                             * When it is already open, the browser's own click must be left alone
+                             * so the tap still closes it.
+                             */
+                            suppressCompatibilityClick = selectedFlag.getAttribute('aria-expanded') !== 'true';
+                            setTimeout(function() {
+                                if (selectedFlag.getAttribute('aria-expanded') === 'true') {
+                                    return;
+                                }
+                                selectedFlag.click();
+                            }, 50);
+                        }, { passive: false });
+
+                        /*
+                         * The handler above already opens the list itself, so the click the browser
+                         * synthesises after touchend would arrive as a SECOND toggle and shut it
+                         * again - the list appeared only while the finger stayed down. Suppressing
+                         * that click requires preventDefault on touchend; doing it on pointerdown
+                         * (as above) does not stop it.
+                         */
+                        flagContainer.addEventListener('touchend', function(e) {
+                            if (!suppressCompatibilityClick) {
+                                return;
+                            }
+                            suppressCompatibilityClick = false;
+                            if (e.cancelable) {
+                                e.preventDefault();
+                            }
+                        }, { passive: false });
+
                         flagContainer.addEventListener('click', function() {
                             setTimeout(function() {
                                 const countryList = document.querySelector('.iti--container .iti__country-list') ||
@@ -396,8 +446,13 @@
                 }
 
                 if (hasCountryCodeSelection) {
-                    const hiddenFieldId = element.id + '-full';
-                    const hiddenField = document.getElementById(hiddenFieldId);
+                    const fieldScope = element.form || element.closest('form') || document;
+                    const hiddenField =
+                        Array.from(fieldScope.querySelectorAll('.js-phone-number-full'))
+                            .find(function(field) {
+                                return field.dataset.phoneField === element.name;
+                            }) ||
+                        document.getElementById(element.id + '-full');
 
                     if (hiddenField) {
                         const updateHiddenField = function() {
@@ -427,27 +482,108 @@
                             }
                         };
 
+                        const toInternationalValue = function(rawValue) {
+                            if (rawValue.startsWith('00')) {
+                                return '+' + rawValue.slice(2);
+                            }
+
+                            if (rawValue.startsWith('+')) {
+                                return rawValue;
+                            }
+
+                            const digits = rawValue.replace(/\D/g, '');
+                            const countryData = iti.getSelectedCountryData();
+                            const dialCode = countryData && countryData.dialCode ? countryData.dialCode : '';
+
+                            if (! dialCode || ! countryData.iso2 || ! window.intlTelInputUtils) {
+                                return '';
+                            }
+
+                            if (digits.indexOf(dialCode) !== 0 || digits.length <= dialCode.length) {
+                                return '';
+                            }
+
+                            const asInternational = '+' + digits;
+                            const withoutDialCode = digits.slice(dialCode.length);
+
+                            if (
+                                window.intlTelInputUtils.isValidNumber(asInternational) &&
+                                window.intlTelInputUtils.isValidNumber(withoutDialCode, countryData.iso2)
+                            ) {
+                                return asInternational;
+                            }
+
+                            return '';
+                        };
+
+                        /*
+                         * A value that already carries the dial code (browser autofill,
+                         * a paste, or a number typed as +8801...) has to be handed to
+                         * setNumber, which re-derives the country and moves the dial
+                         * code back into the separate selector instead of dropping it.
+                         */
+                        const applyInternationalValue = function() {
+                            const rawValue = (element.value || '').trim();
+
+                            if (! rawValue) {
+                                return;
+                            }
+
+                            const fullNumber = toInternationalValue(rawValue);
+
+                            if (! fullNumber) {
+                                return;
+                            }
+
+                            iti.setNumber(fullNumber);
+                        };
+
                         const initialValue = hiddenField.value || element.value;
 
                         if (initialValue) {
                             if (initialValue.startsWith('+')) {
                                 iti.setNumber(initialValue);
-                            } else if (initialValue) {
+                            } else {
                                 element.value = initialValue;
                             }
 
-                            setTimeout(function() {
+                            const normalizeInitialValue = function() {
+                                applyInternationalValue();
                                 updateHiddenField();
-                            }, 100);
+                            };
+
+                            if (iti.promise && typeof iti.promise.then === 'function') {
+                                iti.promise.then(normalizeInitialValue, normalizeInitialValue);
+                            }
+
+                            setTimeout(normalizeInitialValue, 100);
                         }
 
+                        /*
+                         * Bulk insertions carry the dial code; a plain keystroke does not.
+                         * Re-parsing on every keystroke would fight the caret while typing.
+                         */
+                        const bulkInputTypes = ['insertFromPaste', 'insertFromDrop', 'insertReplacementText'];
+
                         element.addEventListener('countrychange', updateHiddenField);
-                        element.addEventListener('input', updateHiddenField);
-                        element.addEventListener('blur', updateHiddenField);
+
+                        element.addEventListener('input', function(event) {
+                            if (! event.inputType || bulkInputTypes.indexOf(event.inputType) !== -1) {
+                                applyInternationalValue();
+                            }
+
+                            updateHiddenField();
+                        });
+
+                        element.addEventListener('blur', function() {
+                            applyInternationalValue();
+                            updateHiddenField();
+                        });
 
                         const form = element.closest('form');
                         if (form) {
                             form.addEventListener('submit', function() {
+                                applyInternationalValue();
                                 updateHiddenField();
                             });
                         }

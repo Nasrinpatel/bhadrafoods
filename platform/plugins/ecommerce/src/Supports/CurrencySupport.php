@@ -13,6 +13,10 @@ use Throwable;
 
 class CurrencySupport
 {
+    protected const CURRENCY_COOKIE_NAME = 'currency_code';
+
+    protected const CURRENCY_COOKIE_LIFETIME_MINUTES = 60 * 24 * 365;
+
     protected ?Currency $currency = null;
 
     protected ?Currency $defaultCurrency = null;
@@ -25,11 +29,7 @@ class CurrencySupport
     {
         $this->currency = $currency;
 
-        if (session('currency') == $currency->title) {
-            return;
-        }
-
-        session(['currency' => $currency->title]);
+        $this->persistSelectedCurrencyCode($currency->title);
     }
 
     public function forceCurrentCurrency(Currency $currency): void
@@ -63,9 +63,15 @@ class CurrencySupport
             $this->currencies();
         }
 
-        if (session('currency')) {
-            $currency = $this->currencies->where('title', session('currency'))->first();
-        } elseif ((int) get_ecommerce_setting('enable_auto_detect_visitor_currency', 0) == 1) {
+        $selectedCurrencyCode = $this->getSelectedCurrencyCode();
+
+        if ($selectedCurrencyCode) {
+            $currency = $this->currencies->where('title', $selectedCurrencyCode)->first();
+
+            if ($currency && session('currency') !== $selectedCurrencyCode) {
+                session(['currency' => $selectedCurrencyCode]);
+            }
+        } elseif ((int) get_ecommerce_setting('enable_auto_detect_visitor_currency', 0) === 1) {
             $currency = $this->currencies->where('title', $this->detectedCurrencyCode())->first();
         }
 
@@ -622,5 +628,36 @@ class CurrencySupport
         }
 
         return $currency;
+    }
+
+    /**
+     * Resolve the visitor's selected currency code, preferring the session
+     * value and falling back to a long-lived cookie. The cookie keeps the
+     * choice durable across requests when the configured session driver is
+     * unreliable (e.g., file storage on containerized shared hosting where
+     * session files may not persist between requests).
+     */
+    protected function getSelectedCurrencyCode(): ?string
+    {
+        $code = session('currency') ?: request()->cookie(self::CURRENCY_COOKIE_NAME);
+
+        return is_string($code) && $code !== '' ? $code : null;
+    }
+
+    /**
+     * Persist the selected currency code to both the session (per-request
+     * fast path) and a long-lived cookie (durable fallback). The cookie is
+     * always refreshed so its expiration window keeps extending while the
+     * visitor actively uses the site.
+     */
+    protected function persistSelectedCurrencyCode(string $code): void
+    {
+        cookie()->queue(self::CURRENCY_COOKIE_NAME, $code, self::CURRENCY_COOKIE_LIFETIME_MINUTES);
+
+        if (session('currency') === $code) {
+            return;
+        }
+
+        session(['currency' => $code]);
     }
 }

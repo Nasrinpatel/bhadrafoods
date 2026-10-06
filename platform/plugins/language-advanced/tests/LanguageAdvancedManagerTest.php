@@ -50,7 +50,6 @@ class LanguageAdvancedManagerTest extends TestCase
     {
         $columns = LanguageAdvancedManager::getTranslatableColumns(Page::class);
 
-        $this->assertIsArray($columns);
         $this->assertContains('name', $columns);
         $this->assertContains('description', $columns);
         $this->assertContains('content', $columns);
@@ -60,7 +59,6 @@ class LanguageAdvancedManagerTest extends TestCase
     {
         $columns = LanguageAdvancedManager::getTranslatableColumns(User::class);
 
-        $this->assertIsArray($columns);
         $this->assertEmpty($columns);
     }
 
@@ -68,7 +66,6 @@ class LanguageAdvancedManagerTest extends TestCase
     {
         $columns = LanguageAdvancedManager::getTranslatableColumns(null);
 
-        $this->assertIsArray($columns);
         $this->assertEmpty($columns);
     }
 
@@ -120,7 +117,6 @@ class LanguageAdvancedManagerTest extends TestCase
     {
         $models = LanguageAdvancedManager::supportedModels();
 
-        $this->assertIsArray($models);
         $this->assertContains(Page::class, $models);
     }
 
@@ -237,6 +233,73 @@ class LanguageAdvancedManagerTest extends TestCase
         $result = LanguageAdvancedManager::save($this->user, $request);
 
         $this->assertFalse($result);
+    }
+
+    public function testIsValidLanguageCodeAcceptsActiveCodes(): void
+    {
+        $this->assertTrue(LanguageAdvancedManager::isValidLanguageCode($this->languages[1]->lang_code));
+        $this->assertTrue(LanguageAdvancedManager::isValidLanguageCode($this->languages[0]->lang_code));
+    }
+
+    public function testIsValidLanguageCodeRejectsInvalidValues(): void
+    {
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode(null));
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode(''));
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode('zz_ZZ'));
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode('if(now()=sysdate(),sleep(15),0)'));
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode(['vi']));
+        $this->assertFalse(LanguageAdvancedManager::isValidLanguageCode(123));
+    }
+
+    public function testSaveRejectsInjectionStyleLanguage(): void
+    {
+        $this->actingAs($this->user);
+
+        $page = Page::query()->create([
+            'name' => 'English Page',
+            'user_id' => $this->user->getKey(),
+        ]);
+
+        $payload = 'if(now()=sysdate(),sleep(15),0)';
+
+        $request = Request::create('/test', 'POST', [
+            'language' => $payload,
+            'name' => 'Injected',
+        ]);
+
+        $result = LanguageAdvancedManager::save($page, $request);
+
+        $this->assertFalse($result);
+
+        // Ensure nothing was written under the truncated/injected lang_code.
+        $this->assertEquals(
+            0,
+            DB::table('pages_translations')
+                ->where('pages_id', $page->getKey())
+                ->where('lang_code', substr($payload, 0, 20))
+                ->count()
+        );
+
+        $page->delete();
+    }
+
+    public function testSaveRejectsXLanguageHeaderInjection(): void
+    {
+        $this->actingAs($this->user);
+
+        $page = Page::query()->create([
+            'name' => 'English Page',
+            'user_id' => $this->user->getKey(),
+        ]);
+
+        $request = Request::create('/test', 'POST', ['name' => 'Injected']);
+        $request->headers->set('X-LANGUAGE', "' OR 1=1 --");
+
+        $result = LanguageAdvancedManager::save($page, $request);
+
+        $this->assertFalse($result);
+
+        $page->delete();
     }
 
     public function testDeleteTranslations(): void

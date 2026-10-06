@@ -27,11 +27,30 @@ class LocalizationRedirectFilter extends LaravelLocalizationMiddlewareBase
             $hideDefaultLocale = Language::hideDefaultLocaleInURL();
             $redirection = false;
 
+            // Per-locale sitemap URLs must stay reachable so search engines can
+            // crawl each locale. Theme registers two sitemap routes:
+            //   sitemap.xml                → main entry / multi-locale index
+            //   {key}.{extension}          → sub-sitemaps (pages.xml, posts.xml…)
+            // Both end up at /{locale}/<file>.xml and must NOT be redirected to
+            // the locale-less variant, otherwise the default-locale sitemap
+            // would 302 back to /sitemap.xml (the index), causing a loop.
+            $isLocalizedSitemap = isset($params[1])
+                && count($params) === 2
+                && preg_match('/^[\w-]+\.(xml|xml-mobile|txt|ror-rss|ror-rdf|google-news)$/', $params[1]);
+
+            // The root crawler files (sitemap.xml, robots.txt, llms.txt…) are served
+            // by locale-agnostic routes and must never be redirected to a prefixed
+            // URL. Without this guard, `hideDefaultLocaleInURL() === false` makes the
+            // `elseif` below always true, so /sitemap.xml 302s to /{default}/sitemap.xml
+            // and PublicController::getSiteMap() never gets to emit the sitemap index.
+            $isRootCrawlerFile = count($params) === 1
+                && preg_match('/^[\w-]+\.(xml|xml-mobile|txt|ror-rss|ror-rdf|google-news)$/', $params[0]);
+
             if (! empty($locales[$localeCode])) {
-                if ($localeCode === $defaultLocale && $hideDefaultLocale) {
+                if ($localeCode === $defaultLocale && $hideDefaultLocale && ! $isLocalizedSitemap) {
                     $redirection = Language::getNonLocalizedURL();
                 }
-            } elseif ($currentLocale !== $defaultLocale || ! $hideDefaultLocale) {
+            } elseif (! $isRootCrawlerFile && ($currentLocale !== $defaultLocale || ! $hideDefaultLocale)) {
                 if (! Language::getActiveLanguage(['lang_id'])->isEmpty()) {
                     $redirection = Language::getLocalizedURL(Session::get('language'), $request->fullUrl(), [], false);
                 }

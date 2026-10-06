@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => '답변:',
         'admin_reply_additional_questions' => '추가 질문이 있으시면 이 이메일에 답장하거나 다시 문의해 주세요.',
         'admin_reply_best_regards' => '감사합니다,',
-        'admin_reply_team' => '{{ site_title }} 팀',
+        'admin_reply_team' => ':site_title 팀',
 
         // Notice email template
         'notice_title' => '새로운 문의 메시지',
@@ -184,4 +184,6 @@ return [
     'subject_placeholder' => '주제',
     'your_message' => '귀하의 메시지',
     'agree_terms_privacy' => '이용약관 및 개인정보 보호정책에 동의합니다.',
+    'agree_terms_privacy_link' => ':link에 동의합니다.',
+    'terms_and_privacy_policy' => '이용약관 및 개인정보 보호정책',
 ];

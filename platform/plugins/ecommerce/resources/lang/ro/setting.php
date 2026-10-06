@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Afișați un mesaj informativ care informează clienții despre termenii cu care sunt de acord plasând o comandă.',
       'hide_customer_info_at_checkout' => 'Ascundeți informațiile clientului la finalizare',
       'hide_customer_info_at_checkout_helper' => 'Ascundeți informațiile contului de client și butonul de deconectare de pe pagina de finalizare. Când este activat, clienții autentificați nu vor vedea detaliile contului afișate.',
+      'enable_order_notes_at_checkout' => 'Activează notele comenzii la finalizare',
+      'enable_order_notes_at_checkout_helper' => 'Dacă este activat, clienții pot adăuga note opționale la comanda lor pe pagina de finalizare (de ex. instrucțiuni speciale de livrare).',
     ],
   ],
   'return' =>

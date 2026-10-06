@@ -2,6 +2,7 @@
 
 namespace Botble\Contact\Forms\Fronts;
 
+use Botble\Base\Facades\Html;
 use Botble\Base\Forms\FieldOptions\ButtonFieldOption;
 use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
 use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
@@ -54,7 +55,7 @@ class ContactForm extends FormFront
 
         Theme::asset()
             ->usePath(false)
-            ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.2');
+            ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.1');
 
         Theme::asset()
             ->container('footer')
@@ -263,12 +264,26 @@ class ContactForm extends FormFront
                     ->maxLength(-1)
             )
             ->when(setting('contact_form_show_terms_checkbox', true), function (self $form): void {
+                $privacyPolicyUrl = theme_option('term_and_privacy_policy_url');
+
                 $form->add(
                     'agree_terms_and_policy',
                     OnOffCheckboxField::class,
                     CheckboxFieldOption::make()
                         ->required()
-                        ->label(trans('plugins/contact::contact.agree_terms_privacy'))
+                        ->when(
+                            $privacyPolicyUrl,
+                            function (CheckboxFieldOption $fieldOption) use ($privacyPolicyUrl): void {
+                                $fieldOption->label(
+                                    trans('plugins/contact::contact.agree_terms_privacy_link', [
+                                        'link' => Html::link($privacyPolicyUrl, trans('plugins/contact::contact.terms_and_privacy_policy'), attributes: ['class' => 'text-decoration-underline', 'target' => '_blank']),
+                                    ])
+                                );
+                            }
+                        )
+                        ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption): void {
+                            $fieldOption->label(trans('plugins/contact::contact.agree_terms_privacy'));
+                        })
                         ->wrapperAttributes(['class' => $this->formInputWrapperClass])
                 );
             })

@@ -1,6 +1,6 @@
 <section class="slider-area">
     <div class="secondary-slider p-relative">
-        <div class="swiper-container greenslider-active">
+        <div class="swiper-container greenslider-active" data-autoplay-speed="{{ $autoplaySpeed }}">
             <div class="swiper-wrapper">
                 @foreach($sliders as $slider)
                     <div class="swiper-slide slider-bg-2 slider-3" @if ($shortcode->background_color) style="background-color: {{ $shortcode->background_color }} !important;" @endif>

@@ -71,6 +71,7 @@ return [
     'add_recent_success' => 'Added item to recent list successfully!',
     'rename_error' => 'Error when rename item(s)',
     'rename_success' => 'Rename selected item(s) successfully!',
+    'rename_error_dangerous_extension' => 'File names with ":extension" extension are not allowed for security reasons.',
     'crop_success' => 'Crop image successfully!',
     'empty_trash_success' => 'Empty trash successfully!',
     'invalid_action' => 'Invalid action!',
@@ -83,6 +84,7 @@ return [
     'file_too_big' => 'File is too big. Max file upload is :size bytes',
     'file_too_big_readable_size' => 'File is too big. Max file upload is :size.',
     'can_not_detect_file_type' => 'File type is not allowed or can not detect file type!',
+    'image_dimensions_too_large' => 'Image dimensions are too large to process (:dimensions - :megapixels MP). Please resize the image before uploading, or increase the PHP memory_limit on your server.',
     'upload_failed' => 'The file is NOT uploaded completely. The server allows max upload file size is :size . Please check your file size OR try to upload again in case of having network errors',
     'failed_to_crop_image' => 'The file cropping must be image type',
     'menu_name' => 'Media',
@@ -92,6 +94,17 @@ return [
         'description' => 'Manage and view Media Files',
     ],
     'add' => 'Add media',
+
+    // Footer status bar. Pluralised server-side with trans_choice so locales with
+    // more than two plural forms are handled correctly.
+    'status_bar' => [
+        'folders' => '{1} :count folder|[0,*] :count folders',
+        'files' => '{1} :count file|[0,*] :count files',
+        'images' => '{1} :count image|[0,*] :count images',
+        'videos' => '{1} :count video|[0,*] :count videos',
+        'documents' => '{1} :count document|[0,*] :count documents',
+        'total_size' => 'Total: :size',
+    ],
 
     'javascript' => [
         'name' => 'Name',
@@ -106,6 +119,31 @@ return [
         'visit_link' => 'Open link',
         'width' => 'Width',
         'height' => 'Height',
+
+        'upload_status' => [
+            'uploading' => 'Uploading...',
+            'uploaded' => 'Uploaded',
+            'error' => 'Error',
+            'canceled' => 'Canceled',
+            'retry' => 'Retry',
+        ],
+
+        // Summary shown once the whole queue finishes. Phrased without plural forms
+        // because these are interpolated in JavaScript, which cannot run trans_choice.
+        'upload_summary' => [
+            'uploaded' => ':count uploaded',
+            'failed' => ':count failed',
+            'canceled' => ':count canceled',
+        ],
+
+        'upload_error' => [
+            // Shown when the request is rejected before it reaches the application,
+            // which is the one upload failure that otherwise reports no reason at all.
+            'too_large' => 'This file is larger than the server upload limit of :size. Increase upload_max_filesize and post_max_size in your PHP configuration, then try again.',
+            'too_large_unknown_limit' => 'This file is larger than the server upload limit. Increase upload_max_filesize and post_max_size in your PHP configuration, then try again.',
+            'incomplete' => 'The upload did not complete. Check your connection and try again.',
+            'unknown' => 'Upload failed (error :code). Please try again.',
+        ],
 
         'no_item' => [
             'all_media' => [
@@ -205,6 +243,13 @@ return [
         'uploaded_file_too_large' => 'The file is too large. Please choose a smaller file.',
         'uploaded_file_corrupted' => 'The file appears to be corrupted or invalid. Please try uploading a different file.',
         'upload_network_error' => 'Upload failed due to network issues. Please check your connection and try again.',
+        'upload_err_ini_size' => 'The file is larger than the server\'s :size upload limit. Increase "upload_max_filesize" in PHP settings or ask your hosting provider.',
+        'upload_err_form_size' => 'The file exceeds the form\'s maximum upload size.',
+        'upload_err_partial' => 'The file was only partially uploaded. Please try again — this usually means the connection was interrupted.',
+        'upload_err_no_tmp_dir' => 'Server cannot save the uploaded file because PHP\'s temporary upload directory (upload_tmp_dir) is missing or not writable. Ask your hosting provider to set "upload_tmp_dir" in the PHP-FPM pool config to a writable folder (e.g. /home/your-user/tmp). Full instructions: https://docs.botble.com/cms/media-upload-errors.html',
+        'upload_err_cant_write' => 'Server could not write the uploaded file to disk. Check folder permissions, disk quota, and that the tmp directory is writable by PHP.',
+        'upload_err_extension' => 'A PHP extension (such as ModSecurity or a security plugin) blocked the upload. Contact your hosting provider.',
+        'upload_err_unknown' => 'Upload failed (PHP error code :code). Please contact your hosting provider.',
         'attributes' => [
             'uploaded_file' => 'file',
             'upload' => 'file',
@@ -232,4 +277,15 @@ return [
     'download_image_to_local_storage_helper' => 'If it is unchecked, the image will be displayed from the original URL',
     'skip_trash' => 'Skip trash',
     'skip_trash_description' => 'If it is checked, the file will be deleted permanently without moving to trash',
+    'manage_access' => 'Manage Access',
+    'add_user_access' => 'Add User Access',
+    'select_user' => 'Select user...',
+    'permission_view' => 'View',
+    'permission_upload' => 'Upload',
+    'permission_manage' => 'Manage',
+    'grant' => 'Grant',
+    'current_permissions' => 'Current Permissions',
+    'loading' => 'Loading',
+    'folder_permission_granted' => 'Permission granted successfully.',
+    'folder_permission_revoked' => 'Permission revoked successfully.',
 ];

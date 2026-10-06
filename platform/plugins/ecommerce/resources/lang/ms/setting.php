@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Paparkan mesej maklumat yang memberitahu pelanggan tentang terma yang mereka setujui dengan membuat pesanan.',
       'hide_customer_info_at_checkout' => 'Sembunyikan maklumat pelanggan di checkout',
       'hide_customer_info_at_checkout_helper' => 'Sembunyikan maklumat akaun pelanggan dan butang log keluar dari halaman checkout. Apabila diaktifkan, pelanggan yang log masuk tidak akan melihat butiran akaun mereka dipaparkan.',
+      'enable_order_notes_at_checkout' => 'Dayakan nota pesanan semasa pembayaran',
+      'enable_order_notes_at_checkout_helper' => 'Jika didayakan, pelanggan boleh menambah nota pilihan pada pesanan mereka pada halaman pembayaran (cth. arahan penghantaran khas).',
     ],
   ],
   'return' =>

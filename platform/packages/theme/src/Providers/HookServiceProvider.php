@@ -84,7 +84,10 @@ class HookServiceProvider extends ServiceProvider
 
         add_action(BASE_ACTION_PUBLIC_RENDER_SINGLE, function (): void {
             if (BaseHelper::getRichEditor() === 'ckeditor') {
+                // Defer to footer — CKEditor content styles are not critical for first paint and only
+                // apply to content inside .ck-content, which is typically below the fold.
                 Theme::asset()
+                    ->container('footer')
                     ->add('ckeditor-content-styles', 'vendor/core/core/base/libraries/ckeditor/content-styles.css');
             }
         }, 15);
@@ -494,7 +497,11 @@ class HookServiceProvider extends ServiceProvider
             add_filter(THEME_FRONT_HEADER, function (?string $html): ?string {
                 $file = Theme::getStyleIntegrationPath();
                 if ($this->app['files']->exists($file)) {
-                    $html .= PHP_EOL . Html::style(Theme::asset()->url('css/style.integration.css?v=' . filectime($file)));
+                    // Link the same filename getStyleIntegrationPath() resolves to: a
+                    // multi-tenant install suffixes it per store (style.integration.<id>.css),
+                    // where a hardcoded 'style.integration.css' would fetch the shared file
+                    // of another store. basename() is style.integration.css by default.
+                    $html .= PHP_EOL . Html::style(Theme::asset()->url('css/' . basename($file) . '?v=' . filectime($file)));
                 }
 
                 return $html;
@@ -826,7 +833,7 @@ class HookServiceProvider extends ServiceProvider
 
     public function addStatsWidgets(array $widgets, Collection $widgetSettings): array
     {
-        $themes = fn () => count(BaseHelper::scanFolder(theme_path()));
+        $themes = count(BaseHelper::scanFolder(theme_path()));
 
         return (new DashboardWidgetInstance())
             ->setType('stats')

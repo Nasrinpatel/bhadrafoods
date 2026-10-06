@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Visualizza un messaggio informativo che informa i clienti sui termini che stanno accettando effettuando un ordine.',
       'hide_customer_info_at_checkout' => 'Nascondi info cliente al checkout',
       'hide_customer_info_at_checkout_helper' => 'Nascondi le informazioni account cliente e il pulsante logout dalla pagina checkout. Quando abilitato, i clienti connessi non vedranno i dettagli del loro account visualizzati.',
+      'enable_order_notes_at_checkout' => 'Abilita note dell\'ordine al checkout',
+      'enable_order_notes_at_checkout_helper' => 'Se abilitato, i clienti possono aggiungere note facoltative al loro ordine nella pagina di pagamento (ad es. istruzioni speciali di consegna).',
     ],
   ],
   'return' =>

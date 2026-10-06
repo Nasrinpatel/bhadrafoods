@@ -10,6 +10,7 @@ use Botble\Language\Facades\Language;
 use Botble\Language\Models\Language as LanguageModel;
 use Botble\LanguageAdvanced\Supports\LanguageAdvancedManager;
 use Botble\Page\Models\Page;
+use Botble\Slug\Models\Slug;
 use Botble\Table\CollectionDataTable;
 use Botble\Table\EloquentDataTable;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -62,6 +63,8 @@ class HookServiceProvider extends ServiceProvider
 
         add_filter('stored_meta_box_key', [$this, 'storeMetaBoxKey'], 1134, 2);
         add_filter('slug_helper_get_slug_query', [$this, 'getSlugQuery'], 1134, 2);
+        add_filter('language_switcher_get_url', [$this, 'translateSlugSwitcherUrl'], 1134, 4);
+        add_filter('slug_get_translated_slug', [$this, 'getTranslatedSlug'], 1134, 2);
         add_filter(['model_after_execute_get', 'model_after_execute_paginate'], function ($data, BaseModel $model) {
             if ($model instanceof LanguageModel) {
                 return $data;
@@ -345,11 +348,9 @@ class HookServiceProvider extends ServiceProvider
             }
         }
 
-        $refLang = null;
-
-        if (! LanguageAdvancedManager::isDefaultLocale()) {
-            $refLang = '?ref_lang=' . LanguageAdvancedManager::getTranslationLocale();
-        }
+        // Reaching here guarantees a non-default locale (see early return above),
+        // so a ref_lang query string is always appended.
+        $refLang = '?ref_lang=' . LanguageAdvancedManager::getTranslationLocale();
 
         return $form
             ->setUrl(route('language-advanced.save', $model->getKey()) . $refLang)
@@ -405,6 +406,160 @@ class HookServiceProvider extends ServiceProvider
                 });
         } catch (Throwable) {
             return $query;
+        }
+    }
+
+    protected ?object $cachedSlugRecord = null;
+
+    protected ?Collection $cachedSlugTranslations = null;
+
+    protected bool $slugLookupDone = false;
+
+    public function translateSlugSwitcherUrl(string $url, string $localeCode, string $languageCode, $languageManager): string
+    {
+        try {
+            if (! $this->slugLookupDone) {
+                $this->resolveCurrentSlug();
+            }
+
+            if (! $this->cachedSlugRecord) {
+                return $url;
+            }
+
+            // slugs_translations.lang_code stores the languages.lang_code value (e.g. "ru_RU"),
+            // not the URL prefix (e.g. "ru"). Match the translation row by $languageCode so the
+            // switcher resolves to the translated slug even when lang_code differs from lang_locale.
+            if ($languageCode === Language::getDefaultLocaleCode()) {
+                $targetPrefix = $this->cachedSlugRecord->prefix;
+                $targetKey = $this->cachedSlugRecord->key;
+            } else {
+                $targetTranslation = $this->cachedSlugTranslations?->firstWhere('lang_code', $languageCode);
+
+                if ($targetTranslation) {
+                    $targetPrefix = $targetTranslation->prefix;
+                    $targetKey = $targetTranslation->key;
+                } else {
+                    $targetPrefix = $this->cachedSlugRecord->prefix;
+                    $targetKey = $this->cachedSlugRecord->key;
+                }
+            }
+
+            $path = $targetPrefix ? $targetPrefix . '/' . $targetKey : $targetKey;
+
+            $queryString = request()->getQueryString();
+
+            $translatedUrl = $languageManager->getLocalizedURL($localeCode, '/' . $path, [], false);
+
+            if ($queryString) {
+                $translatedUrl .= '?' . $queryString;
+            }
+
+            return $translatedUrl;
+        } catch (Throwable) {
+            return $url;
+        }
+    }
+
+    /**
+     * Provide translated slug key and prefix for URL generation on non-default locales.
+     * This ensures menu nodes, breadcrumbs, and other components that call $model->url
+     * get the correctly translated slug instead of the default language slug.
+     */
+    protected array $slugTranslationCache = [];
+
+    public function getTranslatedSlug(mixed $translatedSlug, mixed $slug): mixed
+    {
+        if (is_in_admin() || ! $slug instanceof Slug || ! $slug->id) {
+            return $translatedSlug;
+        }
+
+        if (LanguageAdvancedManager::isDefaultLocale()) {
+            return $translatedSlug;
+        }
+
+        $langCode = LanguageAdvancedManager::getTranslationLocale();
+
+        if (! $langCode) {
+            return $translatedSlug;
+        }
+
+        $cacheKey = $slug->id . '_' . $langCode;
+
+        if (array_key_exists($cacheKey, $this->slugTranslationCache)) {
+            return $this->slugTranslationCache[$cacheKey];
+        }
+
+        $translation = DB::table('slugs_translations')
+            ->where('slugs_id', $slug->id)
+            ->where('lang_code', $langCode)
+            ->first();
+
+        if (! $translation) {
+            $this->slugTranslationCache[$cacheKey] = null;
+
+            return $translatedSlug;
+        }
+
+        $result = [
+            'key' => $translation->key ?: $slug->key, // ?: intentional — empty key is invalid, fall back to default
+            'prefix' => $translation->prefix ?? $slug->prefix, // ?? intentional — empty prefix is valid (pages have no content-type prefix)
+        ];
+
+        $this->slugTranslationCache[$cacheKey] = $result;
+
+        return $result;
+    }
+
+    protected function resolveCurrentSlug(): void
+    {
+        $this->slugLookupDone = true;
+
+        $route = Route::current();
+
+        if (! $route) {
+            return;
+        }
+
+        $currentSlug = $route->parameter('slug');
+
+        if (! $currentSlug) {
+            return;
+        }
+
+        $currentPrefix = $route->parameter('prefix');
+        $defaultLocaleCode = Language::getDefaultLocaleCode();
+        $currentLocaleCode = Language::getCurrentLocaleCode();
+
+        if ($currentLocaleCode === $defaultLocaleCode) {
+            $query = DB::table('slugs')->where('key', $currentSlug);
+
+            if ($currentPrefix) {
+                $query->where('prefix', $currentPrefix);
+            }
+
+            $this->cachedSlugRecord = $query->first();
+        } else {
+            // slugs_translations.lang_code stores the languages.lang_code value (e.g. "ru_RU"),
+            // not the URL prefix. Use getCurrentLocaleCode() so the lookup matches the column.
+            $query = DB::table('slugs_translations')
+                ->where('key', $currentSlug)
+                ->where('lang_code', $currentLocaleCode);
+
+            if ($currentPrefix) {
+                $query->where('prefix', $currentPrefix);
+            }
+
+            $translation = $query->first();
+
+            if ($translation) {
+                $this->cachedSlugRecord = DB::table('slugs')->where('id', $translation->slugs_id)->first();
+            }
+        }
+
+        if ($this->cachedSlugRecord) {
+            $this->cachedSlugTranslations = DB::table('slugs_translations')
+                ->where('slugs_id', $this->cachedSlugRecord->id)
+                ->get();
         }
     }
 

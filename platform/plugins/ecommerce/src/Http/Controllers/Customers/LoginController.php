@@ -37,6 +37,8 @@ class LoginController extends BaseController
         SeoHelper::setTitle(theme_option('ecommerce_login_seo_title') ?: $title)
             ->setDescription(theme_option('ecommerce_login_seo_description'));
 
+        SeoHelper::meta()->addMeta('robots', 'noindex, nofollow');
+
         Theme::breadcrumb()->add($title, route('customer.login'));
 
         $currentHost = request()->getHost();
@@ -120,7 +122,7 @@ class LoginController extends BaseController
         return redirect()->to(BaseHelper::getHomepageUrl());
     }
 
-    protected function attemptLogin(LoginRequest $request)
+    protected function attemptLogin(LoginRequest $request): bool
     {
         $credentials = $this->credentials($request);
 
@@ -155,7 +157,9 @@ class LoginController extends BaseController
             ]);
         }
 
-        return $this->guard()->login($customer, $request->filled('remember'));
+        $this->guard()->login($customer, $request->filled('remember'));
+
+        return true;
     }
 
     protected function findCustomerByPhoneWithoutCountryCode(array $credentials): ?Customer

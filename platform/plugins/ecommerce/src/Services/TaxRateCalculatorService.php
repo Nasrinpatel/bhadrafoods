@@ -29,7 +29,7 @@ class TaxRateCalculatorService
             city: $city,
             zip_code: $zipCode,
             quantity: 1,
-            price: $product->price,
+            price: (float) ($product->price ?? 0),
         );
 
         $result = $this->engine->calculate($context);

@@ -121,6 +121,7 @@ return [
     'apply' => 'Zastosuj',
     'available' => 'Dostępny',
     'back_to_return_requests' => 'Powrót do próśb o zwrot',
+    'backorder_warning' => 'Uwaga: Ten produkt jest w przedsprzedaży i wysyłka może potrwać dłużej.',
     'choose_reason' => 'Wybierz powód',
     'clear' => 'Wyczyść',
     'clear_all_filters' => 'Wyczyść wszystkie filtry',
@@ -191,4 +192,6 @@ return [
     'checkout' => 'Przejdź do kasy',
     'complete_order' => 'Złóż zamówienie',
     'agree_terms_and_policy_error' => 'Musisz zaakceptować regulamin i politykę prywatności.',
+    'optional' => 'Opcjonalnie',
+
 ];

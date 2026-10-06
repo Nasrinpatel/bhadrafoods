@@ -19,7 +19,6 @@ use Botble\Base\Forms\FormAbstract;
 use Botble\Contact\Forms\Fronts\ContactForm;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Models\FlashSale;
-use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\ProductCategory;
 use Botble\Ecommerce\Models\ProductCollection;
 use Botble\Faq\FaqCollection;
@@ -36,9 +35,7 @@ use Botble\Theme\Supports\ThemeSupport;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
-use Theme\Ninico\Forms\ShortcodeBulkOrderAdminConfigForm;
 use Theme\Ninico\Forms\ShortcodeContactAdminConfigForm;
-
 
 app()->booted(function (): void {
     ThemeSupport::registerGoogleMapsShortcode();
@@ -73,7 +70,6 @@ app()->booted(function (): void {
                             'cosmetics' => __('Cosmetics'),
                             'grocery' => __('Grocery'),
                             'full-width' => __('Full width'),
-                            'hero' => __('Hero'),
                         ])->mapWithKeys(fn ($label, $key) => [
                             $key => [
                                 'label' => $label,
@@ -101,6 +97,20 @@ app()->booted(function (): void {
                     OnOffField::class,
                     OnOffFieldOption::make()
                         ->label(__('Show slider image on mobile'))
+                )
+                ->add(
+                    'autoplay_speed',
+                    SelectField::class,
+                    SelectFieldOption::make()
+                        ->label(__('Autoplay speed'))
+                        ->choices(
+                            ['' => __('Default')] + array_combine(
+                                [2000, 3000, 4000, 4500, 5000, 5500, 6000, 7000, 8000, 9000, 10000],
+                                [2000, 3000, 4000, 4500, 5000, 5500, 6000, 7000, 8000, 9000, 10000]
+                            )
+                        )
+                        ->defaultValue('')
+                        ->helperText(__('The number is in milliseconds. For example, 8000 means 8 seconds.'))
                 )
                 ->add(
                     'show_ads_title',
@@ -178,7 +188,7 @@ app()->booted(function (): void {
                     return null;
                 }
 
-                $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'cosmetics', 'custom']) ? 'wooden' : $shortcode->style;
+                $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'cosmetics']) ? 'wooden' : $shortcode->style;
 
                 return Theme::partial(
                     "shortcodes.product-categories.styles.$style",
@@ -194,12 +204,6 @@ app()->booted(function (): void {
                     'label' => __('Title'),
                     'help_block' => [
                         'text' => __('Wrapper text into <code>:tag</code> tag to make it highlight.', ['tag' => '&lt;span&gt;text&lt;/span&gt;']),
-                    ],
-                ])
-                ->add('subtitle', 'text', [
-                    'label' => __('Subtitle'),
-                    'help_block' => [
-                        'text' => __('Only work in custom style', ['tag' => '&lt;span&gt;text&lt;/span&gt;']),
                     ],
                 ])
                 ->add('category_ids', ShortcodeTagsField::class, [
@@ -218,7 +222,6 @@ app()->booted(function (): void {
                         'wooden' => __('Wooden'),
                         'fashion' => __('Fashion'),
                         'cosmetics' => __('Cosmetics'),
-                        'custom' => __('Custom'),
                     ],
                 ]);
         });
@@ -662,13 +665,15 @@ app()->booted(function (): void {
         Shortcode::register('team', __('Team'), __('Team'), function (ShortcodeCompiler $shortcode) {
             $teamIds = Shortcode::fields()->getIds('team_ids', $shortcode);
 
-            if (! $teamIds) {
-                return null;
+            $query = Team::query()
+                ->wherePublished()
+                ->orderByDesc('created_at');
+
+            if ($teamIds) {
+                $query->whereIn('id', $teamIds);
             }
 
-            $teams = Team::query()
-                ->whereIn('id', $teamIds)
-                ->get();
+            $teams = $query->get();
 
             if ($teams->isEmpty()) {
                 return null;
@@ -686,10 +691,13 @@ app()->booted(function (): void {
                 ->add('subtitle', 'text', [
                     'label' => __('Subtitle'),
                 ])
-                ->add('team_ids', 'text', [
+                ->add('team_ids', ShortcodeTagsField::class, [
                     'label' => __('Teams'),
                     'attr' => [
                         'placeholder' => __('Choose teams'),
+                    ],
+                    'help_block' => [
+                        'text' => __('Leave empty to display all published team members.'),
                     ],
                     'choices' => Team::query()
                         ->wherePublished()
@@ -725,40 +733,6 @@ app()->booted(function (): void {
         Shortcode::setAdminConfig('contact-box', function (array $attributes) {
             return ShortcodeContactAdminConfigForm::createFromArray($attributes);
         });
-
-        Shortcode::register('bulk-order-form', __('Bulk Order Form'), __('B2B / bulk order enquiry form'), function (ShortcodeCompiler $shortcode) {
-            Theme::asset()
-                ->usePath(false)
-                ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.2');
-
-            Theme::asset()
-                ->container('footer')
-                ->usePath(false)
-                ->add(
-                    'contact-public-js',
-                    asset('vendor/core/plugins/contact/js/contact-public.js'),
-                    ['jquery'],
-                    [],
-                    '1.0.1'
-                );
-
-            $products = is_plugin_active('ecommerce')
-                ? Product::query()
-                    ->wherePublished()
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all()
-                : [];
-
-            return Theme::partial('shortcodes.bulk-order-form.index', compact('shortcode', 'products'));
-        });
-
-        Shortcode::setAdminConfig('bulk-order-form', function (array $attributes) {
-            return ShortcodeBulkOrderAdminConfigForm::createFromArray($attributes);
-        });
-
-        Shortcode::ignoreLazyLoading(['bulk-order-form']);
-        Shortcode::ignoreCaches(['bulk-order-form']);
     }
 
     if (is_plugin_active('faq')) {
@@ -861,166 +835,6 @@ app()->booted(function (): void {
         }
 
         return $form;
-    });
-
-    Shortcode::register('about2', __('About 2'), __('About 2'), function (ShortcodeCompiler $shortcode) {
-        return Theme::partial('shortcodes.about2.index', compact('shortcode'));
-    });
-
-    Shortcode::setAdminConfig('about2', function (array $attributes) {
-        return ShortcodeForm::createFromArray($attributes)
-            ->withLazyLoading()
-            ->columns()
-
-            ->add('image_1', 'mediaImage', [
-                'label' => __('Main Image'),
-                'colspan' => 2,
-            ])
-
-            ->add('image_2', 'mediaImage', [
-                'label' => __('Bottom Image'),
-                'colspan' => 2,
-            ])
-
-            ->add('logo', 'mediaImage', [
-                'label' => __('Center Logo'),
-                'colspan' => 2,
-            ])
-
-            ->add('subtitle', 'text', [
-                'label' => __('Small Badge Title'),
-                'colspan' => 2,
-            ])
-
-            ->add('title', 'text', [
-                'label' => __('Main Title'),
-                'colspan' => 2,
-            ])
-
-            ->add('description', 'textarea', [
-                'label' => __('Main Description'),
-                'attr' => ['rows' => 4],
-                'colspan' => 2,
-            ])
-
-            ->add('feature_title_1', 'text', [
-                'label' => __('Feature Title 1'),
-                'colspan' => 2,
-            ])
-
-            ->add('feature_text_1', 'textarea', [
-                'label' => __('Feature Description 1'),
-                'attr' => ['rows' => 3],
-                'colspan' => 2,
-            ])
-
-            ->add('feature_title_2', 'text', [
-                'label' => __('Feature Title 2'),
-                'colspan' => 2,
-            ])
-
-            ->add('feature_text_2', 'textarea', [
-                'label' => __('Feature Description 2'),
-                'attr' => ['rows' => 3],
-                'colspan' => 2,
-            ]);
-    });
-
-    Shortcode::register('why-choose', __('Why Choose Us'), __('Why Choose Us'), function (ShortcodeCompiler $shortcode) {
-        return Theme::partial('shortcodes.why-choose.index', compact('shortcode'));
-    });
-
-    Shortcode::setAdminConfig('why-choose', function (array $attributes) {
-        return ShortcodeForm::createFromArray($attributes)
-            ->withLazyLoading()
-            ->columns()
-            ->add('title', 'text', [
-                'label' => __('Main Title'),
-                'colspan' => 2,
-            ])
-            ->add('subtitle', 'text', [
-                'label' => __('Sub Title'),
-                'colspan' => 2,
-            ])
-            ->add('image_1', 'mediaImage', [
-                'label' => __('Main Image'),
-                'colspan' => 2,
-            ])
-            ->add('image_2', 'mediaImage', [
-                'label' => __('Bottom Image'),
-                'colspan' => 2,
-            ])
-            ->add('description', 'textarea', [
-                'label' => __('Description'),
-                'attr' => ['rows' => 4],
-                'colspan' => 2,
-            ])
-            ->add('feature_title_1', 'text', [
-                'label' => __('Feature Title 1'),
-                'colspan' => 2,
-            ])
-            ->add('feature_title_2', 'text', [
-                'label' => __('Feature Title 2'),
-                'colspan' => 2,
-            ])
-            ->add('feature_title_3', 'text', [
-                'label' => __('Feature Title 3'),
-                'colspan' => 2,
-            ])
-            ->add('feature_text_3', 'textarea', [
-                'label' => __('Feature Description 3'),
-                'attr' => ['rows' => 3],
-                'colspan' => 2,
-            ])
-            ->add('feature_title_4', 'text', [
-                'label' => __('Feature Title 4'),
-                'colspan' => 2,
-            ])
-            ->add('feature_text_4', 'textarea', [
-                'label' => __('Feature Description 4'),
-                'attr' => ['rows' => 3],
-                'colspan' => 2,
-            ])
-            ->add('counter_title_1', 'text', [
-                'label' => __('Counter Title 1'),
-                'colspan' => 2,
-            ])
-            ->add('counter_value_1', 'text', [
-                'label' => __('Counter Value 1'),
-                'colspan' => 2,
-            ])
-            ->add('counter_title_2', 'text', [
-                'label' => __('Counter Title 2'),
-                'colspan' => 2,
-            ])
-            ->add('counter_value_2', 'text', [
-                'label' => __('Counter Value 2'),
-                'colspan' => 2,
-            ])
-            ->add('counter_title_3', 'text', [
-                'label' => __('Counter Title 3'),
-                'colspan' => 2,
-            ])
-            ->add('counter_value_3', 'text', [
-                'label' => __('Counter Value 3'),
-                'colspan' => 2,
-            ])
-            ->add('counter_title_4', 'text', [
-                'label' => __('Counter Title 4'),
-                'colspan' => 2,
-            ])
-            ->add('counter_value_4', 'text', [
-                'label' => __('Counter Value 4'),
-                'colspan' => 2,
-            ])
-            ->add('counter_title_5', 'text', [
-                'label' => __('Counter Title 5'),
-                'colspan' => 2,
-            ])
-            ->add('counter_value_5', 'text', [
-                'label' => __('Counter Value 5'),
-                'colspan' => 2,
-            ]);
     });
 
     Shortcode::register('features', __('Features'), __('Features'), function (ShortcodeCompiler $shortcode) {
@@ -1262,36 +1076,4 @@ app()->booted(function (): void {
                 ]);
         });
     }
-    /* =========================
-       MARQUEE SHORTCODE START
-    ========================== */
-
-    Shortcode::register('marquee', __('Marquee Strip'), __('Moving text strip'), function (ShortcodeCompiler $shortcode) {
-        return Theme::partial('shortcodes.marquee.index', [
-            'shortcode' => $shortcode,
-        ]);
-    });
-
-    Shortcode::setAdminConfig('marquee', function (array $attributes) {
-        return ShortcodeForm::createFromArray($attributes)
-            ->add('feature', 'text', [
-                'label' => __('Feature text'),
-            ])
-            ->add('feature2', 'text', [
-                'label' => __('Feature text 2'),
-            ])
-            ->add('feature3', 'text', [
-                'label' => __('Feature text 3'),
-            ])
-            ->add('feature4', 'text', [
-                'label' => __('Feature text 4'),
-            ])
-            ->add('feature5', 'text', [
-                'label' => __('Feature text 5'),
-            ])
-            ->add('feature6', 'text', [
-                'label' => __('Feature text 6'),
-            ]);
-    });
-
 });

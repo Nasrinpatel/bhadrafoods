@@ -42,6 +42,7 @@ class GetProductService
             'brands' => EcommerceHelper::parseFilterParams($request, 'brands'),
             'categories' => EcommerceHelper::parseFilterParams($request, 'categories'),
             'tags' => EcommerceHelper::parseFilterParams($request, 'tags'),
+            'labels' => EcommerceHelper::parseFilterParams($request, 'labels'),
             'collections' => EcommerceHelper::parseFilterParams($request, 'collections'),
             'collection' => $request->input('collection'),
             'attributes' => $this->parseJsonParam($request->input('attributes')),
@@ -51,6 +52,7 @@ class GetProductService
             'sort_by' => $request->input('sort-by') ?: $request->input('sort_by'),
             'num' => $num,
             'discounted_only' => (bool) $request->input('discounted_only'),
+            'rating' => (int) $request->input('rating') ?: null,
         ];
 
         if ($category) {
@@ -145,12 +147,14 @@ class GetProductService
             'price_ranges' => array_values($queryVar['price_ranges']),
             'categories' => $queryVar['categories'],
             'tags' => $queryVar['tags'],
+            'labels' => $queryVar['labels'],
             'collections' => $queryVar['collections'],
             'collection' => $queryVar['collection'],
             'brands' => $queryVar['brands'],
             'attributes' => $queryVar['attributes'],
             'order_by' => $orderBy,
             'discounted_only' => $queryVar['discounted_only'],
+            'rating' => $queryVar['rating'],
         ], $params);
     }
 

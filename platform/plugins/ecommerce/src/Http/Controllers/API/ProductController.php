@@ -135,6 +135,9 @@ class ProductController extends BaseApiController
                     'crossSales' => function (BelongsToMany $query): void {
                         $query->where('ec_product_cross_sale_relations.is_variant', false);
                     },
+                    'variations.productAttributes',
+                    'variations.product',
+                    'productAttributeSets',
                 ],
             ]
         );
@@ -159,10 +162,8 @@ class ProductController extends BaseApiController
         }
 
         // Get product variations info for filtering unavailable attributes
-        $productVariations = ProductVariation::query()
-            ->where('configurable_product_id', $product->id)
-            ->with(['productAttributes', 'product'])
-            ->get();
+        // Uses already-loaded 'variations.productAttributes' and 'variations.product' relations
+        $productVariations = $product->variations;
 
         $productVariationsInfo = ProductVariationItem::getVariationsInfo($productVariations->pluck('id')->all());
 
@@ -179,8 +180,8 @@ class ProductController extends BaseApiController
                 });
         }
 
-        // Get attribute sets and attributes
-        $attributeSets = $product->productAttributeSets()->oldest('order')->get();
+        // Get attribute sets and attributes — uses already-loaded 'productAttributeSets' relation
+        $attributeSets = $product->productAttributeSets->sortBy('order')->values();
         $productAttributes = app(ProductInterface::class)->getRelatedProductAttributes($product)->sortBy('order');
 
         $price = $productVariation->price();

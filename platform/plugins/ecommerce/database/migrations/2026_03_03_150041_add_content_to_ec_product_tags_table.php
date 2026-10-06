@@ -7,11 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_product_tags', function (Blueprint $table): void {
-            $table->mediumText('content')->nullable()->after('description');
-        });
+        if (! Schema::hasColumn('ec_product_tags', 'content')) {
+            Schema::table('ec_product_tags', function (Blueprint $table): void {
+                $table->mediumText('content')->nullable()->after('description');
+            });
+        }
 
-        if (Schema::hasTable('ec_product_tags_translations')) {
+        if (Schema::hasTable('ec_product_tags_translations')
+            && ! Schema::hasColumn('ec_product_tags_translations', 'content')) {
             Schema::table('ec_product_tags_translations', function (Blueprint $table): void {
                 $table->mediumText('content')->nullable();
             });
@@ -20,11 +23,14 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_product_tags', function (Blueprint $table): void {
-            $table->dropColumn('content');
-        });
+        if (Schema::hasColumn('ec_product_tags', 'content')) {
+            Schema::table('ec_product_tags', function (Blueprint $table): void {
+                $table->dropColumn('content');
+            });
+        }
 
-        if (Schema::hasTable('ec_product_tags_translations')) {
+        if (Schema::hasTable('ec_product_tags_translations')
+            && Schema::hasColumn('ec_product_tags_translations', 'content')) {
             Schema::table('ec_product_tags_translations', function (Blueprint $table): void {
                 $table->dropColumn('content');
             });

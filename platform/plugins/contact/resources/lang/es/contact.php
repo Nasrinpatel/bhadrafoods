@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => 'Nuestra respuesta:',
         'admin_reply_additional_questions' => 'Si tiene alguna pregunta adicional, no dude en responder a este correo o contactarnos nuevamente.',
         'admin_reply_best_regards' => 'Saludos cordiales,',
-        'admin_reply_team' => '{{ site_title }} Equipo',
+        'admin_reply_team' => ':site_title Equipo',
         'notice_title' => 'Nuevo mensaje de contacto',
         'notice_greeting' => 'Estimado administrador,',
         'notice_message_details' => 'Detalles del mensaje',
@@ -177,4 +177,6 @@ return [
     'subject_placeholder' => 'Sujeto',
     'your_message' => 'Tu mensaje',
     'agree_terms_privacy' => 'Acepto los Términos y Política de Privacidad',
+    'agree_terms_privacy_link' => 'Acepto los :link',
+    'terms_and_privacy_policy' => 'Términos y Política de Privacidad',
 ];

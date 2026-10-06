@@ -299,6 +299,8 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Prikaži informativnu poruku koja obaveštava kupce o uslovima koje prihvataju pravljenjem porudžbine.',
       'hide_customer_info_at_checkout' => 'Sakrij informacije o kupcu na plaćanju',
       'hide_customer_info_at_checkout_helper' => 'Sakrij informacije o nalogu kupca i dugme za odjavu sa stranice plaćanja. Kada je omogućeno, prijavljeni kupci neće videti njihove detalje naloga prikazane.',
+      'enable_order_notes_at_checkout' => 'Omogući napomene porudžbine na naplati',
+      'enable_order_notes_at_checkout_helper' => 'Ako je omogućeno, kupci mogu dodati opcione napomene svojoj porudžbini na stranici za naplatu (npr. posebna uputstva za dostavu).',
     ],
   ],
   'return' =>

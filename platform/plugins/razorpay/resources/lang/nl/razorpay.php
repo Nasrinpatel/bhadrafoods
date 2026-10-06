@@ -36,10 +36,12 @@ return [
     'test_payment' => 'Doe eerst een testbetaling in testmodus',
     'check_status' => 'Controleer of de bestelstatus wordt bijgewerkt naar "Voltooid"',
     'verify_webhook' => 'Als bestellingen "Onvolledig" blijven, controleer dan uw webhook-configuratie',
-    'check_logs' => 'Controleer betalingslogboeken in storage/logs/payment-*.log voor foutopsporing',
+    'check_logs' => 'Controleer betalingslogboeken in Payments > Payment Logs (admin panel) voor foutopsporing',
     'troubleshooting' => 'Tips voor probleemoplossing:',
     'ssl_required' => 'Zorg ervoor dat uw site een geldig SSL-certificaat heeft (HTTPS)',
     'public_url' => 'Controleer of de webhook-URL openbaar toegankelijk is (niet localhost)',
     'firewall_check' => 'Controleer of geen firewall Razorpay-webhook-verzoeken blokkeert',
     'live_mode' => 'Voor productie, zorg ervoor dat Razorpay in livemodus staat, niet in testmodus',
+    'minimum_amount_error' => 'Het orderbedrag is lager dan het minimumbedrag dat is toegestaan door Razorpay (:amount). Voeg meer artikelen toe aan uw winkelwagen.',
+    'minimum_amount_warning' => 'Razorpay vereist een minimaal orderbedrag van :amount. Uw huidige ordertotaal ligt onder dit minimum.',
 ];

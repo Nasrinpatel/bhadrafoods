@@ -59,7 +59,13 @@ class Cart
 
     public function getLastUpdatedAt(): ?CarbonInterface
     {
-        return $this->session->get($this->instance . '_updated_at');
+        $value = $this->session->get($this->instance . '_updated_at');
+
+        if (! $value) {
+            return null;
+        }
+
+        return $value instanceof CarbonInterface ? $value : Carbon::parse($value);
     }
 
     public function add($id, $name = null, $qty = null, $price = null, array $options = [])
@@ -194,23 +200,61 @@ class Cart
 
     protected function getContent(): Collection
     {
-        return $this->session->has($this->instance)
-            ? $this->session->get($this->instance)
-            : new Collection();
+        if (! $this->session->has($this->instance)) {
+            return new Collection();
+        }
+
+        $raw = $this->session->get($this->instance);
+
+        // PHP session serializer path — already a Collection of CartItem objects.
+        if ($raw instanceof Collection) {
+            return $raw;
+        }
+
+        // JSON session serializer path — stored as array<rowId, array>.
+        // Rehydrate into Collection<CartItem> to preserve the public contract.
+        if (! is_array($raw)) {
+            return new Collection();
+        }
+
+        $hydrated = new Collection();
+
+        foreach ($raw as $row) {
+            if (! is_array($row) || ! isset($row['id'], $row['name'], $row['price'])) {
+                continue;
+            }
+
+            $item = CartItem::fromArray($row);
+            $hydrated->put($item->rowId, $item);
+        }
+
+        return $hydrated;
     }
 
     public function putToSession($content): static
     {
         $this->setLastUpdatedAt();
 
-        $this->session->put($this->instance, $content);
+        // Under PHP session serializer, write the Collection<CartItem> directly.
+        // This preserves any dynamic/__set properties third-party plugins may have
+        // attached to cart items. Only convert to array-of-arrays when the JSON
+        // serializer is active, which cannot round-trip PHP objects.
+        if ($content instanceof Collection && config('session.serialization') === 'json') {
+            $payload = $content
+                ->map(fn ($item) => $item instanceof CartItem ? $item->toSessionArray() : $item)
+                ->all();
+        } else {
+            $payload = $content;
+        }
+
+        $this->session->put($this->instance, $payload);
 
         return $this;
     }
 
     public function setLastUpdatedAt(): void
     {
-        $this->session->put($this->instance . '_updated_at', Carbon::now());
+        $this->session->put($this->instance . '_updated_at', Carbon::now()->toIso8601String());
     }
 
     public function update(string $rowId, int|Buyable|array $qty): bool|CartItem|null
@@ -555,23 +599,30 @@ class Cart
             ->where('instance', $this->currentInstance())
             ->exists();
 
+        $now = Carbon::now();
+
         if ($exists) {
             $table
                 ->where('identifier', $identifier)
                 ->where('instance', $this->currentInstance())
                 ->update([
                     'content' => serialize($this->getContent()),
-                    'updated_at' => Carbon::now(),
+                    'updated_at' => $now,
                 ]);
         } else {
             $table->insert([
                 'identifier' => $identifier,
                 'instance' => $this->currentInstance(),
                 'content' => serialize($this->getContent()),
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
+
+        // Sync session timestamp with the DB write so the
+        // RestoreCustomerCartMiddleware does not treat the DB as
+        // "newer" and overwrite the session with stale content.
+        $this->session->put($this->instance . '_updated_at', $now->toIso8601String());
 
         static::dispatchEvent('cart.stored');
     }
@@ -671,13 +722,15 @@ class Cart
             ->where('instance', $this->currentInstance())
             ->exists();
 
+        $now = Carbon::now();
+
         if ($exists) {
             $table
                 ->where('customer_id', $customerId)
                 ->where('instance', $this->currentInstance())
                 ->update([
                     'content' => serialize($this->getContent()),
-                    'updated_at' => Carbon::now(),
+                    'updated_at' => $now,
                 ]);
         } else {
             $table->insert([
@@ -685,10 +738,15 @@ class Cart
                 'instance' => $this->currentInstance(),
                 'customer_id' => $customerId,
                 'content' => serialize($this->getContent()),
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
+
+        // Sync session timestamp with the DB write so the
+        // RestoreCustomerCartMiddleware does not treat the DB as
+        // "newer" and overwrite the session with stale content.
+        $this->session->put($this->instance . '_updated_at', $now->toIso8601String());
 
         static::dispatchEvent('cart.stored');
     }
@@ -1015,7 +1073,7 @@ class Cart
             return collect();
         }
 
-        $content = $this->session->get($this->instance);
+        $content = $this->getContent();
 
         return apply_filters('ecommerce_cart_content', $content, $this->instance);
     }
@@ -1101,7 +1159,13 @@ class Cart
                     $options = $cartItem->options->toArray();
                     $options['image'] = $product->image ?: $parentProduct->image;
 
-                    $options['taxRate'] = $cartItem->getTaxRate();
+                    // Preserve the original tax option so the rowId stays stable across
+                    // refresh. The CartItem taxRate property defaults to 0 and is only set
+                    // later by setTax() at checkout; overwriting the option with it flipped
+                    // the rowId, so a second Buy Now of the same product no longer merged
+                    // and produced a duplicate cart line. The effective tax rate lives on
+                    // the property (recalculated by HandleTaxService), not in this option.
+                    $options['taxRate'] = $cartItem->options->taxRate ?? $cartItem->getTaxRate();
 
                     $cart->addQuietly(
                         $cartItem->id,

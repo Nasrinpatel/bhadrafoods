@@ -60,7 +60,19 @@
                                         <td>
                                             {!! $product->stock_status_html !!}
                                         </td>
-                                        @if (EcommerceHelper::isCartEnabled())
+                                        @if ($product->isExternalProduct())
+                                            <td>
+                                                <a
+                                                    class="tp-btn tp-color-btn"
+                                                    href="{{ $product->original_product->external_url ?? $product->external_url }}"
+                                                    target="_blank"
+                                                    rel="nofollow noopener noreferrer"
+                                                >
+                                                    {{ __('Buy on External Store') }}
+                                                    <i class="fal fa-external-link"></i>
+                                                </a>
+                                            </td>
+                                        @elseif (EcommerceHelper::isCartEnabled())
                                             <td>
                                                 <a
                                                     class="tp-btn tp-color-btn add-to-cart"

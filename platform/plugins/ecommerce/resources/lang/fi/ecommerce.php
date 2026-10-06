@@ -121,6 +121,7 @@ return [
     'apply' => 'Käytä',
     'available' => 'Saatavilla',
     'back_to_return_requests' => 'Takaisin palautuspyyntöihin',
+    'backorder_warning' => 'Varoitus: Tämä tuote on jälkitilauksessa ja toimitus voi kestää kauemmin.',
     'choose_reason' => 'Valitse syy',
     'clear' => 'Tyhjennä',
     'clear_all_filters' => 'Tyhjennä kaikki suodattimet',
@@ -191,4 +192,6 @@ return [
     'checkout' => 'Kassalle',
     'complete_order' => 'Viimeistele tilaus',
     'agree_terms_and_policy_error' => 'Sinun on hyväksyttävä käyttöehdot ja tietosuojakäytäntö.',
+    'optional' => 'Valinnainen',
+
 ];

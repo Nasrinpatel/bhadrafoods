@@ -25,6 +25,11 @@ use Throwable;
 
 class CheckoutForm extends FormFront
 {
+    public static function formTitle(): string
+    {
+        return __('Checkout form');
+    }
+
     public function setup(): void
     {
         $model = $this->getModel();
@@ -48,7 +53,11 @@ class CheckoutForm extends FormFront
                     try {
                         $mobileDetect = new MobileDetect();
 
-                        $isMobile = $mobileDetect->isMobile();
+                        // Treat tablets (iPad / Android tablet) as desktop. The mobile
+                        // checkout footer (which carries the agree-terms checkbox) is
+                        // gated by `max-width: 767.98px` in CSS, so tablets at >= 768px
+                        // would otherwise receive the mobile layout but render it invisible.
+                        $isMobile = $mobileDetect->isMobile() && ! $mobileDetect->isTablet();
                     } catch (Throwable) {
                         $isMobile = false;
                     }
@@ -104,7 +113,7 @@ class CheckoutForm extends FormFront
                                 $form
                                     ->addWrapper(
                                         'left_column_logo_wrapper',
-                                        '<div>',
+                                        '<div class="checkout-section checkout-section--logo">',
                                         '</div>',
                                         fn (CheckoutForm $form) => $form->add(
                                             'left_column_logo',
@@ -121,7 +130,7 @@ class CheckoutForm extends FormFront
                                         $form
                                             ->addWrapper(
                                                 'shipping_information_wrapper',
-                                                '<div class="mb-4">',
+                                                '<div class="mb-4 checkout-section checkout-section--shipping-info">',
                                                 '</div>',
                                                 function (CheckoutForm $form) use ($model, $token): void {
                                                     $form
@@ -206,7 +215,7 @@ class CheckoutForm extends FormFront
                                             $form
                                                 ->addWrapper(
                                                     'shipping_method_wrapper',
-                                                    '<div class="shipping-method-wrapper mb-4">',
+                                                    '<div class="shipping-method-wrapper mb-4 checkout-section checkout-section--shipping-method">',
                                                     '</div>',
                                                     function (CheckoutForm $form) use ($model): void {
                                                         $form
@@ -245,7 +254,7 @@ class CheckoutForm extends FormFront
                                         $form
                                             ->addWrapper(
                                                 'mobile_cart_item_wrapper',
-                                                '<div class="my-3 bg-light"><div class="position-relative p-3 cart-item-wrapper">',
+                                                '<div class="my-3 bg-light checkout-section checkout-section--cart"><div class="position-relative p-3 cart-item-wrapper">',
                                                 '</div></div>',
                                                 fn (CheckoutForm $form) => $form->add(
                                                     'mobile_cart_item',
@@ -255,7 +264,7 @@ class CheckoutForm extends FormFront
                                             )
                                             ->addWrapper(
                                                 'mobile_discount_wrapper',
-                                                '<div class="mt-3 mb-5">',
+                                                '<div class="mt-3 mb-5 checkout-section checkout-section--discount">',
                                                 '</div>',
                                                 fn (CheckoutForm $form) => $form->add(
                                                     'mobile_discount',
@@ -286,7 +295,7 @@ class CheckoutForm extends FormFront
                                     )
                                     ->addWrapper(
                                         'payment_methods_wrapper',
-                                        '<div data-bb-toggle="checkout-payment-methods-area">',
+                                        '<div class="checkout-section checkout-section--payment" data-bb-toggle="checkout-payment-methods-area">',
                                         '</div>',
                                         function (CheckoutForm $form) use ($model): void {
                                             $filteredModel = $form->filterPaymentMethods($model);
@@ -303,15 +312,17 @@ class CheckoutForm extends FormFront
                                         HtmlField::class,
                                         HtmlFieldOption::make()->content(apply_filters('ecommerce_checkout_form_after_payment_form', null, $model['products']))
                                     )
-                                    ->add(
-                                        'description',
-                                        TextareaField::class,
-                                        TextareaFieldOption::make()
-                                            ->wrapperAttributes(['class' => 'form-group mb-3'])
-                                            ->rows(3)
-                                            ->label(__('Order notes'))
-                                            ->placeholder(__('Notes about your order, e.g. special notes for delivery.'))
-                                    )
+                                    ->when(get_ecommerce_setting('enable_order_notes_at_checkout', true), function (CheckoutForm $form): void {
+                                        $form->add(
+                                            'description',
+                                            TextareaField::class,
+                                            TextareaFieldOption::make()
+                                                ->wrapperAttributes(['class' => 'form-group mb-3 checkout-section checkout-section--order-notes'])
+                                                ->rows(3)
+                                                ->label(__('Order notes'))
+                                                ->placeholder(__('Notes about your order, e.g. special notes for delivery.'))
+                                        );
+                                    })
                                     ->when(EcommerceHelper::isDisplayTaxFieldsAtCheckoutPage(), function (CheckoutForm $form) use ($model): void {
                                         $form->add(
                                             'tax_information',

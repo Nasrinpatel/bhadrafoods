@@ -43,6 +43,7 @@ class ShipmentTable extends TableAbstract
                     'price',
                     'status',
                     'cod_status',
+                    'cod_amount',
                     'created_at',
                 ];
 
@@ -69,12 +70,16 @@ class ShipmentTable extends TableAbstract
                         ->table
                         ->eloquent($table->query())
                         ->editColumn('order_id', function (Shipment $item) {
+                            if (! $item->order || ! $item->order->getKey()) {
+                                return BaseHelper::renderBadge(trans('plugins/ecommerce::shipping.not_available'), 'warning');
+                            }
+
                             if (! $this->hasPermission('orders.edit')) {
                                 return $item->order->code;
                             }
 
                             return Html::link(
-                                route('orders.edit', $item->order->id),
+                                route('orders.edit', $item->order->getKey()),
                                 $item->order->code . BaseHelper::renderIcon('ti ti-external-link'),
                                 ['target' => '_blank'],
                                 null,
