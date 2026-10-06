@@ -3,7 +3,6 @@
 namespace Botble\Ecommerce\Providers;
 
 use Botble\Ecommerce\Commands\CancelExpiredDeletionRequests;
-use Botble\Ecommerce\Commands\CancelPendingOrdersCommand;
 use Botble\Ecommerce\Commands\CheckAbandonedCartsCommand;
 use Botble\Ecommerce\Commands\CleanupExpiredCartsCommand;
 use Botble\Ecommerce\Commands\SeedEuVatRatesCommand;
@@ -23,20 +22,20 @@ class CommandServiceProvider extends ServiceProvider
         $this->commands([
             SendAbandonedCartsEmailCommand::class,
             CancelExpiredDeletionRequests::class,
-            CancelPendingOrdersCommand::class,
             CheckAbandonedCartsCommand::class,
             CleanupExpiredCartsCommand::class,
             SeedEuVatRatesCommand::class,
         ]);
 
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command(SendAbandonedCartsEmailCommand::class)->weekly();
             $schedule->command(CancelExpiredDeletionRequests::class)->daily();
 
             $schedule->command(CheckAbandonedCartsCommand::class)
                 ->hourly()
                 ->when(fn () => get_ecommerce_setting('abandoned_cart_enabled', false));
 
-            $schedule->command(CheckAbandonedCartsCommand::class, ['--cleanup'])
+            $schedule->command(CheckAbandonedCartsCommand::class, ['--cleanup' => true])
                 ->daily()
                 ->when(fn () => get_ecommerce_setting('abandoned_cart_enabled', false));
 
@@ -45,10 +44,6 @@ class CommandServiceProvider extends ServiceProvider
             ])->daily();
 
             $schedule->command(CleanupExpiredCartsCommand::class)->daily();
-
-            $schedule->command(CancelPendingOrdersCommand::class)
-                ->everyFiveMinutes()
-                ->when(fn () => get_ecommerce_setting('auto_cancel_pending_orders_enabled', false));
         });
     }
 }

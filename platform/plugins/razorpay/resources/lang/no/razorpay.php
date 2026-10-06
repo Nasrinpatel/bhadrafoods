@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Gjør en testbetaling i testmodus først',
     'check_status' => 'Sjekk om bestillingsstatusen oppdateres til "Fullført"',
     'verify_webhook' => 'Hvis bestillinger forblir "Ufullstendig", verifiser webhook-konfigurasjonen din',
-    'check_logs' => 'Sjekk betalingslogger i Payments > Payment Logs (admin panel) for feilsøking',
+    'check_logs' => 'Sjekk betalingslogger i storage/logs/payment-*.log for feilsøking',
     'troubleshooting' => 'Feilsøkingstips:',
     'ssl_required' => 'Forsikre deg om at nettstedet ditt har et gyldig SSL-sertifikat (HTTPS)',
     'public_url' => 'Verifiser at webhook-URL er offentlig tilgjengelig (ikke localhost)',
     'firewall_check' => 'Sjekk at ingen brannmur blokkerer Razorpay webhook-forespørsler',
     'live_mode' => 'For produksjon, forsikre deg om at Razorpay er i livemodus, ikke testmodus',
-    'minimum_amount_error' => 'Ordrebeløpet er mindre enn minimumsbeløpet tillatt av Razorpay (:amount). Vennligst legg til flere varer i handlekurven din.',
-    'minimum_amount_warning' => 'Razorpay krever et minimum ordrebeløp på :amount. Ditt nåværende ordretotal er under dette minimumet.',
 ];

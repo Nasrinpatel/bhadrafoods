@@ -77,9 +77,7 @@
                                         @switch(Arr::get($field, 'type'))
                                             @case('image')
                                             @case('mediaImage')
-                                                {{-- Nest under "attr" so data-name reaches the hidden input; the JS uses it to
-                                                     restore the field name when a tab item beyond the initial quantity is shown. --}}
-                                                {!! Form::mediaImage($name, $value, ['attr' => $fieldAttributes]) !!}
+                                                {!! Form::mediaImage($name, $value, $fieldAttributes) !!}
                                             @break
 
                                             @case('file')

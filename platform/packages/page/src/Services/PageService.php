@@ -62,7 +62,7 @@ class PageService
         }
 
         SeoHelper::openGraph()->setUrl($page->url);
-        SeoHelper::openGraph()->setType(BaseHelper::isHomepage($page->getKey()) ? 'website' : 'article');
+        SeoHelper::openGraph()->setType('article');
 
         SeoHelper::meta()->setUrl($page->url);
 

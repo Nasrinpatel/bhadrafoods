@@ -32,17 +32,11 @@ class SimpleSlider extends BaseModel
         });
     }
 
-    /**
-     * @return HasMany<SimpleSliderItem, $this>
-     */
     public function sliderItems(): HasMany
     {
         return $this->hasMany(SimpleSliderItem::class)->oldest('simple_slider_items.order');
     }
 
-    /**
-     * @return HasMany<SimpleSliderItem, $this>
-     */
     public function publishedSliderItems(): HasMany
     {
         return $this->sliderItems()->where('simple_slider_items.status', BaseStatusEnum::PUBLISHED);

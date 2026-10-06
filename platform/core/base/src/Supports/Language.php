@@ -290,7 +290,6 @@ class Language
         'de_DE' => ['de', 'de_DE', 'Deutsch', 'ltr', 'de'],
         'de_DE_formal' => ['de', 'de_DE_formal', 'Deutsch', 'ltr', 'de'],
         'el' => ['el', 'el', 'Ελληνικά', 'ltr', 'gr'],
-        'en' => ['en', 'en', 'English', 'ltr', 'us'],
         'en_US' => ['en', 'en_US', 'English', 'ltr', 'us'],
         'en_AU' => ['en', 'en_AU', 'English', 'ltr', 'au'],
         'en_CA' => ['en', 'en_CA', 'English', 'ltr', 'ca'],
@@ -466,15 +465,7 @@ class Language
 
     public static function getLocales(): array
     {
-        // Several entries share the same locale code (e.g. `ar` is used by both Arabic and
-        // Moroccan Arabic). Keep the first one so the base language keeps its own name.
-        $locales = [];
-
-        foreach (static::getListLanguages() as $language) {
-            $locales[$language[0]] ??= $language[2];
-        }
-
-        $locales = collect($locales)->unique()->all();
+        $locales = collect(static::getListLanguages())->pluck('2', '0')->unique()->all();
 
         $locales = [
             ...$locales,

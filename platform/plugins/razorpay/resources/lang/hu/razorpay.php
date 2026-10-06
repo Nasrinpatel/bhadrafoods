@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Először végezzen tesztfizetést tesztüzemmódban',
     'check_status' => 'Ellenőrizze, hogy a rendelés állapota "Befejezett"-re frissül-e',
     'verify_webhook' => 'Ha a rendelések "Befejezetlen" maradnak, ellenőrizze a webhook konfigurációt',
-    'check_logs' => 'Ellenőrizze a fizetési naplókat a Payments > Payment Logs (admin panel) fájlban hibakereséshez',
+    'check_logs' => 'Ellenőrizze a fizetési naplókat a storage/logs/payment-*.log fájlban hibakereséshez',
     'troubleshooting' => 'Hibaelhárítási tippek:',
     'ssl_required' => 'Győződjön meg arról, hogy webhelye érvényes SSL tanúsítvánnyal rendelkezik (HTTPS)',
     'public_url' => 'Ellenőrizze, hogy a webhook URL nyilvánosan elérhető (nem localhost)',
     'firewall_check' => 'Ellenőrizze, hogy egyetlen tűzfal sem blokkolja a Razorpay webhook kéréseket',
     'live_mode' => 'Éles környezetben győződjön meg arról, hogy a Razorpay éles üzemmódban van, nem tesztüzemmódban',
-    'minimum_amount_error' => 'A rendelés összege kisebb, mint a Razorpay által engedélyezett minimális összeg (:amount). Kérjük, adjon hozzá több terméket a kosarához.',
-    'minimum_amount_warning' => 'A Razorpay minimális rendelési összege :amount. Az aktuális rendelési összege ez alatt a minimum alatt van.',
 ];

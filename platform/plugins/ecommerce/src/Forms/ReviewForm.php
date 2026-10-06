@@ -14,7 +14,6 @@ use Botble\Base\Forms\Fields\SelectField;
 use Botble\Base\Forms\Fields\TextareaField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Base\Forms\FormAbstract;
-use Botble\Ecommerce\Enums\ReviewBadgeEnum;
 use Botble\Ecommerce\Forms\Fronts\Auth\FieldOptions\EmailFieldOption;
 use Botble\Ecommerce\Forms\Fronts\Auth\FieldOptions\TextFieldOption;
 use Botble\Ecommerce\Http\Requests\ReviewRequest;
@@ -60,14 +59,12 @@ class ReviewForm extends FormAbstract
                 TextField::class,
                 TextFieldOption::make()
                     ->label(trans('plugins/ecommerce::ecommerce.customer_name'))
-                    ->placeholder(trans('plugins/ecommerce::review.placeholders.customer_name'))
             )
             ->add(
                 'customer_email',
                 EmailField::class,
                 EmailFieldOption::make()
                     ->label(trans('plugins/ecommerce::ecommerce.customer_email'))
-                    ->placeholder(trans('plugins/ecommerce::review.placeholders.customer_email'))
             )
             ->add(
                 'close_or',
@@ -82,7 +79,6 @@ class ReviewForm extends FormAbstract
                     ->label(trans('plugins/ecommerce::review.star'))
                     ->choices(array_combine(range(1, 5), range(1, 5)))
                     ->selected(5)
-                    ->helperText(trans('plugins/ecommerce::review.helpers.star'))
             )
             ->add(
                 'comment',
@@ -90,21 +86,11 @@ class ReviewForm extends FormAbstract
                 TextareaFieldOption::make()
                     ->label(trans('plugins/ecommerce::review.comment'))
                     ->required()
-                    ->placeholder(trans('plugins/ecommerce::review.placeholders.comment'))
             )
             ->add('images[]', MediaImagesField::class, [
                 'label' => trans('plugins/ecommerce::review.images'),
                 'values' => $this->model->images,
             ])
-            ->add(
-                'badge_type',
-                SelectField::class,
-                SelectFieldOption::make()
-                    ->label(trans('plugins/ecommerce::review.badge_type'))
-                    ->choices(ReviewBadgeEnum::labels())
-                    ->selected($this->model->badge_type?->getValue() ?? ReviewBadgeEnum::AUTO)
-                    ->helperText(trans('plugins/ecommerce::review.badge_type_help'))
-            )
             ->add(
                 'created_at',
                 DatePickerField::class,
@@ -113,6 +99,6 @@ class ReviewForm extends FormAbstract
                     ->value(Carbon::now())
                     ->withTimePicker()
             )
-            ->setBreakFieldPoint('badge_type');
+            ->setBreakFieldPoint('created_at');
     }
 }

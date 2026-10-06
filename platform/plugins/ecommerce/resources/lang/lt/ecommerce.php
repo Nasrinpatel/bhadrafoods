@@ -121,7 +121,6 @@ return [
     'apply' => 'Taikyti',
     'available' => 'Prieinamas',
     'back_to_return_requests' => 'Grįžti į grąžinimo užklausas',
-    'backorder_warning' => 'Įspėjimas: Šis produktas yra užsakytas ir pristatymas gali užtrukti ilgiau.',
     'choose_reason' => 'Pasirinkite priežastį',
     'clear' => 'Išvalyti',
     'clear_all_filters' => 'Išvalyti visus filtrus',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Apmokėti',
     'complete_order' => 'Užbaigti užsakymą',
     'agree_terms_and_policy_error' => 'Turite sutikti su sąlygomis ir privatumo politika.',
-    'optional' => 'Neprivaloma',
-
 ];

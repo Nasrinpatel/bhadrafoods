@@ -34,11 +34,9 @@ class AdminAppearance
 
     public function getLocale(): string
     {
-        $siteLocale = setting('locale', config('core.base.general.locale', config('app.locale')));
+        $generalLocale = config('core.base.general.locale', config('app.locale'));
 
-        $locale = $this->getUserSetting('locale');
-
-        return $locale ?: $siteLocale;
+        return $this->getUserSetting('locale', $generalLocale);
     }
 
     public function getLocaleDirection(): string

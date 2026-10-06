@@ -33,11 +33,6 @@ class ContactController extends BaseController
 
         $this->pageTitle(trans('plugins/contact::contact.edit'));
 
-        if ($contact->status == ContactStatusEnum::UNREAD) {
-            $contact->status = ContactStatusEnum::READ();
-            $contact->save();
-        }
-
         return ContactForm::createFromModel($contact)->renderForm();
     }
 

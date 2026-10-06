@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => '顯示一條資訊訊息,通知顧客他們在下訂單時同意的條款。',
       'hide_customer_info_at_checkout' => '在結帳時隱藏顧客資訊',
       'hide_customer_info_at_checkout_helper' => '從結帳頁面隱藏顧客帳戶資訊和登出按鈕。啟用後,已登入的顧客將看不到其帳戶詳情顯示。',
-      'enable_order_notes_at_checkout' => '在結帳時啟用訂單備註',
-      'enable_order_notes_at_checkout_helper' => '如果啟用，客戶可以在結帳頁面向訂單添加可選備註（例如特殊送貨說明）。',
     ],
   ],
   'return' =>

@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Model;
 
-final class UniquePhoneRule implements ValidationRule
+class UniquePhoneRule implements ValidationRule
 {
     protected ?int $ignoreId = null;
 

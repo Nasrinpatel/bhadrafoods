@@ -82,36 +82,6 @@
         border-color: #ff6b35;
         box-shadow: 0 2px 12px rgba(255, 107, 53, 0.15);
     }
-
-    /* Locked state — parent product not yet in cart. */
-    &.is-locked {
-        background: #fafafa;
-        border-color: #ececec;
-        border-style: dashed;
-        cursor: not-allowed;
-
-        &:hover {
-            border-color: #ececec;
-            box-shadow: none;
-        }
-
-        .ec-upsell-bundle-item-inner {
-            cursor: not-allowed;
-        }
-
-        .ec-upsell-bundle-thumb,
-        .ec-upsell-bundle-info,
-        .ec-upsell-bundle-action {
-            opacity: 0.55;
-            filter: grayscale(0.4);
-        }
-
-        .ec-upsell-bundle-name a,
-        .ec-upsell-attribute-text,
-        .ec-upsell-attribute-visual {
-            pointer-events: none;
-        }
-    }
 }
 
 .ec-upsell-bundle-item-inner {
@@ -187,25 +157,6 @@
     }
 }
 
-/* Lock icon shown inside the checkmark when parent product is not in cart. */
-.ec-upsell-lock-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    color: #9aa0a6;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-}
-
-.ec-upsell-bundle-item.is-locked .ec-upsell-checkmark {
-    background-color: #f1f3f5;
-    border-color: #cbd0d4;
-    border-style: dashed;
-    cursor: not-allowed;
-}
-
 .ec-upsell-bundle-thumb {
     position: relative;
     width: 70px;
@@ -240,22 +191,6 @@
     padding: 2px 6px;
     border-radius: 4px;
     z-index: 1;
-
-    // Inline variant — used when the badge sits next to the price instead
-    // of overlaying the product thumbnail. Resets the absolute positioning
-    // so the badge flows inline within .ec-upsell-bundle-price.
-    &.ec-upsell-discount-badge--inline {
-        position: static;
-        top: auto;
-        left: auto;
-        z-index: auto;
-        font-size: 12px;
-        padding: 4px 8px;
-        border-radius: 6px;
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-    }
 }
 
 .ec-upsell-bundle-info {
@@ -780,8 +715,7 @@
 
 .ec-cross-sale-price-old {
     font-size: 13px;
-    // Darkened from #94a3b8 (2.56:1) to meet WCAG AA 4.5:1 on white.
-    color: #647082;
+    color: #94a3b8;
     text-decoration: line-through;
     line-height: 1.3;
 }

@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Hämta systemrapport',
     'system_environment' => 'Systemmiljö',
     'framework_version' => 'Ramverksversion',
-    'core_version' => 'Kärnversion',
     'timezone' => 'Tidszon',
     'debug_mode' => 'Felsökningsläge',
     'debug_mode_off' => 'Felsökningsläge av',

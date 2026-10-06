@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Visa ett informationsmeddelande som informerar kunder om de villkor de godkänner genom att lägga en beställning.',
       'hide_customer_info_at_checkout' => 'Dölj kundinformation vid kassan',
       'hide_customer_info_at_checkout_helper' => 'Dölj kundkontoinformationen och utloggningsknappen från kassasidan. När aktiverat kommer inloggade kunder inte att se sina kontouppgifter visade.',
-      'enable_order_notes_at_checkout' => 'Aktivera orderanteckningar vid utcheckning',
-      'enable_order_notes_at_checkout_helper' => 'Om aktiverat kan kunder lägga till valfria anteckningar till sin beställning på utcheckningssidan (t.ex. särskilda leveransinstruktioner).',
     ],
   ],
   'return' =>

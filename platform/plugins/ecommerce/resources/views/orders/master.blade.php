@@ -55,7 +55,6 @@
 
     {!! Html::style('vendor/core/core/base/libraries/toastr/toastr.min.css?v=' . $assetsVersion) !!}
 
-    {!! Html::script('vendor/core/core/base/libraries/jquery.min.js?v=' . $assetsVersion) !!}
     {!! Html::script('vendor/core/plugins/ecommerce/js/checkout.js?v=' . $assetsVersion) !!}
 
     @if (EcommerceHelper::loadCountriesStatesCitiesFromPluginLocation())

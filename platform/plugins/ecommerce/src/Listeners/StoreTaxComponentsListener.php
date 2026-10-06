@@ -45,7 +45,7 @@ class StoreTaxComponentsListener
             city: $address?->city,
             zip_code: $address?->zip_code,
             quantity: $orderProduct->qty,
-            price: (float) ($orderProduct->price ?? 0),
+            price: $orderProduct->price,
         );
 
         $result = $this->engine->calculate($context);

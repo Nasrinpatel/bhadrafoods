@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Najpierw dokonaj płatności testowej w trybie testowym',
     'check_status' => 'Sprawdź, czy status zamówienia aktualizuje się na "Ukończone"',
     'verify_webhook' => 'Jeśli zamówienia pozostają "Niekompletne", sprawdź konfigurację webhooka',
-    'check_logs' => 'Sprawdź dzienniki płatności w Payments > Payment Logs (admin panel) w celu debugowania',
+    'check_logs' => 'Sprawdź dzienniki płatności w storage/logs/payment-*.log w celu debugowania',
     'troubleshooting' => 'Wskazówki dotyczące rozwiązywania problemów:',
     'ssl_required' => 'Upewnij się, że Twoja witryna ma ważny certyfikat SSL (HTTPS)',
     'public_url' => 'Sprawdź, czy URL webhooka jest publicznie dostępny (nie localhost)',
     'firewall_check' => 'Sprawdź, czy żadna zapora ogniowa nie blokuje żądań webhooka Razorpay',
     'live_mode' => 'W przypadku produkcji upewnij się, że Razorpay jest w trybie na żywo, a nie w trybie testowym',
-    'minimum_amount_error' => 'Kwota zamówienia jest mniejsza niż minimalna kwota dozwolona przez Razorpay (:amount). Dodaj więcej produktów do koszyka.',
-    'minimum_amount_warning' => 'Razorpay wymaga minimalnej kwoty zamówienia :amount. Aktualna suma zamówienia jest poniżej tego minimum.',
 ];

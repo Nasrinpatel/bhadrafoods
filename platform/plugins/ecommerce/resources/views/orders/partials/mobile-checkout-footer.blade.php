@@ -11,7 +11,7 @@
     $hasCoupons = isset($discounts) && $discounts->isNotEmpty();
 @endphp
 
-<div class="mobile-checkout-footer checkout-section checkout-section--footer">
+<div class="mobile-checkout-footer">
     @if ($showAcceptanceMessage)
         <div class="mobile-checkout-footer__acceptance">
             {{ trans('plugins/ecommerce::ecommerce.checkout_acceptance_message') }}

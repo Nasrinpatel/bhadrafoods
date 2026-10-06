@@ -5,6 +5,7 @@ namespace Botble\AuditLog\Models;
 use Botble\ACL\Models\User;
 use Botble\Base\Models\BaseModel;
 use Botble\Base\Models\BaseQueryBuilder;
+use Botble\Ecommerce\Models\Customer;
 use Botble\Setting\Enums\DataRetentionPeriod;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\MassPrunable;
@@ -70,26 +71,28 @@ class AuditHistory extends BaseModel
 
     public function getUserTypeLabelAttribute(): string
     {
-        return $this->resolveTypeLabel($this->user_type);
+        if (! $this->user_type || ! class_exists($this->user_type)) {
+            return trans('plugins/audit-log::history.system');
+        }
+
+        return match ($this->user_type) {
+            User::class => trans('plugins/audit-log::history.admin'),
+            Customer::class => trans('plugins/audit-log::history.customer'),
+            default => trans('plugins/audit-log::history.system'),
+        };
     }
 
     public function getActorTypeLabelAttribute(): string
     {
-        return $this->resolveTypeLabel($this->actor_type);
-    }
-
-    protected function resolveTypeLabel(?string $type): string
-    {
-        if (! $type || ! class_exists($type)) {
+        if (! $this->actor_type || ! class_exists($this->actor_type)) {
             return trans('plugins/audit-log::history.system');
         }
 
-        $labels = [
+        return match ($this->actor_type) {
             User::class => trans('plugins/audit-log::history.admin'),
-            'Botble\Ecommerce\Models\Customer' => trans('plugins/audit-log::history.customer'),
-        ];
-
-        return $labels[$type] ?? trans('plugins/audit-log::history.system');
+            Customer::class => trans('plugins/audit-log::history.customer'),
+            default => trans('plugins/audit-log::history.system'),
+        };
     }
 
     public function prunable(): Builder|BaseQueryBuilder

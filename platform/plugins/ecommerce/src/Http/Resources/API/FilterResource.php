@@ -11,11 +11,11 @@ class FilterResource extends JsonResource
     public function toArray($request): array
     {
         // Extract basic filter data
-        [$categories, $brands, $tags, $rand, $categoriesRequest, $urlCurrent, $categoryId, $maxFilterPrice, $labels] = $this->resource;
+        [$categories, $brands, $tags, $rand, $categoriesRequest, $urlCurrent, $categoryId, $maxFilterPrice] = $this->resource;
 
         // Check if attribute sets are included
-        $attributeSets = $this->resource[9] ?? collect();
-        $selectedAttrs = $this->resource[10] ?? [];
+        $attributeSets = $this->resource[8] ?? collect();
+        $selectedAttrs = $this->resource[9] ?? [];
 
         $priceRanges = EcommerceHelper::dataPriceRangesForFilter();
 
@@ -55,14 +55,6 @@ class FilterResource extends JsonResource
                     'slug' => $slug,
                     'url' => $tag->url ?? route('public.products', ['tags[]' => $tag->id]),
                     'products_count' => $tag->products_count,
-                ];
-            })->all(),
-            'labels' => $labels->map(function ($label) {
-                return [
-                    'id' => $label->id,
-                    'name' => $label->name,
-                    'color' => $label->color,
-                    'products_count' => $label->products_count,
                 ];
             })->all(),
             'price_ranges' => $priceRanges,

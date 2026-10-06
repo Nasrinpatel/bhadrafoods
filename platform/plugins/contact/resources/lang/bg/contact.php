@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => 'Нашият отговор:',
         'admin_reply_additional_questions' => 'Ако имате допълнителни въпроси, не се колебайте да отговорите на този имейл или да се свържете с нас отново.',
         'admin_reply_best_regards' => 'С най-добри пожелания,',
-        'admin_reply_team' => 'Екип :site_title',
+        'admin_reply_team' => 'Екип {{ site_title }}',
         'notice_title' => 'Ново контактно съобщение',
         'notice_greeting' => 'Уважаеми администратор,',
         'notice_message_details' => 'Детайли на съобщението',
@@ -177,6 +177,4 @@ return [
     'subject_placeholder' => 'Предмет',
     'your_message' => 'Вашето съобщение',
     'agree_terms_privacy' => 'Съгласен съм с Условията и Политиката за поверителност',
-    'agree_terms_privacy_link' => 'Съгласен съм с :link',
-    'terms_and_privacy_policy' => 'Условията и Политиката за поверителност',
 ];

@@ -7,7 +7,6 @@ use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Supports\ServiceProvider;
 use Botble\Base\Traits\LoadAndPublishDataTrait;
 use Botble\Dashboard\Events\RenderingDashboardWidgets;
-use Botble\GetStarted\Supports\GetStartedHelper;
 use Illuminate\Support\Facades\Auth;
 
 class GetStartedServiceProvider extends ServiceProvider
@@ -17,7 +16,6 @@ class GetStartedServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->setNamespace('packages/get-started')
-            ->loadAndPublishConfigurations(['general'])
             ->loadAndPublishTranslations()
             ->publishAssets()
             ->loadRoutes()
@@ -31,9 +29,7 @@ class GetStartedServiceProvider extends ServiceProvider
                         ->addScripts('jquery-ui');
 
                     add_filter(BASE_FILTER_FOOTER_LAYOUT_TEMPLATE, function ($html) {
-                        return $html . view('packages/get-started::index', [
-                            'shouldChangeAccount' => GetStartedHelper::shouldChangeDefaultAccount(),
-                        ])->render();
+                        return $html . view('packages/get-started::index')->render();
                     }, 120);
 
                     add_filter(DASHBOARD_FILTER_ADMIN_NOTIFICATIONS, function ($html) {
@@ -46,8 +42,7 @@ class GetStartedServiceProvider extends ServiceProvider
 
     protected function shouldShowGetStartedPopup(): bool
     {
-        return $this->app['config']->get('packages.get-started.general.enabled', true) &&
-            ! BaseHelper::hasDemoModeEnabled() &&
+        return ! BaseHelper::hasDemoModeEnabled() &&
             is_in_admin(true) &&
             Auth::guard()->check() &&
             setting('admin_appearance_show_get_started', '1') == '1' &&

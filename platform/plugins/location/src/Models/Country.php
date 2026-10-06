@@ -34,8 +34,8 @@ class Country extends BaseModel
     protected static function booted(): void
     {
         static::deleted(function (Country $country): void {
-            $country->cities->each->delete();
-            $country->states->each->delete();
+            $country->states()->delete();
+            $country->cities()->delete();
         });
 
         $clearCache = function (self $model): void {

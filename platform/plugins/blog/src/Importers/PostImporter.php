@@ -4,6 +4,7 @@ namespace Botble\Blog\Importers;
 
 use Botble\ACL\Models\User;
 use Botble\Base\Enums\BaseStatusEnum;
+use Botble\Base\Models\BaseModel;
 use Botble\Blog\Models\Category;
 use Botble\Blog\Models\Post;
 use Botble\Blog\Services\StoreCategoryService;
@@ -223,6 +224,7 @@ class PostImporter extends Importer implements WithMapping
             ->explode(',')
             ->map(function ($item) use ($modelClass) {
                 /**
+                 * @var BaseModel $modelClass
                  * @var Post $model
                  */
                 $model = $modelClass::query()->firstOrCreate(['name' => trim($item)]);

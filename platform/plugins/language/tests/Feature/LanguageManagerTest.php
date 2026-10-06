@@ -350,11 +350,8 @@ class LanguageManagerTest extends BaseTestCase
 
     public function testSupportedModelsReturnsArray(): void
     {
-        $this->manager->registerModule('App\\Models\\SmokeTestModel');
-
         $models = $this->manager->supportedModels();
-
-        $this->assertContains('App\\Models\\SmokeTestModel', $models);
+        $this->assertIsArray($models);
     }
 
     public function testRegisterModuleAddsToSupportedModels(): void
@@ -422,6 +419,7 @@ class LanguageManagerTest extends BaseTestCase
 
     public function testGetLocalesMappingReturnsEmptyByDefault(): void
     {
+        $this->assertIsArray($this->manager->getLocalesMapping());
         $this->assertEmpty($this->manager->getLocalesMapping());
     }
 }

@@ -238,10 +238,10 @@ class GoogleTranslate
             throw new TranslationRequestException($e->getMessage(), $e->getCode());
         }
 
-        $body = (string) $response->getBody(); // Get response body
+        $body = $response->getBody(); // Get response body
 
         // Modify body to avoid json errors
-        $bodyJson = (string) preg_replace(array_keys($this->resultRegexes), array_values($this->resultRegexes), $body);
+        $bodyJson = preg_replace(array_keys($this->resultRegexes), array_values($this->resultRegexes), $body);
 
         // Decode JSON data
         try {

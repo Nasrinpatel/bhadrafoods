@@ -121,7 +121,6 @@ return [
     'apply' => 'Bruk',
     'available' => 'Tilgjengelig',
     'back_to_return_requests' => 'Tilbake til returforespørsler',
-    'backorder_warning' => 'Advarsel: Dette produktet er i restordre og kan ta lengre tid å sende.',
     'choose_reason' => 'Velg årsak',
     'clear' => 'Tøm',
     'clear_all_filters' => 'Fjern alle filtre',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Gå til kassen',
     'complete_order' => 'Fullfør bestilling',
     'agree_terms_and_policy_error' => 'Du må godta vilkårene og personvernreglene.',
-    'optional' => 'Valgfritt',
-
 ];

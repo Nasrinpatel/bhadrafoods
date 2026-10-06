@@ -157,15 +157,13 @@ class AdminAppearanceSettingForm extends SettingForm
                     ->helperText(trans('core/setting::setting.admin_appearance.form.link_hover_color_helper'))
             )
             ->when(! empty($locales = AdminHelper::getAdminLocales()), function (FormAbstract $form) use ($locales): void {
-                $choices = ['' => trans('core/setting::setting.admin_appearance.form.admin_locale_default')] + $locales;
-
                 $form->add(
                     AdminAppearance::getSettingKey('locale'),
                     SelectField::class,
                     SelectFieldOption::make()
                         ->label(trans('core/setting::setting.admin_appearance.form.admin_locale'))
-                        ->choices($choices)
-                        ->selected(AdminAppearance::getSetting('locale', ''))
+                        ->choices($locales)
+                        ->selected(AdminAppearance::getSetting('locale', config('core.base.general.locale', config('app.locale'))))
                         ->searchable()
                         ->helperText(trans('core/setting::setting.admin_appearance.form.admin_locale_helper'))
                 );

@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Thực hiện thanh toán thử nghiệm trong chế độ thử nghiệm trước',
     'check_status' => 'Kiểm tra xem trạng thái đơn hàng có cập nhật thành "Đã hoàn thành" không',
     'verify_webhook' => 'Nếu đơn hàng vẫn "Chưa hoàn thành", hãy xác minh cấu hình webhook của bạn',
-    'check_logs' => 'Kiểm tra nhật ký thanh toán trong Payments > Payment Logs (admin panel) để gỡ lỗi',
+    'check_logs' => 'Kiểm tra nhật ký thanh toán trong storage/logs/payment-*.log để gỡ lỗi',
     'troubleshooting' => 'Mẹo khắc phục sự cố:',
     'ssl_required' => 'Đảm bảo trang web của bạn có chứng chỉ SSL hợp lệ (HTTPS)',
     'public_url' => 'Xác minh URL webhook có thể truy cập công khai (không phải localhost)',
     'firewall_check' => 'Kiểm tra không có tường lửa nào chặn các yêu cầu webhook của Razorpay',
     'live_mode' => 'Đối với môi trường sản xuất, đảm bảo Razorpay ở chế độ Live, không phải chế độ Test',
-    'minimum_amount_error' => 'Số tiền đơn hàng thấp hơn số tiền tối thiểu được Razorpay cho phép (:amount). Vui lòng thêm sản phẩm vào giỏ hàng của bạn.',
-    'minimum_amount_warning' => 'Razorpay yêu cầu số tiền đơn hàng tối thiểu là :amount. Tổng đơn hàng hiện tại của bạn thấp hơn mức tối thiểu này.',
 ];

@@ -23,7 +23,7 @@
         'current-customer-review' => $isCurrentCustomerReview
     ])>
         <div class="col-auto">
-            <img class="rounded-circle" src="{{ $review->customer_avatar_url }}" alt="{{ $review->display_name }}" width="60" height="60" style="object-fit: cover;">
+            <img class="rounded-circle" src="{{ $review->customer_avatar_url }}" alt="{{ $review->display_name }}" width="60">
         </div>
         <div class="col">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-2 review-item__header">
@@ -38,15 +38,8 @@
                 <time class="text-muted small" datetime="{{ $review->created_at->translatedFormat('Y-m-d\TH:i:sP') }}">
                     {{ $review->created_at->diffForHumans() }}
                 </time>
-                @php
-                    $badgeType = $review->badge_type?->getValue() ?? \Botble\Ecommerce\Enums\ReviewBadgeEnum::AUTO;
-                @endphp
-                @if ($badgeType === \Botble\Ecommerce\Enums\ReviewBadgeEnum::AUTO && $review->order_created_at)
+                @if ($review->order_created_at)
                     <div class="small text-muted">{{ trans('plugins/ecommerce::review.purchased_at_time', ['time' => $review->order_created_at->diffForHumans()]) }}</div>
-                @elseif ($badgeType === \Botble\Ecommerce\Enums\ReviewBadgeEnum::PURCHASED)
-                    <div class="small text-muted">{{ trans('plugins/ecommerce::review.purchased_at_time', ['time' => $review->created_at->subHours(12)->diffForHumans()]) }}</div>
-                @elseif ($badgeType !== \Botble\Ecommerce\Enums\ReviewBadgeEnum::AUTO && $badgeType !== \Botble\Ecommerce\Enums\ReviewBadgeEnum::NONE)
-                    <div class="small text-muted">{{ $review->badge_type->label() }}</div>
                 @endif
                 @if (! $review->is_approved)
                     <div class="small text-warning">{{ trans('plugins/ecommerce::review.waiting_for_approval') }}</div>

@@ -2,15 +2,13 @@
 <html
     lang="{{ app()->getLocale() }}"
     class="h-100"
-    data-bs-theme="{{ AdminHelper::initialThemeMode() }}"
 >
 
 <head>
     <meta charset="UTF-8">
-    @include('core/base::layouts.partials.theme-mode-script')
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        content="width=device-width, initial-scale=1.0"
     >
     <meta
         name="csrf-token"
@@ -70,6 +68,7 @@
 
 <body
     class="d-flex flex-column h-100 vb-body"
+    @if (AdminHelper::themeMode() === 'dark') data-bs-theme="dark" @endif
 >
     <div id="visual-builder-app">
         @include('packages/page::visual-builder.header')

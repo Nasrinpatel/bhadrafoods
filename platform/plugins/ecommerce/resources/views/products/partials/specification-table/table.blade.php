@@ -1,6 +1,5 @@
 @php
     use Botble\Ecommerce\Models\ProductSpecificationAttributeTranslation;
-    use Botble\Ecommerce\Models\SpecificationAttribute;
     use Botble\Ecommerce\Models\SpecificationTable;
     use Illuminate\Support\Facades\DB;
 
@@ -71,11 +70,7 @@
                 @foreach ($groupData['attributes'] as $attribute)
                     @php
                         $data = SpecificationTable::getAttributeDisplayData($product, $attribute, $currentLangCode);
-                        // For select/radio with ID-based options, `displayValue` resolves to the option label;
-                        // edit forms (and translation lookups) need the raw pivot value (option ID).
-                        $attributeValue = ($attribute->hasOptions() && $attribute->hasIdBasedOptions())
-                            ? $data['defaultValue']
-                            : $data['displayValue'];
+                        $attributeValue = $data['displayValue'];
 
                         if (!$isDefaultLanguage) {
                             if ($attribute->hasOptions()) {
@@ -111,7 +106,7 @@
                                                 <option value="{{ $opt['id'] }}" @selected($opt['id'] === $attributeValue)>{{ $opt['value'] }}</option>
                                             @endforeach
                                         @else
-                                            @foreach ($attribute->getPlainOptions() as $value)
+                                            @foreach ($attribute->options ?? [] as $value)
                                                 <option value="{{ $value }}" @selected($value === $attributeValue)>{{ $value }}</option>
                                             @endforeach
                                         @endif
@@ -125,7 +120,7 @@
                                             </label>
                                         @endforeach
                                     @else
-                                        @foreach ($attribute->getPlainOptions() as $value)
+                                        @foreach ($attribute->options ?? [] as $value)
                                             <label class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="specification_attributes[{{ $attribute->id }}][value]" value="{{ $value }}" @checked($value === $attributeValue)>
                                                 <span class="form-check-label">{{ $value }}</span>
@@ -147,8 +142,7 @@
                                             $translatedOpts = $attributeTranslations[$attribute->id]['options'] ?? [];
                                             foreach ($translatedOpts as $tOpt) {
                                                 if (is_array($tOpt) && ($tOpt['id'] ?? '') === $attributeValue) {
-                                                    // Cast: a translated option can hold a nested array.
-                                                    $resolvedLabel = SpecificationAttribute::castOptionValue($tOpt['value'] ?? '');
+                                                    $resolvedLabel = $tOpt['value'];
                                                     break;
                                                 }
                                             }
@@ -156,7 +150,7 @@
                                                 $resolvedLabel = $attribute->getOptionValueById($attributeValue);
                                             }
                                         } elseif ($attributeValue) {
-                                            $resolvedLabel = SpecificationAttribute::castOptionValue($attributeValue);
+                                            $resolvedLabel = $attributeValue;
                                         }
                                     @endphp
                                     <span class="form-control-plaintext text-muted">{{ $resolvedLabel ?? '—' }}</span>

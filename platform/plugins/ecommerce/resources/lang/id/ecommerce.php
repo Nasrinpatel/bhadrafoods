@@ -120,7 +120,6 @@ return [
     'apply' => 'Terapkan',
     'available' => 'Tersedia',
     'back_to_return_requests' => 'Kembali ke Permintaan Pengembalian',
-    'backorder_warning' => 'Peringatan: Produk ini sedang pre-order dan pengiriman mungkin lebih lama.',
     'choose_reason' => 'Pilih Alasan',
     'clear' => 'Hapus',
     'clear_all_filters' => 'Hapus semua filter',
@@ -191,6 +190,4 @@ return [
     'checkout' => 'Checkout',
     'complete_order' => 'Selesaikan pesanan',
     'agree_terms_and_policy_error' => 'Anda harus menyetujui syarat dan ketentuan serta kebijakan privasi.',
-    'optional' => 'Opsional',
-
 ];

@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Wyświetl komunikat informacyjny informujący klientów o warunkach, na które wyrażają zgodę, składając zamówienie.',
       'hide_customer_info_at_checkout' => 'Ukryj informacje o kliencie przy zamówieniu',
       'hide_customer_info_at_checkout_helper' => 'Ukryj informacje o koncie klienta i przycisk wylogowania na stronie zamówienia. Po włączeniu zalogowani klienci nie będą widzieć swoich danych konta.',
-      'enable_order_notes_at_checkout' => 'Włącz notatki do zamówienia przy kasie',
-      'enable_order_notes_at_checkout_helper' => 'Jeśli włączone, klienci mogą dodawać opcjonalne notatki do swojego zamówienia na stronie kasy (np. specjalne instrukcje dostawy).',
     ],
   ],
   'return' =>

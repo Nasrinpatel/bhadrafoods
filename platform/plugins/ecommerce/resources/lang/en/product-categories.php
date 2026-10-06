@@ -27,6 +27,4 @@ return [
     'parent' => 'Parent Category',
     'image' => 'Image',
     'product_category_translations' => 'Product Category Translations',
-    'parent_self_reference' => 'A category cannot be its own parent.',
-    'parent_circular_reference' => 'A category cannot be assigned to one of its own descendants as a parent.',
 ];

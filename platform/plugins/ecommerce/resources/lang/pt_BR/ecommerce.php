@@ -121,7 +121,6 @@ return [
     'apply' => 'Aplicar',
     'available' => 'Disponível',
     'back_to_return_requests' => 'Voltar para Solicitações de Devolução',
-    'backorder_warning' => 'Aviso: Este produto está em pré-venda e pode demorar mais para ser enviado.',
     'choose_reason' => 'Escolha o Motivo',
     'clear' => 'Limpar',
     'clear_all_filters' => 'Limpar todos os filtros',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Finalizar compra',
     'complete_order' => 'Concluir pedido',
     'agree_terms_and_policy_error' => 'Você deve concordar com os termos e condições e a política de privacidade.',
-    'optional' => 'Opcional',
-
 ];

@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Kuva informatiivne sõnum, mis teavitab kliente tingimustest, millega nad nõustuvad tellimuse esitamisel.',
       'hide_customer_info_at_checkout' => 'Peida kliendi info maksmisstseenis',
       'hide_customer_info_at_checkout_helper' => 'Peida kliendi konto info ja väljalogimise nupp maksmisstseenist. Kui see on lubatud, ei näe sisse logitud kliendid oma konto üksikasju kuvatuna.',
-      'enable_order_notes_at_checkout' => 'Luba tellimuse märkused kassas',
-      'enable_order_notes_at_checkout_helper' => 'Kui on lubatud, saavad kliendid kassaleheküljel oma tellimusele lisada valikulisi märkusi (nt erilised tarnejuhised).',
     ],
   ],
   'return' =>

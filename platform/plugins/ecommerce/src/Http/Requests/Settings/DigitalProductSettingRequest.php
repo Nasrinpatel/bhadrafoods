@@ -14,7 +14,6 @@ class DigitalProductSettingRequest extends Request
             'allow_guest_checkout_for_digital_products' => $onOffRule,
             'enable_filter_products_by_brands' => $onOffRule,
             'enable_filter_products_by_tags' => $onOffRule,
-            'enable_filter_products_by_labels' => $onOffRule,
             'enable_filter_products_by_attributes' => $onOffRule,
             'disable_physical_product' => $onOffRule,
             'enable_license_codes_for_digital_products' => $onOffRule,

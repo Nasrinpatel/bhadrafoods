@@ -279,7 +279,7 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
     {
         return Attribute::get(function (): int {
             $cache = Cache::make(static::class);
-            $cacheKey = 'count_all_products_' . $this->getKey() . '_' . app()->getLocale() . (is_in_admin() ? '_admin' : '_front');
+            $cacheKey = 'count_all_products_' . $this->getKey() . app()->getLocale();
 
             if ($cache->has($cacheKey)) {
                 return $cache->get($cacheKey);
@@ -289,14 +289,13 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 
             $categoryIds[] = $this->getKey();
 
-            $count = Product::query()
+            $count = DB::table('ec_product_category_product')
+                ->join('ec_products', 'ec_product_category_product.product_id', '=', 'ec_products.id')
+                ->whereIn('category_id', $categoryIds)
                 ->where('ec_products.status', BaseStatusEnum::PUBLISHED)
                 ->where('ec_products.is_variation', 0)
-                ->join('ec_product_category_product', 'ec_product_category_product.product_id', '=', 'ec_products.id')
-                ->whereIn('ec_product_category_product.category_id', $categoryIds)
-                ->notOutOfStock()
-                ->distinct()
-                ->count('ec_products.id');
+                ->distinct('product_id')
+                ->count();
 
             $cache->put($cacheKey, $count, Carbon::now()->addHours(2));
 

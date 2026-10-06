@@ -38,7 +38,6 @@ class CheckoutSettingRequest extends Request
             'terms_and_policy_checkbox_checked_by_default' => $onOffRule,
             'checkout_acceptance_message_enabled' => $onOffRule,
             'hide_customer_info_at_checkout' => $onOffRule,
-            'enable_order_notes_at_checkout' => $onOffRule,
         ];
     }
 }

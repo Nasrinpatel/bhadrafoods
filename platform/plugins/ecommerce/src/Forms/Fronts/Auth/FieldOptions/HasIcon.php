@@ -2,13 +2,22 @@
 
 namespace Botble\Ecommerce\Forms\Fronts\Auth\FieldOptions;
 
-use Botble\Ecommerce\Forms\Fronts\FieldOptions\HasIcon as BaseHasIcon;
+use Botble\Base\Facades\BaseHelper;
 
-/**
- * @deprecated Use {@see \Botble\Ecommerce\Forms\Fronts\FieldOptions\HasIcon} instead.
- *             Kept so existing auth field options keep working unchanged.
- */
 trait HasIcon
 {
-    use BaseHasIcon;
+    public function icon(string $name): static
+    {
+        $this
+            ->prepend(
+                sprintf(
+                    '<div class="position-relative"><span class="auth-input-icon input-group-text">%s</span>',
+                    BaseHelper::renderIcon($name)
+                )
+            )
+            ->append('</div>')
+            ->cssClass('form-control ps-5');
+
+        return $this;
+    }
 }

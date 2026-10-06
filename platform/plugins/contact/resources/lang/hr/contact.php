@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Naš odgovor:',
         'admin_reply_additional_questions' => 'Ako imate dodatnih pitanja, slobodno odgovorite na ovu e-poštu ili nas ponovno kontaktirajte.',
         'admin_reply_best_regards' => 'S poštovanjem,',
-        'admin_reply_team' => ':site_title tim',
+        'admin_reply_team' => '{{ site_title }} tim',
 
         // Notice email template
         'notice_title' => 'Nova kontaktna poruka',
@@ -184,6 +184,4 @@ return [
     'subject_placeholder' => 'Predmet',
     'your_message' => 'Vaša poruka',
     'agree_terms_privacy' => 'Slažem se s Uvjetima i Politikom privatnosti',
-    'agree_terms_privacy_link' => 'Slažem se s :link',
-    'terms_and_privacy_policy' => 'Uvjetima i Politikom privatnosti',
 ];

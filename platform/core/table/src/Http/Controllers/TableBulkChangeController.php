@@ -3,7 +3,6 @@
 namespace Botble\Table\Http\Controllers;
 
 use Botble\Base\Facades\Form;
-use Botble\Table\Abstracts\TableAbstract;
 use Botble\Table\Http\Requests\BulkChangeRequest;
 use Botble\Table\Http\Requests\SaveBulkChangeRequest;
 use Illuminate\Support\Arr;
@@ -17,7 +16,7 @@ class TableBulkChangeController extends TableController
     {
         $class = $request->input('class');
 
-        if (! is_string($class) || ! is_subclass_of($class, TableAbstract::class)) {
+        if (! class_exists($class)) {
             return [];
         }
 
@@ -86,7 +85,7 @@ class TableBulkChangeController extends TableController
 
         $class = $request->input('class');
 
-        if (! is_string($class) || ! is_subclass_of($class, TableAbstract::class)) {
+        if (! class_exists($class)) {
             return $this
                 ->httpResponse()->setError();
         }

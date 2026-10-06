@@ -305,8 +305,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Vis en informasjonsmelding som informerer kunder om vilkårene de godtar ved å legge inn en bestilling.',
       'hide_customer_info_at_checkout' => 'Skjul kundeinformasjon ved betaling',
       'hide_customer_info_at_checkout_helper' => 'Skjul kundekontoinformasjon og utloggingsknapp fra betalingssiden. Når aktivert, vil innloggede kunder ikke se sine kontoopplysninger.',
-      'enable_order_notes_at_checkout' => 'Aktiver ordrenotater ved utsjekking',
-      'enable_order_notes_at_checkout_helper' => 'Hvis aktivert, kan kunder legge til valgfrie notater til bestillingen sin på utsjekkingssiden (f.eks. spesielle leveringsinstruksjoner).',
     ],
   ],
   'return' =>

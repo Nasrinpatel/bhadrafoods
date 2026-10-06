@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Toon een informatief bericht dat klanten informeert over de voorwaarden waarmee ze akkoord gaan door een bestelling te plaatsen.',
       'hide_customer_info_at_checkout' => 'Klant info verbergen bij afrekenen',
       'hide_customer_info_at_checkout_helper' => 'Verberg de klant account informatie en uitlog knop van de afrekenpagina. Wanneer ingeschakeld, zien ingelogde klanten hun account details niet weergegeven.',
-      'enable_order_notes_at_checkout' => 'Bestelnotities bij afrekenen inschakelen',
-      'enable_order_notes_at_checkout_helper' => 'Indien ingeschakeld, kunnen klanten optionele notities aan hun bestelling toevoegen op de afrekenpagina (bijv. speciale bezorginstructies).',
     ],
   ],
   'return' =>

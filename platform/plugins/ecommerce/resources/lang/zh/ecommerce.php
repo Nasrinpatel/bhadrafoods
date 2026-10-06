@@ -121,7 +121,6 @@ return [
     'apply' => '应用',
     'available' => '可用',
     'back_to_return_requests' => '返回退货请求',
-    'backorder_warning' => '警告：此商品为预购，发货时间可能较长。',
     'choose_reason' => '选择原因',
     'clear' => '清除',
     'clear_all_filters' => '清除所有筛选',
@@ -192,6 +191,4 @@ return [
     'checkout' => '结账',
     'complete_order' => '完成订单',
     'agree_terms_and_policy_error' => '您必须同意条款和条件以及隐私政策。',
-    'optional' => '可选',
-
 ];

@@ -225,7 +225,7 @@ class LanguageManager
      * Returns a URL adapted to $locale or current locale
      *
      * @param string|null $url URL to adapt. If not passed, the current url would be taken.
-     * @param string|bool|null $locale Locale to adapt, false to remove locale
+     * @param null $locale Locale to adapt, false to remove locale
      * @return string URL translated
      */
     public function localizeURL(?string $url = null, $locale = null): string
@@ -1016,19 +1016,12 @@ class LanguageManager
     {
         $supportedLocales = $this->getSupportedLocales();
 
-        if (empty($locale)) {
+        if (empty($locale) || ! is_string($locale)) {
             // If the locale has not been passed through the function
             // it tries to get it from the first segment of the url
             $locale = $this->request->segment(1);
 
-            // The `language` input is the admin content-translation switcher. On the front-end it
-            // would swallow any form field that happens to be named `language` (e.g. the account
-            // "add language" form) and rewrite the whole public route group under that locale
-            // prefix, making the submitted URL 404. Use the forced check: plugins may filter
-            // is_in_admin() to treat front URLs as admin, and route names are not resolved yet
-            // at the point this runs. The X-LANGUAGE header stays honoured everywhere.
-            $localeFromRequest = (is_in_admin(true) ? $this->request->input('language') : null)
-                ?: $this->request->header('X-LANGUAGE');
+            $localeFromRequest = $this->request->input('language') ?: $this->request->header('X-LANGUAGE');
 
             if ($localeFromRequest && is_string($localeFromRequest) && array_key_exists($localeFromRequest, $supportedLocales)) {
                 $locale = $localeFromRequest;
@@ -1191,7 +1184,7 @@ class LanguageManager
             }
 
             /**
-             * @var class-string<BaseModel> $item
+             * @var BaseModel $item
              */
             $item::resolveRelationUsing('languageMeta', function ($model) {
                 return $model

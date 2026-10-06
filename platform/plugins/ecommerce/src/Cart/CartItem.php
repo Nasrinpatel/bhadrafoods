@@ -2,7 +2,6 @@
 
 namespace Botble\Ecommerce\Cart;
 
-use Botble\Base\Supports\Enum;
 use Botble\Ecommerce\Cart\Contracts\Buyable;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Carbon\Carbon;
@@ -232,55 +231,7 @@ class CartItem implements Arrayable, Jsonable
     {
         $options = Arr::get($attributes, 'options', []);
 
-        $instance = new self(
-            $attributes['id'],
-            $attributes['name'],
-            (float) $attributes['price'],
-            is_array($options) ? $options : []
-        );
-
-        // Restore the exact rowId from storage. The constructor recomputes it
-        // via md5(serialize($options)), but JSON round-trip can coerce numeric
-        // option types (0.0 -> 0), producing a different hash. Without this
-        // override the same product would split into two cart rows instead of
-        // merging qty on re-add.
-        if (! empty($attributes['rowId'])) {
-            $instance->rowId = $attributes['rowId'];
-        }
-
-        if (isset($attributes['qty']) && is_numeric($attributes['qty']) && $attributes['qty'] > 0) {
-            $instance->setQuantity($attributes['qty'] + 0);
-        }
-
-        if (isset($attributes['tax_rate'])) {
-            $instance->setTaxRate((float) $attributes['tax_rate']);
-        }
-
-        if (! empty($attributes['associated_model']) && is_string($attributes['associated_model'])) {
-            $instance->associate($attributes['associated_model']);
-        }
-
-        $instance->created_at = self::parseTimestamp($attributes['created_at'] ?? null) ?? $instance->created_at;
-        $instance->updated_at = self::parseTimestamp($attributes['updated_at'] ?? null) ?? $instance->updated_at;
-
-        return $instance;
-    }
-
-    protected static function parseTimestamp(mixed $value): ?Carbon
-    {
-        if (empty($value)) {
-            return null;
-        }
-
-        if ($value instanceof Carbon) {
-            return $value;
-        }
-
-        try {
-            return Carbon::parse($value);
-        } catch (\Throwable) {
-            return null;
-        }
+        return new self($attributes['id'], $attributes['name'], $attributes['price'], $options);
     }
 
     public static function fromAttributes(int|string|null $id, string $name, float $price, array $options = []): self
@@ -290,42 +241,9 @@ class CartItem implements Arrayable, Jsonable
 
     protected function generateRowId(int|string|null $id, array $options): string
     {
-        // Hash the JSON-normalized options so the rowId does not depend on PHP types.
-        // With the JSON session serializer, a rehydrated item carries JSON-coerced options
-        // (enum objects become {value, label} arrays, 520.0 becomes 520). Hashing the raw
-        // values gave that item a different rowId than a fresh add of the same product,
-        // so Cart::refresh() re-keyed it and later adds created duplicate lines.
-        $normalizedOptions = json_decode((string) json_encode($this->normalizeEnumsForRowId($options)), true);
-
-        if (is_array($normalizedOptions)) {
-            $options = $normalizedOptions;
-        }
-
         ksort($options);
 
         return md5($id . serialize($options));
-    }
-
-    /**
-     * Reduce enums to their raw value, both as objects (fresh add) and in the {value, label}
-     * form the JSON session serializer stores them in. The label is translated, so hashing it
-     * would give the same product a different rowId in each locale.
-     */
-    protected function normalizeEnumsForRowId(mixed $value): mixed
-    {
-        if ($value instanceof Enum) {
-            return $value->getValue();
-        }
-
-        if (! is_array($value)) {
-            return $value;
-        }
-
-        if (count($value) === 2 && array_key_exists('value', $value) && array_key_exists('label', $value)) {
-            return $value['value'];
-        }
-
-        return array_map(fn ($item) => $this->normalizeEnumsForRowId($item), $value);
     }
 
     public function toArray(): array
@@ -336,29 +254,11 @@ class CartItem implements Arrayable, Jsonable
             'name' => $this->name,
             'qty' => $this->qty,
             'price' => $this->price,
-            'options' => $this->options instanceof Collection
-                ? $this->options->toArray()
-                : (array) $this->options,
+            'options' => $this->options->toArray(),
             'tax' => $this->tax,
             'subtotal' => $this->subtotal,
-            'updated_at' => $this->updated_at instanceof Carbon
-                ? $this->updated_at->toIso8601String()
-                : $this->updated_at,
+            'updated_at' => $this->updated_at,
         ];
-    }
-
-    // Extended shape used ONLY by Cart::putToSession to persist across request.
-    // Includes internal fields (taxRate, associatedModel, created_at) that should
-    // NOT leak through toArray() / toJson() to API consumers.
-    public function toSessionArray(): array
-    {
-        return array_merge($this->toArray(), [
-            'tax_rate' => $this->taxRate,
-            'associated_model' => $this->associatedModel,
-            'created_at' => $this->created_at instanceof Carbon
-                ? $this->created_at->toIso8601String()
-                : $this->created_at,
-        ]);
     }
 
     public function toJson($options = 0): string

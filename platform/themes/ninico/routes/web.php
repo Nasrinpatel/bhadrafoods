@@ -6,6 +6,8 @@ use Theme\Ninico\Http\Controllers\NinicoController;
 
 Route::group(['controller' => NinicoController::class, 'middleware' => ['web', 'core']], function (): void {
     Route::group(apply_filters(BASE_FILTER_GROUP_PUBLIC_ROUTE, []), function (): void {
+        Route::post('bulk-order-contact', 'postBulkOrderContact')->name('public.bulk-order.send');
+
         Route::group(['prefix' => 'ajax', 'as' => 'public.ajax.'], function (): void {
             Route::get('products', 'ajaxGetProducts')->name('products');
             Route::get('cart', 'ajaxCart')->name('cart');

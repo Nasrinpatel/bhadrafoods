@@ -69,7 +69,9 @@ class ImportLocationService
         $this->countries->push($country);
         $this->count++;
 
-        event(new ImportedCountryEvent($row, $country));
+        if ($country->wasRecentlyCreated) {
+            event(new ImportedCountryEvent($row, $country));
+        }
     }
 
     protected function storeState(array $row, bool $skipExistingRecords = false): void
@@ -108,7 +110,9 @@ class ImportLocationService
         $this->states->push($state);
         $this->count++;
 
-        event(new ImportedStateEvent($row, $state));
+        if ($state->wasRecentlyCreated) {
+            event(new ImportedStateEvent($row, $state));
+        }
     }
 
     protected function storeCity(array $row, bool $skipExistingRecords = false): void
@@ -147,7 +151,9 @@ class ImportLocationService
 
         $this->count++;
 
-        event(new ImportedCityEvent($row, $city));
+        if ($city->wasRecentlyCreated) {
+            event(new ImportedCityEvent($row, $city));
+        }
     }
 
     protected function getCountryId(string|int $value): string

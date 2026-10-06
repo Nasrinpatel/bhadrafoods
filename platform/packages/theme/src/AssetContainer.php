@@ -332,11 +332,15 @@ class AssetContainer
 
         $isLocal = ! Str::startsWith($source, ['http://', 'https://']);
 
+        if (! is_bool($this->usePath) && ThemeFacade::exists($this->usePath)) {
+            $source = str_replace($currentTheme, $this->usePath, $source);
+        }
+
         if (
             ThemeFacade::hasInheritTheme()
             && ! $this->isInheritTheme()
             && $isLocal
-            && ! File::exists(public_path(Str::before($source, '?')))
+            && ! File::exists(public_path($source))
         ) {
             $source = str_replace($currentTheme, ThemeFacade::getInheritTheme(), $source);
         }

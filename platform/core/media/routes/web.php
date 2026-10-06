@@ -75,28 +75,6 @@ Route::group(['namespace' => 'Botble\Media\Http\Controllers'], function (): void
                     'uses' => 'MediaFolderController@store',
                 ]);
             });
-
-            Route::group(['prefix' => 'folder-permissions'], function (): void {
-                Route::get('users', [
-                    'as' => 'folder_permissions.users',
-                    'uses' => 'FolderPermissionController@users',
-                ]);
-
-                Route::get('{folder}', [
-                    'as' => 'folder_permissions.index',
-                    'uses' => 'FolderPermissionController@index',
-                ]);
-
-                Route::post('{folder}', [
-                    'as' => 'folder_permissions.store',
-                    'uses' => 'FolderPermissionController@store',
-                ]);
-
-                Route::delete('{folder}/{user}', [
-                    'as' => 'folder_permissions.destroy',
-                    'uses' => 'FolderPermissionController@destroy',
-                ]);
-            });
         });
     });
 });

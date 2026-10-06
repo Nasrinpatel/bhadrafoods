@@ -27,6 +27,4 @@ return [
     'parent' => 'Categoria Padre',
     'image' => 'Immagine',
     'product_category_translations' => 'Traduzioni Categoria Prodotto',
-    'parent_self_reference' => 'Una categoria non può essere genitore di se stessa.',
-    'parent_circular_reference' => 'Una categoria non può essere assegnata come genitore a una delle sue sottocategorie.',
 ];

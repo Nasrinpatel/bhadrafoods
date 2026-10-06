@@ -1,4 +1,4 @@
-@php($galleries = get_galleries(isset($shortcode) && (int) $shortcode->limit ? (int) $shortcode->limit : ($limit ?? 6)))
+@php($galleries = get_galleries(isset($shortcode) && (int) $shortcode->limit ? (int) $shortcode->limit : ($limit ?: 6)))
 
 @if (! $galleries->isEmpty())
     <section class="shop-area pb-100">

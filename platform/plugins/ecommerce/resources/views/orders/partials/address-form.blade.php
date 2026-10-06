@@ -40,7 +40,7 @@
                                 <option
                                     value="{{ $address->id }}"
                                     @selected($oldSessionAddressId == $address->id)
-                                >{{ $address->name ? $address->name . ' - ' : '' }}{{ $address->full_address }}</option>
+                                >{{ $address->full_address }}</option>
                             @endforeach
                         @endif
                     </select>
@@ -82,10 +82,6 @@
         </div>
     @endauth
 
-    @php
-        $enabledMandatoryFields = (array) EcommerceHelper::getEnabledMandatoryFieldsAtCheckout();
-    @endphp
-
     <div class="address-form-wrapper @if (auth('customer')->check() && $oldSessionAddressId !== 'new' && $isAvailableAddress) d-none @endif">
         <div class="form-group mb-3 @error('address.name') has-error @enderror">
             <div class="form-input-wrapper">
@@ -120,9 +116,9 @@
                                 autocomplete="email"
                                 type="email"
                                 value="{{ old('address.email', Arr::get($sessionCheckoutData, 'email')) ?: (auth('customer')->check() ? auth('customer')->user()->email : null) }}"
-                                @required(in_array('email', $enabledMandatoryFields))
+                                required
                             >
-                            <label for="address_email">{{ __('Email') }}@if (!in_array('email', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                            <label for="address_email">{{ __('Email') }}</label>
                         </div>
                         {!! Form::error('address.email', $errors) !!}
                     </div>
@@ -151,7 +147,6 @@
                                     data-country-code-selection="true"
                                     value="{{ $phoneValue }}"
                                     placeholder="{{ trans('plugins/ecommerce::addresses.phone_placeholder') }}"
-                                    @required(in_array('phone', $enabledMandatoryFields))
                                 >
                                 <input
                                     type="hidden"
@@ -170,10 +165,9 @@
                                     type="tel"
                                     value="{{ $phoneValue }}"
                                     placeholder="{{ trans('plugins/ecommerce::addresses.phone_placeholder') }}"
-                                    @required(in_array('phone', $enabledMandatoryFields))
                                 >
                             @endif
-                            <label for="address_phone">{{ __('Phone') }}@if (!in_array('phone', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                            <label for="address_phone">{{ __('Phone') }}</label>
                         </div>
                         {!! Form::error('address.phone', $errors) !!}
                     </div>
@@ -193,7 +187,7 @@
                         autocomplete="country"
                         data-form-parent=".customer-address-payment-form"
                         data-type="country"
-                        @required(in_array('country', $enabledMandatoryFields))
+                        required
                     >
                         @foreach (EcommerceHelper::getAvailableCountries() as $countryCode => $countryName)
                             <option
@@ -205,7 +199,7 @@
                         @endforeach
                     </select>
                     <x-core::icon name="ti ti-chevron-down" />
-                    <label for="address_country">{{ __('Country') }}@if (!in_array('country', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                    <label for="address_country">{{ __('Country') }}</label>
                 </div>
                 {!! Form::error('address.country', $errors) !!}
             </div>
@@ -232,7 +226,7 @@
                                     data-form-parent=".customer-address-payment-form"
                                     data-type="state"
                                     data-url="{{ route('ajax.states-by-country') }}"
-                                    @required(in_array('state', $enabledMandatoryFields))
+                                    required
                                 >
                                     <option value="">{{ __('Select state...') }}</option>
                                     @if (old('address.country', Arr::get($sessionCheckoutData, 'country') ?: EcommerceHelper::getDefaultCountryId()) || !EcommerceHelper::isUsingInMultipleCountries())
@@ -245,7 +239,7 @@
                                     @endif
                                 </select>
                                 <x-core::icon name="ti ti-chevron-down" />
-                                <label for="address_state">{{ __('State') }}@if (!in_array('state', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                                <label for="address_state">{{ __('State') }}</label>
                             </div>
                         @else
                             <div class="form-input-wrapper">
@@ -256,9 +250,9 @@
                                     autocomplete="state"
                                     type="text"
                                     value="{{ old('address.state', Arr::get($sessionCheckoutData, 'state')) }}"
-                                    @required(in_array('state', $enabledMandatoryFields))
+                                    required
                                 >
-                                <label for="address_state">{{ __('State') }}@if (!in_array('state', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                                <label for="address_state">{{ __('State') }}</label>
                             </div>
                         @endif
                         {!! Form::error('address.state', $errors) !!}
@@ -278,9 +272,9 @@
                                     autocomplete="city"
                                     type="text"
                                     value="{{ old('address.city', Arr::get($sessionCheckoutData, 'city')) }}"
-                                    @required(in_array('city', $enabledMandatoryFields))
+                                    required
                                 >
-                                <label for="address_city">{{ __('City') }}@if (!in_array('city', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                                <label for="address_city">{{ __('City') }}</label>
                             </div>
                         @else
                             <div class="select--arrow form-input-wrapper">
@@ -292,7 +286,7 @@
                                     data-form-parent=".customer-address-payment-form"
                                     data-type="city"
                                     data-url="{{ route('ajax.cities-by-state') }}"
-                                    @required(in_array('city', $enabledMandatoryFields))
+                                    required
                                 >
                                     <option value="">{{ __('Select city...') }}</option>
                                     @if (old('address.state', Arr::get($sessionCheckoutData, 'state')) || in_array('state', EcommerceHelper::getHiddenFieldsAtCheckout()))
@@ -305,7 +299,7 @@
                                     @endif
                                 </select>
                                 <x-core::icon name="ti ti-chevron-down" />
-                                <label for="address_city">{{ __('City') }}@if (!in_array('city', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                                <label for="address_city">{{ __('City') }}</label>
                             </div>
                         @endif
                         {!! Form::error('address.city', $errors) !!}
@@ -326,9 +320,9 @@
                         autocomplete="address"
                         type="text"
                         value="{{ old('address.address', Arr::get($sessionCheckoutData, 'address')) }}"
-                        @required(in_array('address', $enabledMandatoryFields))
+                        required
                     >
-                    <label for="address_address">{{ __('Address') }}@if (!in_array('address', $enabledMandatoryFields)) <small class="text-muted fw-normal">({{ trans('plugins/ecommerce::ecommerce.optional') }})</small>@endif</label>
+                    <label for="address_address">{{ __('Address') }}</label>
                 </div>
                 {!! Form::error('address.address', $errors) !!}
             </div>

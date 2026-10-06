@@ -59,7 +59,6 @@
                                     class="form-control form-control-sm"
                                     id="widget-search"
                                     placeholder="{{ trans('packages/widget::widget.search_widgets') }}"
-                                    aria-label="{{ trans('packages/widget::widget.search_widgets') }}"
                                     autocomplete="off"
                                 >
                             </div>
@@ -239,7 +238,7 @@
 
         <div id="widget-add-step-2" style="display: none;">
             <div class="widget-add-step-header">
-                <button type="button" class="btn btn-sm btn-ghost-secondary widget-add-back-btn" id="widget-add-back" aria-label="{{ trans('packages/widget::widget.back') }}">
+                <button type="button" class="btn btn-sm btn-ghost-secondary widget-add-back-btn" id="widget-add-back">
                     <x-core::icon name="ti ti-arrow-left" size="sm" />
                 </button>
                 <div class="widget-add-step-info">

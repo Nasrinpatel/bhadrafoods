@@ -52,7 +52,7 @@ class RestoreCustomerCartMiddleware
                 $cart->destroy();
             }
 
-            session(['cart_last_restored_at' => Carbon::now()->toIso8601String()]);
+            session(['cart_last_restored_at' => Carbon::now()]);
         }
     }
 
@@ -78,7 +78,7 @@ class RestoreCustomerCartMiddleware
                 }
             }
 
-            session(['cart_last_restored_at' => Carbon::now()->toIso8601String()]);
+            session(['cart_last_restored_at' => Carbon::now()]);
         }
     }
 

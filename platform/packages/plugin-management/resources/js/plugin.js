@@ -92,58 +92,15 @@ class PluginManagement {
     }
 
     handleFilters() {
-        const $searchInput = $('[data-bb-toggle="change-search"]')
-        const urlParams = new URLSearchParams(window.location.search)
-        const savedSearch = urlParams.get('search') || ''
-        const savedStatus = urlParams.get('status') || ''
-        const defaultStatus = $('input[data-bb-toggle="change-filter-plugin-status"]').first().val()
-
-        if (savedSearch) {
-            $searchInput.val(savedSearch)
-        }
-
-        if (savedStatus) {
-            const $radio = $(`input[data-bb-toggle="change-filter-plugin-status"][value="${savedStatus}"]`)
-            if ($radio.length) {
-                $('input[data-bb-toggle="change-filter-plugin-status"]').prop('checked', false)
-                $radio.prop('checked', true)
-            }
-
-            const $dropdownItem = $(`button[data-bb-toggle="change-filter-plugin-status"][data-value="${savedStatus}"]`)
-            if ($dropdownItem.length) {
-                $('button[data-bb-toggle="change-filter-plugin-status"]').removeClass('active')
-                $dropdownItem.addClass('active')
-                $('[data-bb-toggle="status-filter-label"]').text($dropdownItem.text())
-            }
-        }
-
-        let search = $searchInput.val().toLowerCase()
-        let status = $('input[data-bb-toggle="change-filter-plugin-status"]:checked').val()
+        let search = $('[data-bb-toggle="change-search"]').val().toLowerCase()
+        let status = $('[data-bb-toggle="change-filter-plugin-status"]:checked').val()
 
         $('button[data-bb-toggle="change-filter-plugin-status"]').each((index, element) => {
-            const itemStatus = $(element).data('value') || $(element).val()
-            const $pluginItems =
-                itemStatus === 'all' ? $('.plugin-item') : $(`.plugin-item[data-status="${itemStatus}"]`)
-            $(`[data-bb-toggle="plugins-count"][data-status="${itemStatus}"]`).text($pluginItems.length)
+            const status = $(element).data('value') || $(element).val()
+            const $visiblePluginItems =
+                status === 'all' ? $('.plugin-item:visible') : $(`.plugin-item[data-status="${status}"]:visible`)
+            $(`[data-bb-toggle="plugins-count"][data-status="${status}"]`).text($visiblePluginItems.length)
         })
-
-        const updateUrlParams = () => {
-            const url = new URL(window.location.href)
-
-            if (search) {
-                url.searchParams.set('search', search)
-            } else {
-                url.searchParams.delete('search')
-            }
-
-            if (status && status !== defaultStatus) {
-                url.searchParams.set('status', status)
-            } else {
-                url.searchParams.delete('status')
-            }
-
-            window.history.replaceState({}, '', url)
-        }
 
         const applyFilters = () => {
             const $pluginItems = $('.plugin-item')
@@ -183,13 +140,11 @@ class PluginManagement {
 
             search = $(event.currentTarget).val().toLowerCase()
             applyFilters()
-            updateUrlParams()
         })
 
         $(document).on('change', 'input[data-bb-toggle="change-filter-plugin-status"]', (event) => {
             status = $(event.currentTarget).val()
             applyFilters()
-            updateUrlParams()
         })
 
         $(document).on('click', 'button[data-bb-toggle="change-filter-plugin-status"]', (event) => {
@@ -202,12 +157,7 @@ class PluginManagement {
 
             status = newValue
             applyFilters()
-            updateUrlParams()
         })
-
-        if (savedSearch || savedStatus) {
-            applyFilters()
-        }
     }
 
     checkUpdate() {

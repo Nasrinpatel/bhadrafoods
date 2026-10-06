@@ -11,6 +11,7 @@ use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\PasswordField;
 use Botble\Base\Forms\Fields\SelectField;
 use Botble\Base\Forms\Fields\TextField;
+use Botble\Language\Facades\Language;
 use Botble\Setting\Http\Requests\EmailSettingRequest;
 
 class EmailSettingForm extends SettingForm
@@ -89,6 +90,9 @@ class EmailSettingForm extends SettingForm
                     ->placeholder(trans('core/setting::setting.email.password_placeholder'))
                     ->helperText(trans('core/setting::setting.email.password_helper'))
                     ->maxLength(255)
+                    ->attributes([
+                        'type' => 'password',
+                    ])
             )
             ->add(
                 'email_local_domain',
@@ -271,7 +275,23 @@ class EmailSettingForm extends SettingForm
                     ->placeholder(trans('core/setting::setting.email.sender_email_placeholder', ['default' => 'admin@example.com']))
                     ->helperText(trans('core/setting::setting.email.sender_email_helper'))
                     ->maxLength(60)
-            );
+            )
+            ->when(is_plugin_active('language'), function (): void {
+                $localeChoices = ['' => trans('core/setting::setting.email.default_locale_auto')];
+                $supportedLocales = Language::getSupportedLocales();
+                foreach ($supportedLocales as $key => $lang) {
+                    $localeChoices[$key] = $lang['lang_name'];
+                }
 
+                $this->add(
+                    'email_default_locale',
+                    SelectField::class,
+                    SelectFieldOption::make()
+                        ->label(trans('core/setting::setting.email.default_locale'))
+                        ->choices($localeChoices)
+                        ->selected(old('email_default_locale', setting('email_default_locale', '')))
+                        ->helperText(trans('core/setting::setting.email.default_locale_helper'))
+                );
+            });
     }
 }

@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Răspunsul nostru:',
         'admin_reply_additional_questions' => 'Dacă aveți întrebări suplimentare, vă rugăm să răspundeți la acest e-mail sau să ne contactați din nou.',
         'admin_reply_best_regards' => 'Cu stimă,',
-        'admin_reply_team' => 'Echipa :site_title',
+        'admin_reply_team' => 'Echipa {{ site_title }}',
 
         // Notice email template
         'notice_title' => 'Mesaj de contact nou',
@@ -184,6 +184,4 @@ return [
     'subject_placeholder' => 'Subiect',
     'your_message' => 'Mesajul dvs',
     'agree_terms_privacy' => 'Sunt de acord cu Termenii și Politica de confidențialitate',
-    'agree_terms_privacy_link' => 'Sunt de acord cu :link',
-    'terms_and_privacy_policy' => 'Termenii și Politica de confidențialitate',
 ];

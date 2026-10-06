@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Müşterileri sipariş vererek kabul ettikleri şartlar hakkında bilgilendiren bir bilgi mesajı görüntüle.',
       'hide_customer_info_at_checkout' => 'Ödemede müşteri bilgilerini gizle',
       'hide_customer_info_at_checkout_helper' => 'Ödeme sayfasından müşteri hesap bilgilerini ve çıkış düğmesini gizle. Etkinleştirildiğinde, giriş yapmış müşteriler hesap detaylarının görüntülendiğini görmeyecektir.',
-      'enable_order_notes_at_checkout' => 'Ödeme sayfasında sipariş notlarını etkinleştir',
-      'enable_order_notes_at_checkout_helper' => 'Etkinleştirildiğinde, müşteriler ödeme sayfasında siparişlerine isteğe bağlı notlar ekleyebilir (örn. özel teslimat talimatları).',
     ],
   ],
   'return' =>

@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Hae järjestelmäraportti',
     'system_environment' => 'Järjestelmäympäristö',
     'framework_version' => 'Kehyksen versio',
-    'core_version' => 'Ytimen versio',
     'timezone' => 'Aikavyöhyke',
     'debug_mode' => 'Virheenkorjaustila',
     'debug_mode_off' => 'Virheenkorjaustila pois päältä',

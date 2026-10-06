@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Tee ensin testmaksu testitilassa',
     'check_status' => 'Tarkista, päivittyykö tilauksen tila "Valmis"-tilaan',
     'verify_webhook' => 'Jos tilaukset pysyvät "Keskeneräisinä", vahvista webhook-määrityksesi',
-    'check_logs' => 'Tarkista maksulokitiedostot kohdassa Payments > Payment Logs (admin panel) virheenkorjausta varten',
+    'check_logs' => 'Tarkista maksulokitiedostot kohdassa storage/logs/payment-*.log virheenkorjausta varten',
     'troubleshooting' => 'Vianmääritysvinkit:',
     'ssl_required' => 'Varmista, että sivustollasi on voimassa oleva SSL-varmenne (HTTPS)',
     'public_url' => 'Vahvista, että webhook-URL on julkisesti saatavilla (ei localhost)',
     'firewall_check' => 'Tarkista, ettei mikään palomuuri estä Razorpay webhook -pyyntöjä',
     'live_mode' => 'Tuotantoa varten varmista, että Razorpay on Live-tilassa, ei testitilassa',
-    'minimum_amount_error' => 'Tilauksen summa on pienempi kuin Razorpayn sallima vähimmäissumma (:amount). Lisää tuotteita ostoskoriisi.',
-    'minimum_amount_warning' => 'Razorpay vaatii vähimmäistilaussumman :amount. Nykyinen tilauksesi kokonaissumma on tämän vähimmäismäärän alapuolella.',
 ];

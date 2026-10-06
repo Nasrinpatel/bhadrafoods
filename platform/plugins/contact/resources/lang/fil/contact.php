@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Ang Aming Sagot:',
         'admin_reply_additional_questions' => 'Kung mayroon kang mga karagdagang tanong, huwag mag-atubiling sumagot sa email na ito o makipag-ugnayan sa amin muli.',
         'admin_reply_best_regards' => 'Mga Pagbati,',
-        'admin_reply_team' => 'Koponan ng :site_title',
+        'admin_reply_team' => 'Koponan ng {{ site_title }}',
 
         // Notice email template
         'notice_title' => 'Bagong Contact Message',
@@ -184,6 +184,4 @@ return [
     'subject_placeholder' => 'Paksa',
     'your_message' => 'Ang iyong mensahe',
     'agree_terms_privacy' => 'Sumasang -ayon ako sa Patakaran sa Mga Tuntunin at Pagkapribado',
-    'agree_terms_privacy_link' => 'Sumasang-ayon ako sa :link',
-    'terms_and_privacy_policy' => 'Mga Tuntunin at Patakaran sa Privacy',
 ];

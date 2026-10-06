@@ -103,50 +103,27 @@ class ThemeService
             return;
         }
 
-        $fromPrefix = 'theme-' . $fromTheme . '-';
-        $toPrefix = 'theme-' . $theme . '-';
-
-        $excludedPrefixes = $this->getRelatedThemePrefixes($fromTheme, 'theme-');
-
         $themeOptions = ThemeOption::getOptions();
 
         $themeOptions = collect($themeOptions)
-            ->filter(function (mixed $value, string $key) use ($fromPrefix, $excludedPrefixes) {
-                if (! Str::startsWith($key, $fromPrefix)) {
-                    return false;
-                }
-
-                foreach ($excludedPrefixes as $excludedPrefix) {
-                    if (Str::startsWith($key, $excludedPrefix)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            })
+            ->filter(
+                fn (mixed $value, string $key) => Str::startsWith($key, 'theme-' . $fromTheme . '-')
+            )
             ->toArray();
 
         $copiedThemeOptions = [];
 
         $now = Carbon::now();
 
-        $settingModel = new Setting();
-
         foreach ($themeOptions as $key => $option) {
-            $key = $toPrefix . Str::after($key, $fromPrefix);
+            $key = str_replace('theme-' . $fromTheme . '-', 'theme-' . $theme . '-', $key);
 
-            $data = [
+            $copiedThemeOptions[] = [
                 'key' => $key,
                 'value' => $option,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
-
-            if (Setting::isUsingStringId()) {
-                $data[$settingModel->getKeyName()] = $settingModel->newUniqueId();
-            }
-
-            $copiedThemeOptions[] = $data;
         }
 
         if (! empty($copiedThemeOptions)) {
@@ -163,44 +140,23 @@ class ThemeService
             return;
         }
 
-        $relatedThemes = $this->getRelatedThemeNames($fromTheme);
-
-        $query = Widget::query()
+        $copiedWidgets = Widget::query()
             ->where(function ($query) use ($fromTheme): void {
                 $query->where('theme', $fromTheme)
                     ->orWhere('theme', 'LIKE', $fromTheme . '-%');
-            });
-
-        if (! empty($relatedThemes)) {
-            $query->where(function ($query) use ($relatedThemes): void {
-                foreach ($relatedThemes as $relatedTheme) {
-                    $query->where('theme', '!=', $relatedTheme)
-                        ->where('theme', 'NOT LIKE', $relatedTheme . '-%');
-                }
-            });
-        }
-
-        $copiedWidgets = $query->get()->toArray();
-
-        $fromPrefix = $fromTheme . '-';
-        $toPrefix = $theme . '-';
-
-        $widgetModel = new Widget();
+            })
+            ->get()
+            ->toArray();
 
         foreach ($copiedWidgets as $key => $widget) {
             $widgetTheme = $widget['theme'];
             if ($widgetTheme === $fromTheme) {
                 $copiedWidgets[$key]['theme'] = $theme;
             } else {
-                $copiedWidgets[$key]['theme'] = $toPrefix . Str::after($widgetTheme, $fromPrefix);
+                $copiedWidgets[$key]['theme'] = str_replace($fromTheme . '-', $theme . '-', $widgetTheme);
             }
             $copiedWidgets[$key]['data'] = json_encode($widget['data']);
-
-            if (Widget::isUsingStringId()) {
-                $copiedWidgets[$key][$widgetModel->getKeyName()] = $widgetModel->newUniqueId();
-            } else {
-                unset($copiedWidgets[$key]['id']);
-            }
+            unset($copiedWidgets[$key]['id']);
         }
 
         if (! empty($copiedWidgets)) {
@@ -390,21 +346,6 @@ class ThemeService
             'error' => false,
             'message' => trans('packages/theme::theme.removed_assets', ['name' => $theme]),
         ];
-    }
-
-    protected function getRelatedThemeNames(string $theme): array
-    {
-        return collect(BaseHelper::scanFolder(theme_path()))
-            ->filter(fn (string $name) => $name !== $theme && Str::startsWith($name, $theme . '-'))
-            ->values()
-            ->all();
-    }
-
-    protected function getRelatedThemePrefixes(string $theme, string $keyPrefix = ''): array
-    {
-        return collect($this->getRelatedThemeNames($theme))
-            ->map(fn (string $name) => $keyPrefix . $name . '-')
-            ->all();
     }
 
     public function getThemeConfig(string $theme): array

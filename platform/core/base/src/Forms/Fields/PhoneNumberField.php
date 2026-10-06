@@ -10,4 +10,15 @@ class PhoneNumberField extends FormField
     {
         return 'core/base::forms.fields.phone-number';
     }
+
+    public function getAttributes(): array
+    {
+        $attributes = parent::getAttributes();
+
+        if (isset($this->options['with_country_code_selection']) && $this->options['with_country_code_selection']) {
+            $attributes['data-country-code-selection'] = 'true';
+        }
+
+        return $attributes;
+    }
 }

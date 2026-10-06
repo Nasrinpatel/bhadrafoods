@@ -3,9 +3,7 @@
 @php
     $currencies = \Botble\Ecommerce\Models\Currency::query()->oldest('order')->get();
     $defaultCurrency = get_application_currency();
-    // Resolve the product's own currency via getSourceCurrency() so variations inherit the parent product's currency (the raw currency_code column is null on variation rows).
-    $sourceCurrency = $product?->getSourceCurrency() ?? $originalProduct?->getSourceCurrency();
-    $productCurrencyCode = old('currency_code', $sourceCurrency?->title ?? $defaultCurrency->title);
+    $productCurrencyCode = old('currency_code', $product?->currency_code ?? $originalProduct?->currency_code ?? $defaultCurrency->title);
     $selectedCurrency = $currencies->firstWhere('title', $productCurrencyCode) ?? $defaultCurrency;
 @endphp
 
@@ -58,7 +56,6 @@
                     <option
                         value="{{ $currency->title }}"
                         data-symbol="{{ $currency->symbol }}"
-                        data-is-prefix-symbol="{{ $currency->is_prefix_symbol ? 1 : 0 }}"
                         @selected($productCurrencyCode === $currency->title)
                     >
                         {{ $currency->title }} ({{ $currency->symbol }})
@@ -79,15 +76,9 @@
             class="input-mask-number"
             :group-flat="true"
         >
-            @if ($selectedCurrency->is_prefix_symbol)
-                <x-slot:prepend>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:prepend>
-            @else
-                <x-slot:append>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:append>
-            @endif
+            <x-slot:prepend>
+                <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
+            </x-slot:prepend>
         </x-core::form.text-input>
     </div>
     <div class="col-md-6">
@@ -105,15 +96,9 @@
                 {!! BaseHelper::clean(trans('plugins/ecommerce::products.form.price_sale_percent_helper', ['percent' => '<strong>' . ($product ? $product->sale_percent : 0) . '%</strong>'])) !!}
             </x-slot:helper-text>
 
-            @if ($selectedCurrency->is_prefix_symbol)
-                <x-slot:prepend>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:prepend>
-            @else
-                <x-slot:append>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:append>
-            @endif
+            <x-slot:prepend>
+                <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
+            </x-slot:prepend>
             <x-slot:labelDescription>
                 <a
                     class="turn-on-schedule"
@@ -174,15 +159,9 @@
             :group-flat="true"
             :helper-text="trans('plugins/ecommerce::products.form.cost_per_item_helper')"
         >
-            @if ($selectedCurrency->is_prefix_symbol)
-                <x-slot:prepend>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:prepend>
-            @else
-                <x-slot:append>
-                    <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
-                </x-slot:append>
-            @endif
+            <x-slot:prepend>
+                <span class="input-group-text currency-symbol">{{ $selectedCurrency->symbol }}</span>
+            </x-slot:prepend>
         </x-core::form.text-input>
     </div>
     <input

@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Rodyti informacinį pranešimą, informuojantį klientus apie sąlygas, su kuriomis jie sutinka pateikdami užsakymą.',
       'hide_customer_info_at_checkout' => 'Slėpti kliento informaciją atsiskaitant',
       'hide_customer_info_at_checkout_helper' => 'Slėpti kliento paskyros informaciją ir atsijungimo mygtuką atsiskaitymo puslapyje. Kai įjungta, prisijungę klientai nematys rodomų savo paskyros duomenų.',
-      'enable_order_notes_at_checkout' => 'Įgalinti užsakymo pastabas atsiskaitant',
-      'enable_order_notes_at_checkout_helper' => 'Jei įgalinta, klientai gali pridėti neprivalomas pastabas prie savo užsakymo atsiskaitymo puslapyje (pvz., specialias pristatymo instrukcijas).',
     ],
   ],
   'return' =>

@@ -1,48 +1,19 @@
 <script>
     window.addEventListener('load', function() {
-        var trackedEvents = window.gtmTrackedEvents = window.gtmTrackedEvents || {};
-
-        /*
-         * Debounce to prevent duplicate event firing within 2s for the same (event, productId) pair.
-         * Guards against rapid double-clicks and multiple dispatchers of ecommerce.cart.added
-         * (front-ecommerce.js, up-sale-bundle.js, front-upsale-crosssale.js all dispatch this event).
-         */
-        function isEventTracked(eventName, productId) {
-            var key = eventName + '_' + (productId || 'global');
-            var now = Date.now();
-            if (trackedEvents[key] && (now - trackedEvents[key]) < 2000) {
-                return true;
-            }
-            trackedEvents[key] = now;
-            return false;
-        }
-
-        /*
-         * Match the server-side push mechanism (see GoogleTagManager::shouldUseGtag).
-         * For GTM-container / custom setups we push a single flat object so client-side
-         * events (add_to_cart, etc.) stay consistent with the server-rendered ones and
-         * never get the GA4 eventModel wrapper - which previously produced a duplicate,
-         * double-shaped add_to_cart push alongside the flat one.
-         */
-        var gtmUseGtag = @json(app(\Botble\Ecommerce\AdsTracking\GoogleTagManager::class)->shouldUseGtag());
-
         function pushEvent(eventName, eventData) {
-            if (gtmUseGtag && typeof gtag === 'function') {
+            if (typeof gtag === 'function') {
                 gtag('event', eventName, eventData);
-                return;
-            }
-
-            window.dataLayer = window.dataLayer || [];
-
-            var dataLayerEvent = {
-                event: eventName
-            };
-            for (var key in eventData) {
-                if (eventData.hasOwnProperty(key)) {
-                    dataLayerEvent[key] = eventData[key];
+            } else if (window.dataLayer && Array.isArray(window.dataLayer)) {
+                var dataLayerEvent = {
+                    event: eventName
+                };
+                for (var key in eventData) {
+                    if (eventData.hasOwnProperty(key)) {
+                        dataLayerEvent[key] = eventData[key];
+                    }
                 }
+                window.dataLayer.push(dataLayerEvent);
             }
-            window.dataLayer.push(dataLayerEvent);
         }
 
         function formatItemCategories(categories) {
@@ -79,6 +50,29 @@
             };
         }
 
+        $(document).on('click', '[data-bb-toggle="add-to-cart-in-form"]', function (e) {
+            var currentTarget = $(e.currentTarget);
+            var form = currentTarget.closest('form');
+            var price = currentTarget.data('product-price');
+            var quantity = form.find('input[name="qty"]').val();
+            var categories = formatItemCategories(currentTarget.data('product-categories'));
+
+            pushEvent('add_to_cart', {
+                currency: '{{ get_application_currency()->title }}',
+                value: price * quantity,
+                items: [
+                    {
+                        item_id: currentTarget.data('product-id'),
+                        item_name: currentTarget.data('product-name'),
+                        price: price,
+                        quantity: quantity,
+                        item_brand: currentTarget.data('product-brand'),
+                        ...categories,
+                    },
+                ],
+            });
+        });
+
         document.addEventListener('ecommerce.cart.added', function(e) {
             var detail = e.detail;
             var productData = null;
@@ -103,10 +97,6 @@
                 }
 
                 productData.quantity = quantity;
-            }
-
-            if (isEventTracked('add_to_cart', productData.item_id)) {
-                return;
             }
 
             pushEvent('add_to_cart', {
@@ -134,10 +124,6 @@
                 productData.quantity = quantity;
             }
 
-            if (isEventTracked('remove_from_cart', productData.item_id)) {
-                return;
-            }
-
             pushEvent('remove_from_cart', {
                 currency: '{{ get_application_currency()->title }}',
                 value: productData.price * productData.quantity,
@@ -160,10 +146,6 @@
                 }
 
                 productData.quantity = 1;
-            }
-
-            if (isEventTracked('add_to_wishlist', productData.item_id)) {
-                return;
             }
 
             pushEvent('add_to_wishlist', {
@@ -190,10 +172,6 @@
                 productData.quantity = 1;
             }
 
-            if (isEventTracked('remove_from_wishlist', productData.item_id)) {
-                return;
-            }
-
             pushEvent('remove_from_wishlist', {
                 currency: '{{ get_application_currency()->title }}',
                 value: productData.price,
@@ -218,10 +196,6 @@
                 productData.quantity = 1;
             }
 
-            if (isEventTracked('add_to_compare', productData.item_id)) {
-                return;
-            }
-
             pushEvent('add_to_compare', {
                 currency: '{{ get_application_currency()->title }}',
                 value: productData.price,
@@ -244,10 +218,6 @@
                 }
 
                 productData.quantity = 1;
-            }
-
-            if (isEventTracked('remove_from_compare', productData.item_id)) {
-                return;
             }
 
             pushEvent('remove_from_compare', {

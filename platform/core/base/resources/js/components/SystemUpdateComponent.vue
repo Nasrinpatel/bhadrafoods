@@ -216,16 +216,6 @@ export default {
                 })
         },
 
-        decodeHtmlEntities(text) {
-            if (typeof text !== 'string' || !text) {
-                return text
-            }
-
-            const textarea = document.createElement('textarea')
-            textarea.innerHTML = text
-            return textarea.value
-        },
-
         extractErrorMessage(error) {
             const stepLabels = {
                 download: 'downloading update files',
@@ -240,9 +230,8 @@ export default {
             const statusCode = error.response?.status
 
             // Try to extract message from JSON response
-            const serverMessage = this.decodeHtmlEntities(
+            const serverMessage =
                 error.response?.data?.message || error.data?.message || null
-            )
 
             if (serverMessage) {
                 return `Error while ${stepLabel}: ${serverMessage}`

@@ -10,8 +10,7 @@ class SentContactEvent extends Event
 {
     use SerializesModels;
 
-    public function __construct(public bool|BaseModel|null $data, public ?string $locale = null)
+    public function __construct(public bool|BaseModel|null $data)
     {
-        $this->locale = $locale ?: app()->getLocale();
     }
 }

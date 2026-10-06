@@ -3,7 +3,6 @@
 namespace Botble\Base\Providers;
 
 use Botble\Base\Commands\ActivateLicenseCommand;
-use Botble\Base\Commands\AutoClearCacheCommand;
 use Botble\Base\Commands\CacheWarmCommand;
 use Botble\Base\Commands\CleanupSystemCommand;
 use Botble\Base\Commands\ClearExpiredCacheCommand;
@@ -30,7 +29,6 @@ class CommandServiceProvider extends ServiceProvider
 
         $this->commands([
             ActivateLicenseCommand::class,
-            AutoClearCacheCommand::class,
             CacheWarmCommand::class,
             CleanupSystemCommand::class,
             ClearExpiredCacheCommand::class,
@@ -52,7 +50,6 @@ class CommandServiceProvider extends ServiceProvider
 
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command(ClearExpiredCacheCommand::class)->daily();
-            $schedule->command(AutoClearCacheCommand::class)->hourly()->withoutOverlapping();
         });
     }
 }

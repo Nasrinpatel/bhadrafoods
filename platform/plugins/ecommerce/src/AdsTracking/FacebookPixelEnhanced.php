@@ -209,7 +209,7 @@ class FacebookPixelEnhanced
             'currency' => $currency,
             'num_items' => $order->products->count(),
             'order_id' => $order->code,
-        ], $order->code);
+        ]);
 
         return $this;
     }
@@ -267,13 +267,12 @@ class FacebookPixelEnhanced
         return $this;
     }
 
-    protected function pushEvent(string $eventName, array $parameters = [], ?string $eventId = null): void
+    protected function pushEvent(string $eventName, array $parameters = []): void
     {
         try {
             $this->events[] = [
                 'event' => $eventName,
                 'parameters' => $parameters,
-                'eventId' => $eventId,
             ];
         } catch (Throwable $e) {
             if ($this->debugMode) {
@@ -292,13 +291,7 @@ class FacebookPixelEnhanced
 
         foreach ($this->events as $event) {
             $params = json_encode($event['parameters']);
-            $eventIdSuffix = '';
-
-            if (! empty($event['eventId'])) {
-                $eventIdSuffix = ', ' . json_encode(['eventID' => $event['eventId']]);
-            }
-
-            $script .= "fbq('track', '{$event['event']}', {$params}{$eventIdSuffix});";
+            $script .= "fbq('track', '{$event['event']}', {$params});";
 
             if ($this->debugMode) {
                 $script .= "console.log('FB Pixel Event: {$event['event']}', {$params});";

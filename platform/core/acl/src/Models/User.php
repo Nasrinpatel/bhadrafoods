@@ -27,9 +27,6 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Throwable;
 
-/**
- * @property string|null $password
- */
 class User extends BaseModel implements
     HasPermissionsContract,
     AuthenticatableContract,

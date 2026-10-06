@@ -8,6 +8,7 @@ use Botble\Theme\Events\RenderingThemeOptionSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Support\Facades\Cookie;
 
 class CookieConsentServiceProvider extends ServiceProvider
 {
@@ -32,10 +33,6 @@ class CookieConsentServiceProvider extends ServiceProvider
 
                     $view->with(compact('cookieConsentConfig'));
                 });
-
-                if (defined('THEME_FRONT_HEADER')) {
-                    add_filter(THEME_FRONT_HEADER, [$this, 'registerCookieConsentHead'], 1346);
-                }
 
                 add_filter(THEME_FRONT_FOOTER, [$this, 'registerCookieConsent'], 1346);
             }
@@ -75,32 +72,12 @@ class CookieConsentServiceProvider extends ServiceProvider
                             'attributes' => [
                                 'name' => 'cookie_consent_style',
                                 'list' => [
-                                    'card' => trans('plugins/cookie-consent::cookie-consent.theme_options.card'),
-                                    'popup' => trans('plugins/cookie-consent::cookie-consent.theme_options.popup'),
                                     'full-width' => trans('plugins/cookie-consent::cookie-consent.theme_options.full_width'),
                                     'minimal' => trans('plugins/cookie-consent::cookie-consent.theme_options.minimal'),
-                                    'floating' => trans('plugins/cookie-consent::cookie-consent.theme_options.floating'),
-                                    'modal' => trans('plugins/cookie-consent::cookie-consent.theme_options.modal'),
-                                    'top-banner' => trans('plugins/cookie-consent::cookie-consent.theme_options.top_banner'),
                                 ],
-                                'value' => 'card',
+                                'value' => 'yes',
                                 'options' => [
                                     'class' => 'form-control',
-                                ],
-                            ],
-                        ],
-                        [
-                            'id' => 'cookie_consent_title',
-                            'type' => 'text',
-                            'label' => trans('plugins/cookie-consent::cookie-consent.theme_options.title'),
-                            'helper' => trans('plugins/cookie-consent::cookie-consent.theme_options.title_helper'),
-                            'attributes' => [
-                                'name' => 'cookie_consent_title',
-                                'value' => trans('plugins/cookie-consent::cookie-consent.title'),
-                                'options' => [
-                                    'class' => 'form-control',
-                                    'placeholder' => trans('plugins/cookie-consent::cookie-consent.theme_options.title'),
-                                    'data-counter' => 120,
                                 ],
                             ],
                         ],
@@ -250,50 +227,12 @@ class CookieConsentServiceProvider extends ServiceProvider
     {
         $cookieConsentConfig = config('plugins.cookie-consent.general', []);
 
-        // The banner is always rendered and always starts hidden (`display: none`);
-        // partials/scripts.blade.php reveals it only when the consent cookie is absent.
-        // Deciding that here in PHP instead would make the page vary per visitor and
-        // stop it being publicly cacheable - see PublicCacheControl.
-        if (is_in_admin()) {
+        $alreadyConsentedWithCookies = Cookie::has($cookieConsentConfig['cookie_name'] ?? 'cookie_for_consent');
+
+        if (is_in_admin() || $alreadyConsentedWithCookies) {
             return $html;
         }
 
-        $view = $this->resolveStyleView(theme_option('cookie_consent_style', 'card'));
-
-        return $html . view($view, compact('cookieConsentConfig'))->render();
-    }
-
-    public function registerCookieConsentHead(?string $html): string
-    {
-        if (is_in_admin()) {
-            return (string) $html;
-        }
-
-        // Only the cookie NAME is passed through; the stored categories are read from
-        // document.cookie in the browser so this head block is identical for every
-        // visitor and does not defeat shared caching (see PublicCacheControl).
-        return (string) $html . view(
-            'plugins/cookie-consent::partials.head-scripts',
-            ['cookieName' => config('plugins.cookie-consent.general.cookie_name', 'cookie_for_consent')]
-        )->render();
-    }
-
-    protected function resolveStyleView(mixed $style): string
-    {
-        $fallbackView = 'plugins/cookie-consent::index';
-
-        if (! is_string($style) && ! is_numeric($style)) {
-            return $fallbackView;
-        }
-
-        $style = trim((string) $style);
-
-        if ($style === '' || ! preg_match('/^[a-z0-9-]+$/i', $style)) {
-            return $fallbackView;
-        }
-
-        $styleView = 'plugins/cookie-consent::styles.' . $style;
-
-        return view()->exists($styleView) ? $styleView : $fallbackView;
+        return $html . view('plugins/cookie-consent::index')->render();
     }
 }

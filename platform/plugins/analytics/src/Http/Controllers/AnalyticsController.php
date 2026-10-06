@@ -29,7 +29,7 @@ class AnalyticsController extends BaseController
 
             $countryStats = $this->getCountryStats($period, 'countryIsoCode');
 
-            [$sessions, $totalUsers, $screenPageViews, $bounceRate] = $this->getTotalStats($period);
+            [$sessions, $totalUsers, $screenPageViews, $bounceRate] = $this->getTotalStats($period, $dimensions);
 
             return $this
                 ->httpResponse()
@@ -49,21 +49,27 @@ class AnalyticsController extends BaseController
         }
     }
 
-    protected function getTotalStats(Period $period): array
+    protected function getTotalStats(Period $period, string $dimensions): array
     {
-        // Query without dimensions so Google returns already-aggregated totals for the period.
-        // Summing per-day rows would double-count unique users and add up bounce rates past 100%.
-        $totals = Analytics::performQuery(
-            $period,
-            ['sessions', 'totalUsers', 'screenPageViews', 'bounceRate']
-        )->first() ?: [];
+        if ($dimensions === 'hour') {
+            $dimensions = 'date';
+        }
 
-        return [
-            (int) Arr::get($totals, 'sessions', 0),
-            (int) Arr::get($totals, 'totalUsers', 0),
-            (int) Arr::get($totals, 'screenPageViews', 0),
-            (float) Arr::get($totals, 'bounceRate', 0),
-        ];
+        $sessions = 0;
+        $totalUsers = 0;
+        $screenPageViews = 0;
+        $bounceRate = 0;
+
+        $totalQuery = Analytics::performQuery($period, ['sessions', 'totalUsers', 'screenPageViews', 'bounceRate'], $dimensions)->toArray();
+
+        foreach ($totalQuery as $item) {
+            $sessions += $item['sessions'];
+            $totalUsers += $item['totalUsers'];
+            $screenPageViews += $item['screenPageViews'];
+            $bounceRate += Arr::get($item, 'bounceRate', 0);
+        }
+
+        return [$sessions, $totalUsers, $screenPageViews, $bounceRate];
     }
 
     protected function getCountryStats(Period $period, string $dimensions): array

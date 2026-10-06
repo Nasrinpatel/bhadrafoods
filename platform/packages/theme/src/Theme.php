@@ -807,13 +807,11 @@ class Theme implements ThemeContract
             $content->withCookie($this->cookie);
         }
 
-        if (! config('core.base.general.hide_version_headers', false)) {
-            $content->withHeaders([
-                'CMS-Version' => get_core_version(),
-                'Authorization-At' => Setting::get('membership_authorization_at'),
-                'Activated-License' => ! empty(Setting::get('licensed_to')) ? 'Yes' : 'No',
-            ]);
-        }
+        $content->withHeaders([
+            'CMS-Version' => get_core_version(),
+            'Authorization-At' => Setting::get('membership_authorization_at'),
+            'Activated-License' => ! empty(Setting::get('licensed_to')) ? 'Yes' : 'No',
+        ]);
 
         return $content;
     }
@@ -906,19 +904,7 @@ class Theme implements ThemeContract
 
     public function getStyleIntegrationPath(): string
     {
-        /**
-         * Filterable so a multi-tenant install can give each store its own file:
-         * this is a single shared file on disk, so without the filter one store
-         * saving Theme Options CSS overwrites every other store's live stylesheet.
-         *
-         * Every reader and writer of the custom CSS resolves the path through this
-         * method, and the <link> tag is built from basename() of what it returns,
-         * so a filter may rename the file but must keep it in the same folder.
-         */
-        return apply_filters(
-            FILTER_THEME_STYLE_INTEGRATION_PATH,
-            public_path($this->getThemeAssetsPath() . '/css/style.integration.css'),
-        );
+        return public_path($this->getThemeAssetsPath() . '/css/style.integration.css');
     }
 
     public function fireEventGlobalAssets(): self
@@ -1105,8 +1091,7 @@ class Theme implements ThemeContract
         array $attributes = [],
         string $logoKey = 'logo',
         int $maxHeight = 0,
-        ?string $logoUrl = null,
-        bool $lazy = false
+        ?string $logoUrl = null
     ): ?HtmlString {
         if ($logoUrl) {
             $logo = $logoUrl;
@@ -1130,11 +1115,9 @@ class Theme implements ThemeContract
             $attributes['style'] = sprintf($maxHeightStyle, is_numeric($height) ? "{$height}px" : $height);
         }
 
-        // Default false preserves eager-load behavior for header (LCP) logos.
-        // Footer/aside logo widgets pass lazy: true to opt into native + bb-lazy loading.
-        $attributes['loading'] = $lazy ? 'lazy' : false;
+        $attributes['loading'] = false;
 
-        return apply_filters('theme_logo_image', RvMedia::image($logo, $this->getSiteTitle(), attributes: $attributes, lazy: $lazy));
+        return apply_filters('theme_logo_image', RvMedia::image($logo, $this->getSiteTitle(), attributes: $attributes, lazy: false));
     }
 
     public function formatDate(CarbonInterface|string|int|null $date, ?string $format = null): ?string

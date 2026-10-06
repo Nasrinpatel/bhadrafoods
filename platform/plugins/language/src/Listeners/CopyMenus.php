@@ -2,7 +2,6 @@
 
 namespace Botble\Language\Listeners;
 
-use Botble\Base\Models\BaseModel;
 use Botble\Language\Events\LanguageCreated;
 use Botble\Language\Facades\Language as LanguageFacade;
 use Botble\Language\Models\Language;
@@ -34,9 +33,7 @@ class CopyMenus
             ->get();
 
         foreach ($menus as $menu) {
-            if ($menu instanceof Menu) {
-                $this->cloneMenu($menu, $event->language);
-            }
+            $this->cloneMenu($menu, $event->language);
         }
     }
 
@@ -69,9 +66,7 @@ class CopyMenus
                 ->where('reference_type', MenuLocation::class)
                 ->value('lang_meta_origin');
 
-            if ($menuLocationItem instanceof BaseModel) {
-                LanguageMeta::saveMetaData($menuLocationItem, $language->lang_code, $originValue);
-            }
+            LanguageMeta::saveMetaData($menuLocationItem, $language->lang_code, $originValue);
         }
     }
 
@@ -98,9 +93,7 @@ class CopyMenus
                 ->where('reference_type', MenuNode::class)
                 ->value('lang_meta_origin');
 
-            if ($menuNodeItem instanceof BaseModel) {
-                LanguageMeta::saveMetaData($menuNodeItem, $language->lang_code, $originValue);
-            }
+            LanguageMeta::saveMetaData($menuNodeItem, $language->lang_code, $originValue);
         }
     }
 }

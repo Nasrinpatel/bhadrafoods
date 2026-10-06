@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Dapatkan Laporan Sistem',
     'system_environment' => 'Persekitaran Sistem',
     'framework_version' => 'Versi Framework',
-    'core_version' => 'Versi Teras',
     'timezone' => 'Zon Waktu',
     'debug_mode' => 'Mod Nyahpepijat',
     'debug_mode_off' => 'Mod Nyahpepijat Dimatikan',

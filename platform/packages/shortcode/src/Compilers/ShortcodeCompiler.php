@@ -28,8 +28,6 @@ class ShortcodeCompiler
 
     protected static array $loadingStates = [];
 
-    protected static array $cacheableFormShortcodes = [];
-
     public function enable(): self
     {
         $this->enabled = true;
@@ -166,33 +164,6 @@ class ShortcodeCompiler
 
         $callback = apply_filters('shortcode_get_callback', $this->getCallback($name), $name);
 
-        $canCache = setting('shortcode_cache_enabled', false)
-            && ! request()->expectsJson()
-            && ! request()->input('visual_builder')
-            && ! $this->shouldIgnoreCache($name)
-            && $compiled->enable_caching !== 'no'
-            && empty(request()->getQueryString())
-            && ! $this->shouldBlockCacheForForms($name);
-
-        $cacheKey = null;
-
-        if ($canCache) {
-            $locale = app()->getLocale();
-            $authorized = auth()->check() ? 'auth' : 'anon';
-            $attributes = $compiled->toArray();
-            $content = $compiled->getContent();
-            $appUrl = url('/');
-            $extraCacheKeys = apply_filters('shortcode_cache_key_parts', [], $name);
-
-            $cacheKey = 'shortcode_render_' . md5($name . $appUrl . serialize($attributes) . ($content ?? '') . $locale . $authorized . serialize($extraCacheKeys));
-
-            $cached = Cache::get($cacheKey);
-
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-
         $renderedContent = apply_filters(
             'shortcode_content_compiled',
             call_user_func_array($callback, [
@@ -206,44 +177,51 @@ class ShortcodeCompiler
             $this
         );
 
-        $renderedString = $renderedContent instanceof View ? $renderedContent->render() : $renderedContent;
+        $containsForms = $this->containsFormElements($renderedContent);
 
-        if ($canCache && ! $this->containsDynamicElements($renderedString)) {
+        if (
+            setting('shortcode_cache_enabled', false)
+            && ! request()->expectsJson()
+            && ! request()->input('visual_builder')
+            && ! $this->shouldIgnoreCache($name)
+            && $compiled->enable_caching !== 'no'
+            && empty(request()->getQueryString())
+            && ! $containsForms
+        ) {
+            $locale = app()->getLocale();
+            $authorized = auth()->check();
+            $attributes = $compiled->toArray();
+            $content = $compiled->getContent();
+            $appUrl = url('/');
+
+            $cacheKey = 'shortcode_render_' . md5($name . $appUrl . serialize($attributes) . ($content ?? '') . $locale . $authorized);
+
             $cacheTtl = (int) setting('shortcode_cache_ttl', 1800);
+            $cacheDuration = Carbon::now()->addSeconds($cacheTtl);
 
-            Cache::put($cacheKey, $renderedString, Carbon::now()->addSeconds($cacheTtl));
-
-            return $renderedString;
+            Cache::put($cacheKey, $renderedContent, $cacheDuration);
         }
 
         return $renderedContent;
     }
 
-    protected function shouldBlockCacheForForms(string $name): bool
-    {
-        $formShortcodes = apply_filters('shortcode_form_shortcodes', [
-            'contact-form',
-        ]);
-
-        if (in_array($name, static::$cacheableFormShortcodes)) {
-            return false;
-        }
-
-        return in_array($name, $formShortcodes);
-    }
-
-    protected function containsDynamicElements($content): bool
+    protected function containsFormElements($content): bool
     {
         if (! is_string($content)) {
-            return false;
+            if ($content instanceof View) {
+                $content = $content->render();
+            } else {
+                return false;
+            }
         }
 
         $patterns = [
+            '<form',
             'csrf_token',
             '_token',
             'g-recaptcha',
-            'method="post"',
-            "method='post'",
+            'FormBuilder',
+            'renderForm()',
         ];
 
         foreach ($patterns as $pattern) {
@@ -393,11 +371,6 @@ class ShortcodeCompiler
     public static function getIgnoredLazyLoading(): array
     {
         return static::$ignoredLazyLoading;
-    }
-
-    public static function allowFormShortcodeCache(array $shortcodes): void
-    {
-        static::$cacheableFormShortcodes = array_merge(static::$cacheableFormShortcodes, $shortcodes);
     }
 
     public static function registerLoadingState(string $shortcodeName, string $view): void

@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Prikaži informativno sporočilo, ki obvešča stranke o pogojih, s katerimi se strinjajo z oddajo naročila.',
       'hide_customer_info_at_checkout' => 'Skrij informacije o stranki pri plačilu',
       'hide_customer_info_at_checkout_helper' => 'Skrij informacije o računu stranke in gumb za odjavo s strani plačila. Ko je omogočeno, prijavljene stranke ne bodo videle prikazanih podatkov svojega računa.',
-      'enable_order_notes_at_checkout' => 'Omogoči opombe naročila ob zaključku nakupa',
-      'enable_order_notes_at_checkout_helper' => 'Če je omogočeno, lahko stranke ob zaključku nakupa dodajo neobvezne opombe k svojemu naročilu (npr. posebna navodila za dostavo).',
     ],
   ],
   'return' =>

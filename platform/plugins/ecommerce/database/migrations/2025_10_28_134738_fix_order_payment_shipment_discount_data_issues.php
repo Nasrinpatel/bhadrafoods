@@ -1,5 +1,7 @@
 <?php
 
+use Botble\Ecommerce\Models\Order;
+use Botble\Payment\Models\Payment;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,111 +23,80 @@ return new class () extends Migration {
 
     protected function fixDuplicatePayments(): void
     {
-        $prefix = DB::getTablePrefix();
+        $duplicates = DB::table('payments as p1')
+            ->select('p1.id')
+            ->join('payments as p2', function ($join): void {
+                $join->on('p1.order_id', '=', 'p2.order_id')
+                    ->on('p1.payment_channel', '=', 'p2.payment_channel')
+                    ->on('p1.id', '>', 'p2.id');
+            })
+            ->whereNotNull('p1.order_id')
+            ->pluck('id');
 
-        DB::statement("
-            DELETE p1 FROM `{$prefix}payments` p1
-            INNER JOIN `{$prefix}payments` p2
-                ON p1.order_id = p2.order_id
-                AND p1.payment_channel = p2.payment_channel
-                AND p1.id > p2.id
-            WHERE p1.order_id IS NOT NULL
-        ");
+        if ($duplicates->isNotEmpty()) {
+            foreach ($duplicates->chunk(100) as $chunk) {
+                DB::table('payments')->whereIn('id', $chunk)->delete();
+            }
+        }
     }
 
     protected function fixOrphanedPayments(): void
     {
-        DB::table('payments')
+        Payment::query()
             ->whereNull('order_id')
             ->whereNotNull('metadata')
-            ->oldest('id')
-            ->chunk(500, function ($payments) {
-                $updates = [];
-
+            ->chunk(100, function ($payments): void {
                 foreach ($payments as $payment) {
                     try {
-                        $metadata = is_string($payment->metadata)
-                            ? json_decode($payment->metadata, true)
-                            : $payment->metadata;
+                        $metadata = is_array($payment->metadata) ? $payment->metadata : json_decode($payment->metadata, true);
 
-                        if (! is_array($metadata)) {
+                        if (empty($metadata)) {
                             continue;
                         }
 
-                        $orderId = $metadata['order_id']
-                            ?? $metadata['notes']['order_id']
-                            ?? null;
+                        $orderId = null;
+
+                        if (isset($metadata['order_id'])) {
+                            $orderId = $metadata['order_id'];
+                        } elseif (isset($metadata['notes']['order_id'])) {
+                            $orderId = $metadata['notes']['order_id'];
+                        }
 
                         if ($orderId) {
-                            $updates[$payment->id] = $orderId;
+                            $orderExists = DB::table('ec_orders')->where('id', $orderId)->exists();
+
+                            if ($orderExists) {
+                                DB::table('payments')
+                                    ->where('id', $payment->id)
+                                    ->update(['order_id' => $orderId]);
+                            }
                         }
                     } catch (Exception $e) {
-                        Log::error('Failed to parse orphaned payment metadata: ' . $e->getMessage(), [
+                        Log::error('Failed to link orphaned payment: ' . $e->getMessage(), [
                             'payment_id' => $payment->id,
                         ]);
                     }
-                }
-
-                if (empty($updates)) {
-                    return;
-                }
-
-                // Verify order IDs exist in bulk
-                $validOrderIds = DB::table('ec_orders')
-                    ->whereIn('id', array_values($updates))
-                    ->pluck('id')
-                    ->flip()
-                    ->toArray();
-
-                $cases = [];
-                $ids = [];
-
-                foreach ($updates as $paymentId => $orderId) {
-                    if (isset($validOrderIds[$orderId])) {
-                        $cases[] = 'WHEN ' . (int) $paymentId . ' THEN ' . (int) $orderId;
-                        $ids[] = (int) $paymentId;
-                    }
-                }
-
-                if (! empty($ids)) {
-                    $idsStr = implode(',', $ids);
-                    DB::statement(
-                        "UPDATE `" . DB::getTablePrefix() . "payments` SET `order_id` = CASE `id` "
-                        . implode(' ', $cases) . " END WHERE `id` IN ({$idsStr})"
-                    );
                 }
             });
     }
 
     protected function syncShipmentPrices(): void
     {
-        if (! Schema::hasTable('ec_shipments')) {
-            return;
-        }
-
-        $prefix = DB::getTablePrefix();
-
-        DB::statement("
-            UPDATE `{$prefix}ec_shipments` s
-            INNER JOIN `{$prefix}ec_orders` o ON s.order_id = o.id
+        DB::statement('
+            UPDATE ec_shipments s
+            INNER JOIN ec_orders o ON s.order_id = o.id
             SET s.price = o.shipping_amount
             WHERE s.price != o.shipping_amount
-        ");
+        ');
     }
 
     protected function cleanupIncompleteOrderDiscounts(): void
     {
-        if (! Schema::hasTable('ec_discount_customers') || ! Schema::hasTable('ec_discounts')) {
-            return;
-        }
-
-        DB::table('ec_orders')
+        Order::query()
             ->where('is_finished', false)
             ->whereNotNull('coupon_code')
             ->whereNotNull('user_id')
-            ->select('id', 'user_id', 'coupon_code')
-            ->oldest('id')
-            ->chunk(500, function ($orders) {
+            ->chunk(100, function ($orders): void {
                 foreach ($orders as $order) {
                     try {
                         $deletedCount = DB::table('ec_discount_customers')

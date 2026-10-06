@@ -391,7 +391,6 @@ class PluginService
 
         self::$activatedPlugins = [];
 
-        $cacheService->clearBootstrapCache();
         $cacheService->clearConfig();
         $cacheService->clearRoutesCache();
     }
@@ -438,34 +437,6 @@ class PluginService
 
     public function validatePlugin(string $plugin, bool $throw = false): bool
     {
-        $validator = $this->makePluginValidator($plugin, $throw);
-
-        $passes = $validator->passes();
-
-        if (! $passes) {
-            logger()->info($validator->getMessageBag()->toJson());
-
-            if ($throw) {
-                throw new Exception($validator->getMessageBag()->toJson());
-            }
-        }
-
-        return $passes;
-    }
-
-    public function getPluginValidationErrors(string $plugin): array
-    {
-        $validator = $this->makePluginValidator($plugin);
-
-        if ($validator->passes()) {
-            return [];
-        }
-
-        return $validator->errors()->toArray();
-    }
-
-    protected function makePluginValidator(string $plugin, bool $strict = false): \Illuminate\Validation\Validator
-    {
         $content = $this->getPluginInfo($plugin);
 
         $rules = [
@@ -481,11 +452,23 @@ class PluginService
             'minimum_core_version' => ['nullable', 'string', 'regex:/^[0-9]+\.[0-9]+\.[0-9]+$/'],
         ];
 
-        if ($strict) {
+        if ($throw) {
             $rules['id'] = ['required', 'string', 'max:100'];
         }
 
-        return Validator::make($content, $rules);
+        $validator = Validator::make($content, $rules);
+
+        $passes = $validator->passes();
+
+        if (! $passes) {
+            logger()->info($validator->getMessageBag()->toJson());
+
+            if ($throw) {
+                throw new Exception($validator->getMessageBag()->toJson());
+            }
+        }
+
+        return $passes;
     }
 
     public function getInstalledPluginIds(): array
@@ -670,7 +653,7 @@ class PluginService
 
         if (class_exists($pluginClass) && method_exists($pluginClass, 'getLicenseSettingKey')) {
             try {
-                return $pluginClass::getLicenseSettingKey();
+                return call_user_func([$pluginClass, 'getLicenseSettingKey']);
             } catch (Throwable $exception) {
                 BaseHelper::logError($exception);
             }

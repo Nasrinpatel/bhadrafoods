@@ -302,8 +302,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => '주문 시 고객이 동의하는 약관에 대한 안내 메시지를 표시합니다.',
       'hide_customer_info_at_checkout' => '결제 시 고객 정보 숨기기',
       'hide_customer_info_at_checkout_helper' => '결제 페이지에서 고객 계정 정보와 로그아웃 버튼을 숨깁니다. 활성화하면 로그인한 고객의 계정 정보가 표시되지 않습니다.',
-      'enable_order_notes_at_checkout' => '결제 시 주문 메모 사용',
-      'enable_order_notes_at_checkout_helper' => '활성화되면 고객은 결제 페이지에서 주문에 선택적 메모를 추가할 수 있습니다 (예: 특별 배송 지침).',
     ],
   ],
   'return' =>

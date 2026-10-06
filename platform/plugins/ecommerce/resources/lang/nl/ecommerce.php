@@ -121,7 +121,6 @@ return [
     'apply' => 'Toepassen',
     'available' => 'Beschikbaar',
     'back_to_return_requests' => 'Terug naar retourverzoeken',
-    'backorder_warning' => 'Let op: Dit product is in backorder en kan langer duren om te verzenden.',
     'choose_reason' => 'Kies reden',
     'clear' => 'Wissen',
     'clear_all_filters' => 'Alle filters wissen',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Afrekenen',
     'complete_order' => 'Bestelling afronden',
     'agree_terms_and_policy_error' => 'U moet akkoord gaan met de algemene voorwaarden en het privacybeleid.',
-    'optional' => 'Optioneel',
-
 ];

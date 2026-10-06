@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => 'Наша відповідь:',
         'admin_reply_additional_questions' => 'Якщо у вас є додаткові запитання, не соромтеся відповісти на цей лист або зв\'яжіться з нами знову.',
         'admin_reply_best_regards' => 'З повагою,',
-        'admin_reply_team' => 'Команда :site_title',
+        'admin_reply_team' => 'Команда {{ site_title }}',
         'notice_title' => 'Нове контактне повідомлення',
         'notice_greeting' => 'Шановний адміністраторе,',
         'notice_message_details' => 'Деталі повідомлення',
@@ -177,6 +177,4 @@ return [
     'subject_placeholder' => 'Тема',
     'your_message' => 'Ваше повідомлення',
     'agree_terms_privacy' => 'Я погоджуюся з Умовами та Політикою конфіденційності',
-    'agree_terms_privacy_link' => 'Я погоджуюся з :link',
-    'terms_and_privacy_policy' => 'Умовами та Політикою конфіденційності',
 ];

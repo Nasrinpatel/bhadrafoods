@@ -1,11 +1,11 @@
 .flag {
     position: relative;
     display: inline-block;
-    height: 2.5rem;
+    height: $avatar-size;
     aspect-ratio: 1.33333;
     background: no-repeat center/cover;
-    box-shadow: var(--bb-shadow-border);
-    border-radius: var(--bb-border-radius-sm);
+    box-shadow: $flag-box-shadow;
+    border-radius: $flag-border-radius;
     vertical-align: bottom;
 
     &.flag-country-np {

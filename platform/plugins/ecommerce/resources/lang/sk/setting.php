@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Zobraziť informačnú správu, ktorá informuje zákazníkov o podmienkach, s ktorými súhlasia vytvorením objednávky.',
       'hide_customer_info_at_checkout' => 'Skryť informácie o zákazníkovi pri pokladni',
       'hide_customer_info_at_checkout_helper' => 'Skryť informácie o účte zákazníka a tlačidlo odhlásenia zo stránky pokladne. Pri povolení nebudú prihlásení zákazníci vidieť zobrazené údaje o svojom účte.',
-      'enable_order_notes_at_checkout' => 'Povoliť poznámky k objednávke pri pokladni',
-      'enable_order_notes_at_checkout_helper' => 'Ak je povolené, zákazníci môžu pri pokladni pridať voliteľné poznámky k svojej objednávke (napr. špeciálne pokyny na doručenie).',
     ],
   ],
   'return' =>

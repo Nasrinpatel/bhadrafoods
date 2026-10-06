@@ -2,8 +2,8 @@
 
 namespace Botble\ACL\Traits;
 
-use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -70,7 +70,7 @@ trait AuthenticatesUsers
         );
     }
 
-    protected function guard(): SessionGuard
+    protected function guard(): StatefulGuard
     {
         return Auth::guard();
     }

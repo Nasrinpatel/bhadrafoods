@@ -62,8 +62,6 @@ class Product extends BaseModel
         'allow_checkout_when_out_of_stock',
         'with_storehouse_management',
         'is_featured',
-        'is_affiliate',
-        'external_url',
         'brand_id',
         'is_variation',
         'sale_type',
@@ -113,7 +111,6 @@ class Product extends BaseModel
         'minimum_order_quantity' => 'int',
         'maximum_order_quantity' => 'int',
         'is_featured' => 'bool',
-        'is_affiliate' => 'bool',
         'is_new_until' => 'date',
         'allow_checkout_when_out_of_stock' => 'bool',
         'with_storehouse_management' => 'bool',
@@ -549,19 +546,6 @@ class Product extends BaseModel
         return Attribute::make(
             get: fn () => $this->reviews_avg
         );
-    }
-
-    public function isExternalProduct(): bool
-    {
-        $product = $this->original_product instanceof self ? $this->original_product : $this;
-
-        if (empty($product->external_url)) {
-            return false;
-        }
-
-        // In catalog mode the cart is off site-wide, so any product carrying an
-        // external URL links out - no need to flag each one individually.
-        return (bool) $product->is_affiliate || ! EcommerceHelper::isCartEnabled();
     }
 
     public function isOutOfStock(): bool
@@ -1088,7 +1072,7 @@ class Product extends BaseModel
                         $data['video_id'] = Str::afterLast($url, 'video/');
                     } elseif (preg_match('/^.*https:\/\/twitter\.com\/(?:#!\/)?(\w+)\/status(es)?\/(\d+)/', $url)) {
                         $data['provider'] = 'twitter';
-                    } elseif (in_array(Str::lower(File::extension($url)), ['mp4', 'webm', 'ogg', 'mov'])) {
+                    } elseif (in_array(Str::lower(File::extension($url)), ['mp4', 'webm', 'ogg'])) {
                         $data['provider'] = 'video';
                     } else {
                         $data['provider'] = 'iframe';

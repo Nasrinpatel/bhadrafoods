@@ -7,58 +7,35 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        foreach (['ec_specification_groups', 'ec_specification_attributes', 'ec_specification_tables'] as $tableName) {
-            if (! Schema::hasTable($tableName)) {
-                continue;
-            }
-
-            $hasType = Schema::hasColumn($tableName, 'author_type');
-            $hasId = Schema::hasColumn($tableName, 'author_id');
-
-            if ($hasType && $hasId) {
-                continue;
-            }
-
-            Schema::table($tableName, function (Blueprint $table) use ($hasType, $hasId): void {
-                if (! $hasType) {
-                    $table->string('author_type')->nullable();
-                }
-
-                if (! $hasId) {
-                    $table->unsignedBigInteger('author_id')->nullable();
-                }
-
-                $table->index(['author_type', 'author_id'], 'author_index');
-            });
+        if (Schema::hasColumn('ec_specification_groups', 'author_id')) {
+            return;
         }
+
+        Schema::table('ec_specification_groups', function (Blueprint $table): void {
+            $table->nullableMorphs('author');
+        });
+
+        Schema::table('ec_specification_attributes', function (Blueprint $table): void {
+            $table->nullableMorphs('author');
+        });
+
+        Schema::table('ec_specification_tables', function (Blueprint $table): void {
+            $table->nullableMorphs('author');
+        });
     }
 
     public function down(): void
     {
-        foreach (['ec_specification_groups', 'ec_specification_attributes', 'ec_specification_tables'] as $tableName) {
-            if (! Schema::hasTable($tableName)) {
-                continue;
-            }
+        Schema::table('ec_specification_groups', function (Blueprint $table): void {
+            $table->dropMorphs('author');
+        });
 
-            if (! Schema::hasColumn($tableName, 'author_id') && ! Schema::hasColumn($tableName, 'author_type')) {
-                continue;
-            }
+        Schema::table('ec_specification_attributes', function (Blueprint $table): void {
+            $table->dropMorphs('author');
+        });
 
-            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                if (Schema::hasColumn($tableName, 'author_id') && Schema::hasColumn($tableName, 'author_type')) {
-                    $table->dropMorphs('author');
-
-                    return;
-                }
-
-                if (Schema::hasColumn($tableName, 'author_id')) {
-                    $table->dropColumn('author_id');
-                }
-
-                if (Schema::hasColumn($tableName, 'author_type')) {
-                    $table->dropColumn('author_type');
-                }
-            });
-        }
+        Schema::table('ec_specification_tables', function (Blueprint $table): void {
+            $table->dropMorphs('author');
+        });
     }
 };

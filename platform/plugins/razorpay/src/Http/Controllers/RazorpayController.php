@@ -5,18 +5,13 @@ namespace Botble\Razorpay\Http\Controllers;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
-use Botble\Ecommerce\Enums\OrderAddressTypeEnum;
-use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
 use Botble\Ecommerce\Facades\OrderHelper;
 use Botble\Ecommerce\Models\Order;
-use Botble\Ecommerce\Models\OrderAddress;
-use Botble\Ecommerce\Models\OrderHistory;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Models\Payment;
 use Botble\Payment\Supports\PaymentHelper;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors\BadRequestError;
 use Razorpay\Api\Errors\SignatureVerificationError;
@@ -152,67 +147,20 @@ class RazorpayController extends BaseController
             'customer_type' => $customerType,
         ];
 
-        // Always prefer the row for this exact charge. Razorpay replays each event (authorized,
-        // captured, plus webhook retries and the browser callback), so a lookup that can return
-        // a sibling row instead would insert a duplicate on every replay.
-        $existingPayment = Payment::query()->where('charge_id', $chargeId)->first();
-
-        $orderIdValue = is_array($orderId) ? ($orderId[0] ?? null) : $orderId;
-
-        // No row for this charge yet: fall back to the order, so a retry reuses the row left
-        // behind by an earlier failed or abandoned attempt instead of piling up rows. An order
-        // can legitimately hold several rows once a buyer has paid twice, so order by id to
-        // keep which row a new charge reuses deterministic rather than engine-dependent.
-        if (! $existingPayment && $orderIdValue) {
-            $existingPayment = Payment::query()
-                ->where('order_id', $orderIdValue)
-                ->where('payment_channel', RAZORPAY_PAYMENT_METHOD_NAME)
-                ->oldest('id')
-                ->first();
-        }
-
-        // The fallback matched a row belonging to a different charge. Reusing it is only right
-        // while that charge never succeeded; once it is COMPLETED the two charges are separate
-        // money and must not share a row.
-        if (
-            $existingPayment
-            && $existingPayment->charge_id !== $chargeId
-            && $existingPayment->status == PaymentStatusEnum::COMPLETED
-        ) {
-            // Razorpay reports each attempt separately and out of order, so this is usually the
-            // failed/abandoned event of an earlier attempt arriving after the capture. Writing
-            // it anywhere would either void a paid order or hang a phantom FAILED row off it.
-            if ($status != PaymentStatusEnum::COMPLETED) {
-                PaymentHelper::log(
-                    RAZORPAY_PAYMENT_METHOD_NAME,
-                    ['info' => 'Ignored a stale event from another attempt on an already paid order'],
-                    [
-                        'charge_id' => $chargeId,
-                        'order_id' => $orderId,
-                        'status' => $status,
-                        'paid_charge_id' => $existingPayment->charge_id,
-                    ]
-                );
-
-                return;
-            }
-
-            // A genuine second capture on the same order: the buyer paid twice. Overwriting
-            // would erase the first capture and leave the order looking underpaid.
-            PaymentHelper::log(
-                RAZORPAY_PAYMENT_METHOD_NAME,
-                ['info' => 'Second charge on an already paid order, storing it as a separate payment'],
-                [
-                    'charge_id' => $chargeId,
-                    'order_id' => $orderId,
-                    'existing_charge_id' => $existingPayment->charge_id,
-                ]
-            );
-
-            $this->noteAdditionalPayment($orderIdValue, $chargeId, $amount, $currency);
-
-            $existingPayment = null;
-        }
+        $existingPayment = Payment::query()
+            ->where(function ($query) use ($chargeId, $orderId): void {
+                $query->where('charge_id', $chargeId)
+                    ->orWhere(function ($q) use ($orderId): void {
+                        if (! empty($orderId)) {
+                            $orderIdValue = is_array($orderId) ? ($orderId[0] ?? null) : $orderId;
+                            if ($orderIdValue) {
+                                $q->where('order_id', $orderIdValue)
+                                    ->where('payment_channel', RAZORPAY_PAYMENT_METHOD_NAME);
+                            }
+                        }
+                    });
+            })
+            ->first();
 
         if (! $existingPayment) {
             $payment = new Payment();
@@ -231,27 +179,6 @@ class RazorpayController extends BaseController
         $this->updateExistingPayment($existingPayment, $paymentData, $chargeId, $orderId, $status, $context);
     }
 
-    /**
-     * Make a second capture visible on the order page. It usually means the buyer made a
-     * new purchase on this order's old checkout session, so the items they paid for exist
-     * only in the Razorpay dashboard and the shop has to follow up.
-     */
-    protected function noteAdditionalPayment(int|string|null $orderId, string $chargeId, float $amount, string $currency): void
-    {
-        if (! $orderId || ! class_exists(OrderHistory::class)) {
-            return;
-        }
-
-        OrderHistory::query()->create([
-            'action' => OrderHistoryActionEnum::UPDATE_STATUS,
-            'description' => trans('plugins/ecommerce::order.additional_payment_on_paid_order', [
-                'charge_id' => $chargeId,
-                'paid' => $amount . ' ' . $currency,
-            ]),
-            'order_id' => $orderId,
-        ]);
-    }
-
     protected function updateExistingPayment(
         Payment $existingPayment,
         array $paymentData,
@@ -263,20 +190,6 @@ class RazorpayController extends BaseController
 
         $updated = false;
 
-        // A successful retry can reuse a payment row that still holds the charge id
-        // of an earlier failed/abandoned attempt on the same order (the dedup lookup
-        // matches by order_id). Refresh the charge id and amount so the order reflects
-        // the charge that was actually captured, not the failed one.
-        if ($status == PaymentStatusEnum::COMPLETED && $existingPayment->charge_id !== $chargeId) {
-            $existingPayment->charge_id = $chargeId;
-
-            if ($paymentData['amount'] > 0) {
-                $existingPayment->amount = $paymentData['amount'];
-            }
-
-            $updated = true;
-        }
-
         if ($existingPayment->amount == 0 && $paymentData['amount'] > 0) {
             $existingPayment->amount = $paymentData['amount'];
             $updated = true;
@@ -287,18 +200,7 @@ class RazorpayController extends BaseController
             $updated = true;
         }
 
-        // A real gateway verdict is applied as given, including a late failure of a payment
-        // that was only authorized, which must still be able to undo COMPLETED. PENDING is
-        // the one status that is never a verdict: processVerifiedPayment() falls back to it
-        // whenever the Razorpay ORDER is not yet 'paid', which is still true right after a
-        // capture settles on the charge. The browser callback therefore arrives with PENDING
-        // after the webhook already recorded COMPLETED, and applying it would make a captured
-        // payment read Pending - hiding it from hasCompletedPayment() and letting the
-        // auto-cancel job void a paid order.
-        $isUnknownOverCaptured = $status == PaymentStatusEnum::PENDING
-            && $existingPayment->status == PaymentStatusEnum::COMPLETED;
-
-        if ($existingPayment->status != $status && ! $isUnknownOverCaptured) {
+        if ($existingPayment->status !== $status) {
             $existingPayment->status = $status;
             $updated = true;
         }
@@ -323,18 +225,6 @@ class RazorpayController extends BaseController
                 ['charge_id' => $chargeId, 'order_id' => $orderId, 'status' => $status, 'amount' => $paymentData['amount']]
             );
         }
-    }
-
-    protected function areOrdersAlreadyFinished(array|string|null $orderId): bool
-    {
-        if (empty($orderId) || ! class_exists(Order::class)) {
-            return false;
-        }
-
-        return ! Order::query()
-            ->whereIn('id', (array) $orderId)
-            ->where('is_finished', false)
-            ->exists();
     }
 
     protected function finalizeOrders(array|string|null $orderId, string $chargeId): void
@@ -448,9 +338,7 @@ class RazorpayController extends BaseController
             ['order_data' => $orderData]
         );
 
-        // Source the amount from the captured charge, not the order's cumulative
-        // amount_paid (which can be stale when a Razorpay order is reused on retry).
-        $amount = $this->capturedChargeAmount($api, $chargeId) ?? ($orderData['amount_paid'] / 100);
+        $amount = $orderData['amount_paid'] / 100;
         $currency = $orderData['currency'];
         $status = $orderData['status'] === 'paid' ? PaymentStatusEnum::COMPLETED : PaymentStatusEnum::PENDING;
         $orderId = $this->resolveOrderId($request, $token, null, $orderData);
@@ -594,27 +482,13 @@ class RazorpayController extends BaseController
         if (in_array($paymentEntity['status'], ['captured', 'authorized']) || $orderData['status'] === 'paid') {
             if ($paymentEntity['status'] === 'authorized' && empty($paymentEntity['captured'])) {
                 try {
-                    // capture() must be called on a fetched payment entity: the SDK builds
-                    // the URL from $payment->id, so calling $api->payment->capture() on the
-                    // bare (idless) accessor threw "Undefined array key id". Fetch first,
-                    // then re-check captured to skip a payment the captured webhook already
-                    // settled (avoids an "already captured" error on the near-simultaneous
-                    // authorized event). Razorpay requires both amount and currency.
                     // @phpstan-ignore-next-line
-                    $payment = $api->payment->fetch($chargeId);
-
-                    if (empty($payment->captured)) {
-                        $payment->capture(array_filter([
-                            'amount' => $paymentEntity['amount'],
-                            'currency' => $paymentEntity['currency'] ?? ($orderData['currency'] ?? null),
-                        ]));
-
-                        PaymentHelper::log(
-                            RAZORPAY_PAYMENT_METHOD_NAME,
-                            ['payment_captured' => true],
-                            ['charge_id' => $chargeId]
-                        );
-                    }
+                    $api->payment->capture($chargeId, ['amount' => $paymentEntity['amount']]);
+                    PaymentHelper::log(
+                        RAZORPAY_PAYMENT_METHOD_NAME,
+                        ['payment_captured' => true],
+                        ['charge_id' => $chargeId]
+                    );
                 } catch (Exception $e) {
                     PaymentHelper::log(
                         RAZORPAY_PAYMENT_METHOD_NAME,
@@ -697,241 +571,6 @@ class RazorpayController extends BaseController
         return [];
     }
 
-    /**
-     * Fetch the email/phone Razorpay collected on its own checkout page.
-     *
-     * For guest orders the buyer often types their contact directly into the
-     * Razorpay window rather than our address form, so the only surviving copy
-     * lives on the Razorpay payment entity (email/contact) or its notes.
-     *
-     * @return array{email: ?string, phone: ?string, name: ?string, address_notes: array<string, string>}
-     */
-    protected function fetchGatewayContact(string $chargeId): array
-    {
-        try {
-            $api = $this->createRazorpayApi();
-            // @phpstan-ignore-next-line
-            $payment = $api->payment->fetch($chargeId);
-
-            $notes = isset($payment->notes) ? (array) $payment->notes : [];
-
-            // Razorpay may return an empty string (not null) for an unset field,
-            // so fall through to the notes copy whenever the primary value is blank.
-            return [
-                'email' => filled($payment->email ?? null) ? $payment->email : ($notes['customer_email'] ?? null),
-                'phone' => filled($payment->contact ?? null) ? $payment->contact : ($notes['customer_phone'] ?? null),
-                'name' => $notes['customer_name'] ?? null,
-                'address_notes' => $this->extractAddressNotes($notes),
-            ];
-        } catch (Exception $exception) {
-            BaseHelper::logError($exception);
-
-            return ['email' => null, 'phone' => null, 'name' => null, 'address_notes' => []];
-        }
-    }
-
-    /**
-     * Amount (major units) actually captured by a specific charge.
-     *
-     * The authoritative figure for a payment record is the charge's own amount, NOT
-     * the Razorpay order's cumulative amount_paid - the order figure can be stale when
-     * an order is reused across retries, which led to a payment being stored with the
-     * wrong total. Uses the webhook entity when already in hand; otherwise fetches the
-     * payment by charge id. Returns null if it cannot be determined (caller falls back).
-     */
-    protected function capturedChargeAmount(Api $api, string $chargeId, ?array $paymentEntity = null): ?float
-    {
-        if ($paymentEntity && isset($paymentEntity['amount'])) {
-            return $paymentEntity['amount'] / 100;
-        }
-
-        try {
-            // @phpstan-ignore-next-line
-            $payment = $api->payment->fetch($chargeId);
-            $amount = $payment['amount'] ?? null;
-
-            return $amount !== null ? $amount / 100 : null;
-        } catch (Exception $exception) {
-            BaseHelper::logError($exception);
-
-            return null;
-        }
-    }
-
-    /**
-     * Map the shipping_* keys Razorpay returned in the notes back to OrderAddress
-     * columns. Used to rebuild a guest order's physical address when the buyer
-     * paid but never returned to finish checkout. Blanks are dropped.
-     *
-     * @return array<string, string>
-     */
-    protected function extractAddressNotes(array $notes): array
-    {
-        return array_filter([
-            'address' => $notes['shipping_address'] ?? null,
-            'city' => $notes['shipping_city'] ?? null,
-            'state' => $notes['shipping_state'] ?? null,
-            'country' => $notes['shipping_country'] ?? null,
-            'zip_code' => $notes['shipping_zip'] ?? null,
-        ], fn ($value) => filled($value));
-    }
-
-    /**
-     * Write the gateway-captured contact AND the shipping-address snapshot (from the
-     * Razorpay notes) onto the order's shipping address when our checkout left those
-     * fields blank.
-     *
-     * Guest orders paid through the redirect flow can finalize without a populated
-     * address because the on-page address step never reached the server. Filling
-     * only the blank fields keeps any details the buyer actually provided intact.
-     */
-    protected function backfillOrderContactFromGateway(
-        array|string|null $orderId,
-        ?string $email,
-        ?string $phone,
-        ?string $name = null,
-        array $addressNotes = []
-    ): void {
-        if (empty($orderId) || ! class_exists(Order::class)) {
-            return;
-        }
-
-        $email = $email ? trim($email) : null;
-        $phone = $phone ? trim($phone) : null;
-        $name = $name ? trim($name) : null;
-
-        if (! $email && ! $phone && ! $name && empty($addressNotes)) {
-            return;
-        }
-
-        $orders = Order::query()->whereIn('id', (array) $orderId)->get();
-
-        foreach ($orders as $order) {
-            $address = OrderAddress::query()
-                ->where('order_id', $order->getKey())
-                ->where('type', OrderAddressTypeEnum::SHIPPING)
-                ->first();
-
-            $data = [];
-
-            // Only fill blanks — never overwrite details the buyer already provided.
-            if ($name && (! $address || blank($address->name))) {
-                $data['name'] = $name;
-            }
-
-            if ($email && (! $address || blank($address->email))) {
-                $data['email'] = $email;
-            }
-
-            if ($phone && (! $address || blank($address->phone))) {
-                $data['phone'] = $phone;
-            }
-
-            // Rebuild the physical shipping address from the Razorpay notes snapshot when
-            // our checkout left it blank (guest paid but never returned). Values are the
-            // raw stored ones, so they round-trip identically. Blanks only — never clobber.
-            foreach (['address', 'city', 'state', 'country', 'zip_code'] as $column) {
-                $value = $addressNotes[$column] ?? null;
-
-                if (filled($value) && (! $address || blank($address->{$column}))) {
-                    $data[$column] = $value;
-                }
-            }
-
-            if (empty($data)) {
-                continue;
-            }
-
-            OrderAddress::query()->updateOrCreate(
-                [
-                    'order_id' => $order->getKey(),
-                    'type' => OrderAddressTypeEnum::SHIPPING,
-                ],
-                $data
-            );
-
-            PaymentHelper::log(
-                RAZORPAY_PAYMENT_METHOD_NAME,
-                ['info' => 'Backfilled order contact from Razorpay payment'],
-                ['order_id' => $order->getKey(), 'fields' => array_keys($data)]
-            );
-        }
-    }
-
-    /**
-     * Guard against an order being recorded as fully paid when Razorpay captured
-     * less than the order total.
-     *
-     * This happens when the cart/total changes after the gateway order was created
-     * - e.g. a failed attempt left items in the cart and the order was reused on
-     * retry, so the order total grew while Razorpay only captured the earlier amount.
-     * We record the true captured amount on the payment (so the order is NOT shown
-     * fully paid) and leave a visible note for the merchant to review before
-     * fulfilling.
-     */
-    protected function flagUnderpaidOrder(array|string|null $orderId, float $capturedAmount): void
-    {
-        if (empty($orderId) || $capturedAmount <= 0 || ! class_exists(Order::class)) {
-            return;
-        }
-
-        // Only the single-order case is auto-handled; a split charge (one payment for
-        // several orders) is left untouched to avoid mis-apportioning the amount.
-        $ids = array_values((array) $orderId);
-        if (count($ids) !== 1) {
-            return;
-        }
-
-        $order = Order::query()->find($ids[0]);
-        if (! $order) {
-            return;
-        }
-
-        $orderTotal = (float) $order->amount;
-
-        // Opt-out for stores that intentionally capture less than the total
-        // (e.g. deposit / partial-payment setups).
-        if (! apply_filters('razorpay_enforce_full_payment', true, $order, $capturedAmount)) {
-            return;
-        }
-
-        // Small tolerance for rounding; only act on a genuine shortfall.
-        if ($capturedAmount + 0.01 >= $orderTotal) {
-            return;
-        }
-
-        // Record the real captured amount so the order is not displayed as fully paid.
-        if ($order->payment_id) {
-            $payment = Payment::query()->find($order->payment_id);
-
-            if ($payment && (float) $payment->amount > $capturedAmount) {
-                $payment->amount = $capturedAmount;
-                $payment->save();
-            }
-        }
-
-        PaymentHelper::log(
-            RAZORPAY_PAYMENT_METHOD_NAME,
-            ['warning' => 'Captured amount is less than the order total; flagged for review'],
-            ['order_id' => $order->getKey(), 'captured' => $capturedAmount, 'order_total' => $orderTotal]
-        );
-
-        // Surface a visible flag for the merchant in the order's private notes.
-        // Idempotent: callback and webhook may both run, so only append once.
-        $existingNotes = (string) $order->private_notes;
-
-        if (! str_contains($existingNotes, 'Razorpay captured')) {
-            $note = sprintf(
-                '[Payment review] Razorpay captured %s but the order total is %s. The order is left as not fully paid - please review the quantities and total before fulfilling.',
-                number_format($capturedAmount, 2),
-                number_format($orderTotal, 2)
-            );
-
-            $order->private_notes = trim($existingNotes . ' ' . $note);
-            $order->save();
-        }
-    }
-
     protected function handlePaymentWebhookEvent(Request $request, Api $api)
     {
         try {
@@ -972,11 +611,7 @@ class RazorpayController extends BaseController
             }
 
             $orderId = $this->resolveOrderIdFromWebhook($paymentEntity, $orderData, $existingPaymentOrderId);
-            // Record the amount actually captured by THIS charge, not the Razorpay
-            // order's cumulative amount_paid - the latter can be stale when an order
-            // is reused across retries, which previously stored a wrong payment total.
-            $amount = $this->capturedChargeAmount($api, $chargeId, $paymentEntity)
-                ?? (($orderData['amount_paid'] ?? 0) / 100);
+            $amount = isset($orderData['amount_paid']) ? $orderData['amount_paid'] / 100 : ($paymentEntity['amount'] / 100);
             $currency = $orderData['currency'] ?? $paymentEntity['currency'];
             $customerInfo = $this->getCustomerInfoFromOrder($orderId);
 
@@ -984,69 +619,19 @@ class RazorpayController extends BaseController
                 $this->linkPaymentWithOrder($chargeId, $orderId, $status);
             }
 
-            // Guard against double processing: if orders already finished (callback
-            // already processed), only update payment status
-            if ($orderId && $this->areOrdersAlreadyFinished($orderId)) {
-                $this->saveOrUpdatePayment(
-                    $chargeId,
-                    $orderId,
-                    $amount,
-                    $currency,
-                    $status,
-                    $customerInfo['customer_id'] ?? null,
-                    $customerInfo['customer_type'] ?? null,
-                    'webhook'
-                );
-            } elseif (defined('PAYMENT_ACTION_PAYMENT_PROCESSED') && $orderId) {
-                do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
-                    'amount' => $amount,
-                    'currency' => $currency,
-                    'charge_id' => $chargeId,
-                    'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
-                    'status' => $status,
-                    'order_id' => $orderId,
-                    'customer_id' => $customerInfo['customer_id'] ?? null,
-                    'customer_type' => $customerInfo['customer_type'] ?? null,
-                ]);
-            } else {
-                $this->saveOrUpdatePayment(
-                    $chargeId,
-                    $orderId,
-                    $amount,
-                    $currency,
-                    $status,
-                    $customerInfo['customer_id'] ?? null,
-                    $customerInfo['customer_type'] ?? null,
-                    'webhook'
-                );
+            $this->saveOrUpdatePayment(
+                $chargeId,
+                $orderId,
+                $amount,
+                $currency,
+                $status,
+                $customerInfo['customer_id'] ?? null,
+                $customerInfo['customer_type'] ?? null,
+                'webhook'
+            );
 
-                if ($status == PaymentStatusEnum::COMPLETED) {
-                    $this->finalizeOrders($orderId, $chargeId);
-                }
-            }
-
-            // Recover the buyer contact Razorpay collected when our checkout left the order
-            // address blank (guest redirect flow). Runs AFTER finalize as a top-up so the
-            // core address backfill gets first pass; this only fills still-blank contact
-            // fields. The payment entity carries the email/phone from the Razorpay window.
-            if ($orderId && $status == PaymentStatusEnum::COMPLETED) {
-                // Merge order notes (set on order.create) with payment notes; the buyer's
-                // shipping snapshot lives on the order, contact may live on either.
-                $webhookNotes = array_merge(
-                    (array) Arr::get($orderData, 'notes', []),
-                    (array) Arr::get($paymentEntity, 'notes', [])
-                );
-
-                $this->backfillOrderContactFromGateway(
-                    $orderId,
-                    $paymentEntity['email'] ?? null,
-                    $paymentEntity['contact'] ?? null,
-                    $webhookNotes['customer_name'] ?? null,
-                    $this->extractAddressNotes($webhookNotes)
-                );
-
-                // Flag/record when Razorpay captured less than the order total.
-                $this->flagUnderpaidOrder($orderId, (float) $amount);
+            if ($status == PaymentStatusEnum::COMPLETED) {
+                $this->finalizeOrders($orderId, $chargeId);
             }
 
             PaymentHelper::log(
@@ -1166,91 +751,27 @@ class RazorpayController extends BaseController
             ['charge_id' => $chargeId, 'token' => $token]
         );
 
-        // Resolve customer info: prefer order's own user_id (trusted), fall back to
-        // request params only if order has no user (guest checkout)
         $customerInfo = $this->getCustomerInfoFromOrder($orderId);
-        $customerId = $customerInfo['customer_id'] ?? null;
-        $customerType = $customerInfo['customer_type'] ?? null;
 
-        if (! $customerId) {
-            $customerId = $request->input('customer_id');
-            $customerType = $request->input('customer_type');
+        $this->saveOrUpdatePayment(
+            $chargeId,
+            $orderId,
+            $amount,
+            $currency,
+            $status,
+            $customerInfo['customer_id'] ?? null,
+            $customerInfo['customer_type'] ?? null
+        );
+
+        if ($status == PaymentStatusEnum::COMPLETED) {
+            $this->finalizeOrders($orderId, $chargeId);
         }
 
-        // Link any orphaned payment (created by webhook before callback) with the order
-        // BEFORE firing PAYMENT_ACTION_PAYMENT_PROCESSED to prevent duplicate payment records
         $this->linkPaymentWithOrder($chargeId, $orderId, $status);
-
-        // Guard against double processing: if orders are already finished (e.g. webhook
-        // already processed them), only update payment status — don't fire the action again
-        // to avoid duplicate emails, double stock decrease, etc.
-        if ($this->areOrdersAlreadyFinished($orderId)) {
-            $this->saveOrUpdatePayment(
-                $chargeId,
-                $orderId,
-                $amount,
-                $currency,
-                $status,
-                $customerId,
-                $customerType
-            );
-        } elseif (defined('PAYMENT_ACTION_PAYMENT_PROCESSED')) {
-            // Fire PAYMENT_ACTION_PAYMENT_PROCESSED so ecommerce plugin properly stores
-            // payment records and processes orders (sends emails, clears cart, etc.)
-            do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
-                'amount' => $amount,
-                'currency' => $currency,
-                'charge_id' => $chargeId,
-                'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
-                'status' => $status,
-                'order_id' => $orderId,
-                'customer_id' => $customerId,
-                'customer_type' => $customerType,
-            ]);
-        } else {
-            $this->saveOrUpdatePayment(
-                $chargeId,
-                $orderId,
-                $amount,
-                $currency,
-                $status,
-                $customerId,
-                $customerType
-            );
-
-            if ($status == PaymentStatusEnum::COMPLETED) {
-                $this->finalizeOrders($orderId, $chargeId);
-            }
-        }
-
-        // Recover the buyer contact Razorpay collected on its own checkout page when our
-        // checkout left the order address blank (guest redirect flow). Runs AFTER finalize
-        // as a top-up so the core address backfill (billing/session/saved-address) gets first
-        // pass at the physical address; this only fills contact fields still left blank.
-        if ($orderId && $status == PaymentStatusEnum::COMPLETED) {
-            $gatewayContact = $this->fetchGatewayContact($chargeId);
-            $this->backfillOrderContactFromGateway(
-                $orderId,
-                $gatewayContact['email'],
-                $gatewayContact['phone'],
-                $gatewayContact['name'],
-                $gatewayContact['address_notes'] ?? []
-            );
-
-            // Flag/record when Razorpay captured less than the order total.
-            $this->flagUnderpaidOrder($orderId, (float) $amount);
-        }
 
         return $response
             ->setNextUrl(PaymentHelper::getRedirectURL($token) . '?charge_id=' . $chargeId)
-            ->setMessage($this->getCallbackMessage($status));
-    }
-
-    protected function getCallbackMessage(?string $status): string
-    {
-        return $status == PaymentStatusEnum::COMPLETED
-            ? trans('plugins/payment::payment.checkout_success')
-            : trans('plugins/payment::payment.payment_pending');
+            ->setMessage(trans('plugins/payment::payment.checkout_success'));
     }
 
     public function webhook(Request $request)

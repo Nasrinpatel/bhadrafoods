@@ -5,16 +5,12 @@
         {{ trans('plugins/translation::translation.theme_translations_instruction') }}
 
         <p class="mt-3 mb-0">
-            {{-- Purify the message first, then inject the link: HTMLPurifier strips data-* attributes,
-                 which would break the modal trigger if the link went through BaseHelper::clean(). --}}
-            {!! str_replace(
-                ':here',
-                Html::link('#', trans('plugins/translation::translation.here'), [
+            {!! BaseHelper::clean(trans('plugins/translation::translation.re_import_alert', [
+                'here' => Html::link('#', trans('plugins/translation::translation.here'), [
                     'data-bs-toggle' => 'modal',
                     'data-bs-target' => '#confirm-re-import-modal',
-                ])->toHtml(),
-                BaseHelper::clean(trans('plugins/translation::translation.re_import_alert')),
-            ) !!}
+                ]),
+            ])) !!}
         </p>
     </x-core::alert>
 

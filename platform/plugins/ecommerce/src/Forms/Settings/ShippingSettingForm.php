@@ -2,10 +2,8 @@
 
 namespace Botble\Ecommerce\Forms\Settings;
 
-use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\OnOffFieldOption;
 use Botble\Base\Forms\FieldOptions\RadioFieldOption;
-use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\OnOffCheckboxField;
 use Botble\Base\Forms\Fields\RadioField;
 use Botble\Ecommerce\Http\Requests\Settings\ShippingSettingRequest;
@@ -48,15 +46,6 @@ class ShippingSettingForm extends SettingForm
                     ->label(trans('plugins/ecommerce::setting.shipping.form.disable_shipping_options'))
                     ->helperText(trans('plugins/ecommerce::setting.shipping.form.disable_shipping_options_helper'))
                     ->value(get_ecommerce_setting('disable_shipping_options', false))
-            )
-            ->add(
-                'volumetric_weight_divisor',
-                NumberField::class,
-                NumberFieldOption::make()
-                    ->label(trans('plugins/ecommerce::setting.shipping.form.volumetric_weight_divisor'))
-                    ->helperText(trans('plugins/ecommerce::setting.shipping.form.volumetric_weight_divisor_helper'))
-                    ->value(get_ecommerce_setting('volumetric_weight_divisor', 0))
-                    ->min(0)
                     ->wrapperAttributes([
                         'class' => 'mb-0',
                     ])

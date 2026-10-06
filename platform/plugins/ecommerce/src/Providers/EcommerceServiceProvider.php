@@ -26,7 +26,6 @@ use Botble\Ecommerce\Forms\Fronts\Auth\ForgotPasswordForm;
 use Botble\Ecommerce\Forms\Fronts\Auth\LoginForm;
 use Botble\Ecommerce\Forms\Fronts\Auth\RegisterForm;
 use Botble\Ecommerce\Forms\Fronts\Auth\ResetPasswordForm;
-use Botble\Ecommerce\Forms\Fronts\CheckoutForm;
 use Botble\Ecommerce\Http\Middleware\ApiCurrencyMiddleware;
 use Botble\Ecommerce\Http\Middleware\ApiLanguageMiddleware;
 use Botble\Ecommerce\Http\Middleware\CaptureCouponMiddleware;
@@ -36,7 +35,6 @@ use Botble\Ecommerce\Http\Middleware\RedirectIfCustomer;
 use Botble\Ecommerce\Http\Middleware\RedirectIfNotCustomer;
 use Botble\Ecommerce\Http\Middleware\RestoreCustomerCartMiddleware;
 use Botble\Ecommerce\Http\Middleware\TrackAbandonedCart;
-use Botble\Ecommerce\Http\Requests\CheckoutRequest;
 use Botble\Ecommerce\Http\Requests\Fronts\Auth\ForgotPasswordRequest;
 use Botble\Ecommerce\Http\Requests\Fronts\Auth\ResetPasswordRequest;
 use Botble\Ecommerce\Http\Requests\LoginRequest;
@@ -601,7 +599,7 @@ class EcommerceServiceProvider extends ServiceProvider
 
                         $specificationAttributes = $request->input('specification_attributes', []);
 
-                        $langCode = LanguageAdvancedManager::getTranslationLocale();
+                        $langCode = $request->input('language');
 
                         if ($specificationAttributes && $langCode) {
                             foreach ($specificationAttributes as $attributeId => $attributeData) {
@@ -632,10 +630,8 @@ class EcommerceServiceProvider extends ServiceProvider
 
                         $newRequest = new Request();
 
-                        $translationLocale = LanguageAdvancedManager::getTranslationLocale();
-
                         $newRequest->replace([
-                            'language' => $translationLocale,
+                            'language' => $request->input('language'),
                             'ref_lang' => $request->input('ref_lang'),
                         ]);
 
@@ -651,7 +647,7 @@ class EcommerceServiceProvider extends ServiceProvider
                             $newRequest = new Request();
 
                             $newRequest->replace([
-                                'language' => $translationLocale,
+                                'language' => $request->input('language'),
                                 'ref_lang' => $request->input('ref_lang'),
                             ]);
 
@@ -683,7 +679,7 @@ class EcommerceServiceProvider extends ServiceProvider
 
                         $request = new Request();
                         $request->replace([
-                            'language' => LanguageAdvancedManager::getTranslationLocale(),
+                            'language' => request()->input('language'),
                             'ref_lang' => request()->input('ref_lang'),
                         ]);
 
@@ -717,7 +713,7 @@ class EcommerceServiceProvider extends ServiceProvider
                         $newRequest = new Request();
 
                         $newRequest->replace([
-                            'language' => LanguageAdvancedManager::getTranslationLocale(),
+                            'language' => $request->input('language'),
                             'ref_lang' => $request->input('ref_lang'),
                         ]);
 
@@ -817,7 +813,7 @@ class EcommerceServiceProvider extends ServiceProvider
                     'name' => 'plugins/ecommerce::order.order_return',
                     'icon' => 'ti ti-basket-down',
                     'url' => fn () => route('order_returns.index'),
-                    'permissions' => ['order_returns.index'],
+                    'permissions' => ['orders.edit'],
                 ])
                 ->when(! EcommerceHelper::isDisabledPhysicalProduct(), function (DashboardMenuSupport $dashboardMenu): void {
                     $dashboardMenu->registerItem([
@@ -1240,7 +1236,6 @@ class EcommerceServiceProvider extends ServiceProvider
             FormFrontManager::register(RegisterForm::class, RegisterRequest::class);
             FormFrontManager::register(ForgotPasswordForm::class, ForgotPasswordRequest::class);
             FormFrontManager::register(ResetPasswordForm::class, ResetPasswordRequest::class);
-            FormFrontManager::register(CheckoutForm::class, CheckoutRequest::class);
         });
 
         $this->app->register(EventServiceProvider::class);

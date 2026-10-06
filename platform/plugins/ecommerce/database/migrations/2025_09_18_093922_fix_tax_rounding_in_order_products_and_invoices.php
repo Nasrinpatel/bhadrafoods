@@ -1,18 +1,14 @@
 <?php
 
+use Botble\Ecommerce\Facades\EcommerceHelper;
+use Botble\Ecommerce\Models\Invoice;
+use Botble\Ecommerce\Models\Order;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
-    protected int $decimals = 2;
-
     public function up(): void
     {
         try {
-            $currency = DB::table('ec_currencies')->where('is_default', 1)->first();
-            $this->decimals = $currency ? (int) $currency->decimals : 2;
-
             $this->fixOrderTaxCalculations();
             $this->fixInvoiceTaxCalculations();
         } catch (Throwable) {
@@ -22,97 +18,106 @@ return new class () extends Migration {
 
     protected function fixOrderTaxCalculations(): void
     {
-        DB::table('ec_orders')
-            ->select('id', 'tax_amount', 'amount')
+        Order::query()
             ->where('tax_amount', '>', 0)
-            ->orderBy('id')
-            ->chunk(500, function ($orders) {
-                $orderIds = $orders->pluck('id');
-                $allProducts = DB::table('ec_order_product')
-                    ->whereIn('order_id', $orderIds)
-                    ->get()
-                    ->groupBy('order_id');
-
-                $productUpdates = [];
-                $orderUpdates = [];
-
+            ->chunkById(100, function ($orders): void {
                 foreach ($orders as $order) {
-                    $products = $allProducts->get($order->id, collect());
-                    $taxGroups = $this->buildTaxGroups($products);
+                    $orderProducts = $order->products;
+
+                    $taxGroups = [];
+                    foreach ($orderProducts as $product) {
+                        $options = $product->options ?? [];
+                        $taxRate = null;
+
+                        if (! empty($options['taxRate'])) {
+                            $taxRate = $options['taxRate'];
+                        } elseif (! empty($options['taxClasses'])) {
+                            $taxRate = array_sum(array_values($options['taxClasses']));
+                        }
+
+                        if ($taxRate !== null && $taxRate > 0) {
+                            if (! isset($taxGroups[$taxRate])) {
+                                $taxGroups[$taxRate] = [
+                                    'subtotal' => 0,
+                                    'products' => [],
+                                ];
+                            }
+                            $taxGroups[$taxRate]['subtotal'] += ($product->price * $product->qty);
+                            $taxGroups[$taxRate]['products'][] = $product;
+                        }
+                    }
 
                     $totalCorrectTax = 0;
 
-                    foreach ($taxGroups as $group) {
-                        $taxRate = $group['rate'];
-                        $groupTax = round($group['subtotal'] * $taxRate / 100, $this->decimals);
+                    foreach ($taxGroups as $taxRate => $group) {
+                        $groupTax = EcommerceHelper::roundPrice($group['subtotal'] * $taxRate / 100);
                         $totalCorrectTax += $groupTax;
 
                         $remainingTax = $groupTax;
-                        $itemCount = count($group['items']);
+                        $productCount = count($group['products']);
 
-                        foreach ($group['items'] as $index => $item) {
-                            $itemSubtotal = $item->price * $item->qty;
+                        foreach ($group['products'] as $index => $product) {
+                            $productSubtotal = $product->price * $product->qty;
 
-                            if ($index === $itemCount - 1) {
-                                $itemTax = $remainingTax;
+                            if ($index === $productCount - 1) {
+                                $productTax = $remainingTax;
                             } else {
-                                $itemTax = round($itemSubtotal * $taxRate / 100, $this->decimals);
-                                $remainingTax -= $itemTax;
+                                $productTax = EcommerceHelper::roundPrice($productSubtotal * $taxRate / 100);
+                                $remainingTax -= $productTax;
                             }
 
-                            if (abs($item->tax_amount - $itemTax) > 0.001) {
-                                $productUpdates[] = [
-                                    'id' => $item->id,
-                                    'tax_amount' => $itemTax,
-                                ];
+                            if (abs($product->tax_amount - $productTax) > 0.001) {
+                                $product->tax_amount = $productTax;
+                                $product->save();
                             }
                         }
                     }
 
                     if (abs($order->tax_amount - $totalCorrectTax) > 0.001) {
                         $taxDifference = $totalCorrectTax - $order->tax_amount;
-                        $orderUpdates[] = [
-                            'id' => $order->id,
-                            'tax_amount' => $totalCorrectTax,
-                            'amount' => round($order->amount + $taxDifference, $this->decimals),
-                        ];
+                        $order->tax_amount = $totalCorrectTax;
+                        $order->amount = EcommerceHelper::roundPrice($order->amount + $taxDifference);
+                        $order->save();
                     }
                 }
-
-                $this->bulkUpdate('ec_order_product', $productUpdates, ['tax_amount']);
-                $this->bulkUpdate('ec_orders', $orderUpdates, ['tax_amount', 'amount']);
             });
     }
 
     protected function fixInvoiceTaxCalculations(): void
     {
-        if (! Schema::hasTable('ec_invoices') || ! Schema::hasTable('ec_invoice_items')) {
-            return;
-        }
-
-        DB::table('ec_invoices')
-            ->select('id', 'tax_amount', 'amount')
+        Invoice::query()
             ->where('tax_amount', '>', 0)
-            ->orderBy('id')
-            ->chunk(500, function ($invoices) {
-                $invoiceIds = $invoices->pluck('id');
-                $allItems = DB::table('ec_invoice_items')
-                    ->whereIn('invoice_id', $invoiceIds)
-                    ->get()
-                    ->groupBy('invoice_id');
-
-                $itemUpdates = [];
-                $invoiceUpdates = [];
-
+            ->chunkById(100, function ($invoices): void {
                 foreach ($invoices as $invoice) {
-                    $items = $allItems->get($invoice->id, collect());
-                    $taxGroups = $this->buildTaxGroups($items);
+                    $invoiceItems = $invoice->items;
+
+                    $taxGroups = [];
+                    foreach ($invoiceItems as $item) {
+                        $options = $item->options ?? [];
+                        $taxRate = null;
+
+                        if (! empty($options['taxRate'])) {
+                            $taxRate = $options['taxRate'];
+                        } elseif (! empty($options['taxClasses'])) {
+                            $taxRate = array_sum(array_values($options['taxClasses']));
+                        }
+
+                        if ($taxRate !== null && $taxRate > 0) {
+                            if (! isset($taxGroups[$taxRate])) {
+                                $taxGroups[$taxRate] = [
+                                    'subtotal' => 0,
+                                    'items' => [],
+                                ];
+                            }
+                            $taxGroups[$taxRate]['subtotal'] += ($item->price * $item->qty);
+                            $taxGroups[$taxRate]['items'][] = $item;
+                        }
+                    }
 
                     $totalCorrectTax = 0;
 
-                    foreach ($taxGroups as $group) {
-                        $taxRate = $group['rate'];
-                        $groupTax = round($group['subtotal'] * $taxRate / 100, $this->decimals);
+                    foreach ($taxGroups as $taxRate => $group) {
+                        $groupTax = EcommerceHelper::roundPrice($group['subtotal'] * $taxRate / 100);
                         $totalCorrectTax += $groupTax;
 
                         $remainingTax = $groupTax;
@@ -124,89 +129,25 @@ return new class () extends Migration {
                             if ($index === $itemCount - 1) {
                                 $itemTax = $remainingTax;
                             } else {
-                                $itemTax = round($itemSubtotal * $taxRate / 100, $this->decimals);
+                                $itemTax = EcommerceHelper::roundPrice($itemSubtotal * $taxRate / 100);
                                 $remainingTax -= $itemTax;
                             }
 
                             if (abs($item->tax_amount - $itemTax) > 0.001) {
-                                $itemUpdates[] = [
-                                    'id' => $item->id,
-                                    'tax_amount' => $itemTax,
-                                    'amount' => round($item->price * $item->qty + $itemTax, $this->decimals),
-                                ];
+                                $item->tax_amount = $itemTax;
+                                $item->amount = EcommerceHelper::roundPrice($item->price * $item->qty + $itemTax);
+                                $item->save();
                             }
                         }
                     }
 
                     if (abs($invoice->tax_amount - $totalCorrectTax) > 0.001) {
                         $taxDifference = $totalCorrectTax - $invoice->tax_amount;
-                        $invoiceUpdates[] = [
-                            'id' => $invoice->id,
-                            'tax_amount' => $totalCorrectTax,
-                            'amount' => round($invoice->amount + $taxDifference, $this->decimals),
-                        ];
+                        $invoice->tax_amount = $totalCorrectTax;
+                        $invoice->amount = EcommerceHelper::roundPrice($invoice->amount + $taxDifference);
+                        $invoice->save();
                     }
                 }
-
-                $this->bulkUpdate('ec_invoice_items', $itemUpdates, ['tax_amount', 'amount']);
-                $this->bulkUpdate('ec_invoices', $invoiceUpdates, ['tax_amount', 'amount']);
             });
-    }
-
-    protected function buildTaxGroups($items): array
-    {
-        $taxGroups = [];
-
-        foreach ($items as $item) {
-            $options = is_string($item->options) ? json_decode($item->options, true) : ($item->options ?? []);
-
-            if (! is_array($options)) {
-                continue;
-            }
-
-            $taxRate = null;
-
-            if (! empty($options['taxRate'])) {
-                $taxRate = $options['taxRate'];
-            } elseif (! empty($options['taxClasses'])) {
-                $taxRate = array_sum(array_values($options['taxClasses']));
-            }
-
-            if ($taxRate !== null && $taxRate > 0) {
-                // Use string key to avoid PHP float-to-int casting (10.5 -> 10)
-                $key = (string) $taxRate;
-                if (! isset($taxGroups[$key])) {
-                    $taxGroups[$key] = ['subtotal' => 0, 'items' => [], 'rate' => (float) $taxRate];
-                }
-                $taxGroups[$key]['subtotal'] += ($item->price * $item->qty);
-                $taxGroups[$key]['items'][] = $item;
-            }
-        }
-
-        return $taxGroups;
-    }
-
-    protected function bulkUpdate(string $table, array $rows, array $columns): void
-    {
-        if (empty($rows)) {
-            return;
-        }
-
-        foreach (array_chunk($rows, 500) as $chunk) {
-            $ids = array_column($chunk, 'id');
-            $sets = [];
-
-            foreach ($columns as $column) {
-                $cases = [];
-                foreach ($chunk as $row) {
-                    $cases[] = 'WHEN ' . (int) $row['id'] . ' THEN ' . (float) $row[$column];
-                }
-                $sets[] = "`{$column}` = CASE `id` " . implode(' ', $cases) . ' END';
-            }
-
-            $idsStr = implode(',', $ids);
-
-            DB::statement("UPDATE `{$table}` SET " . implode(', ', $sets) . " WHERE `id` IN ({$idsStr})");
-        }
     }
 };

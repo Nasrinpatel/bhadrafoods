@@ -70,7 +70,6 @@
                                                 </a>
                                             </li>
                                         @endforeach
-                                        {!! apply_filters('ecommerce_customer_sidebar_menu_items', '') !!}
                                     </ul>
                                 </div>
                             </nav>

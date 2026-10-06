@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Dohvati izvještaj sustava',
     'system_environment' => 'Okruženje sustava',
     'framework_version' => 'Verzija okvira',
-    'core_version' => 'Verzija jezgre',
     'timezone' => 'Vremenska zona',
     'debug_mode' => 'Način otklanjanja pogrešaka',
     'debug_mode_off' => 'Način otklanjanja pogrešaka isključen',

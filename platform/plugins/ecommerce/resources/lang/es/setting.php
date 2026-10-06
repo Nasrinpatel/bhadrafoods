@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Mostrar un mensaje informativo que informa a los clientes sobre los términos que están aceptando al hacer un pedido.',
       'hide_customer_info_at_checkout' => 'Ocultar información del cliente en checkout',
       'hide_customer_info_at_checkout_helper' => 'Ocultar la información de cuenta del cliente y botón de cerrar sesión de la página de checkout. Cuando está habilitado, los clientes con sesión iniciada no verán los detalles de su cuenta mostrados.',
-      'enable_order_notes_at_checkout' => 'Habilitar notas de pedido en el checkout',
-      'enable_order_notes_at_checkout_helper' => 'Si está habilitado, los clientes pueden agregar notas opcionales a su pedido en la página de pago (por ejemplo, instrucciones especiales de entrega).',
     ],
   ],
   'return' =>

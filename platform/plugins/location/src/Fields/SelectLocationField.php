@@ -122,31 +122,33 @@ class SelectLocationField extends FormField
         }
 
         $value = Arr::get($this->getValue(), 'state');
-
-        if ($value) {
-            $selectedState = State::query()->select('id', 'name')->find($value);
-            if ($selectedState) {
-                $states[$selectedState->getKey()] = $selectedState->name;
-            }
-        } elseif ($countryId) {
-            $defaultState = State::query()
-                ->select('id', 'name')
+        if ($countryId) {
+            $statesQuery = State::query()
                 ->where('country_id', $countryId)
-                ->where('is_default', true)
-                ->first();
+                ->select('name', 'id', 'is_default')
+                ->latest('is_default')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
+                ->get();
 
-            if ($defaultState) {
-                $value = $defaultState->getKey();
-                $states[$defaultState->getKey()] = $defaultState->name;
+            if (! $value && $statesQuery->isNotEmpty()) {
+                $firstState = $statesQuery->first();
+                if ($firstState->is_default) {
+                    $value = $firstState->getKey();
+                }
             }
+
+            $states = $statesQuery
+                ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
+                ->all();
         }
 
         $attr = array_merge($this->getOption('attr', []), [
             'id' => $stateKey,
             'data-url' => route('ajax.states-by-country'),
-            'class' => 'select-location-ajax',
+            'class' => 'select-search-full',
             'data-type' => 'state',
-            'data-country-id' => $countryId ?: '',
         ]);
 
         return array_merge([
@@ -189,31 +191,44 @@ class SelectLocationField extends FormField
             }
         }
 
-        if ($value) {
-            $selectedCity = City::query()->select('id', 'name')->find($value);
-            if ($selectedCity) {
-                $cities[$selectedCity->getKey()] = $selectedCity->name;
-            }
-        } elseif ($stateId) {
-            $defaultCity = City::query()
-                ->select('id', 'name')
-                ->where('state_id', $stateId)
-                ->where('is_default', true)
-                ->first();
+        $citiesQuery = collect();
 
-            if ($defaultCity) {
-                $value = $defaultCity->getKey();
-                $cities[$defaultCity->getKey()] = $defaultCity->name;
+        if ($stateId) {
+            $citiesQuery = City::query()
+                ->where('state_id', $stateId)
+                ->latest('is_default')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
+                ->select('name', 'id', 'is_default')
+                ->get();
+        } elseif ($countryId) {
+            $citiesQuery = City::query()
+                ->where('country_id', $countryId)
+                ->select('name', 'id', 'is_default')
+                ->latest('is_default')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
+                ->get();
+        }
+
+        if (! $value && $citiesQuery->isNotEmpty()) {
+            $firstCity = $citiesQuery->first();
+            if ($firstCity->is_default) {
+                $value = $firstCity->getKey();
             }
         }
+
+        $cities = $citiesQuery
+            ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
+            ->all();
 
         $attr = array_merge($this->getOption('attr', []), [
             'id' => $cityKey,
             'data-url' => route('ajax.cities-by-state'),
-            'class' => 'select-location-ajax',
+            'class' => 'select-search-full',
             'data-type' => 'city',
-            'data-state-id' => $stateId ?: '',
-            'data-country-id' => $countryId ?: '',
         ]);
 
         return array_merge([

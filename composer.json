@@ -5,7 +5,7 @@
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.3|^8.4",
+        "php": "^8.2|^8.3",
         "ext-curl": "*",
         "ext-gd": "*",
         "ext-json": "*",
@@ -29,9 +29,10 @@
         "botble/widget": "*@dev",
         "doctrine/dbal": "^4.2",
         "guzzlehttp/guzzle": "^7.9",
-        "laravel/framework": "^13.0",
+        "laravel/framework": "12.53.0",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^3.0",
+        "laravel/tinker": "^2.10",
+        "netresearch/jsonmapper": "^4.4",
         "predis/predis": "^3.0",
         "wikimedia/composer-merge-plugin": "^2.1"
     },
@@ -43,12 +44,12 @@
         "fruitcake/laravel-debugbar": "^4.0",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.0",
-        "laravel/pail": "^1.2.5",
-        "laravel/pint": "^1.27",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.24",
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^12.5.12",
+        "phpunit/phpunit": "^11.5.3",
         "rector/rector": "^2.0"
     },
     "autoload": {
@@ -87,10 +88,7 @@
             "@php artisan migrate --force",
             "npm install",
             "npm run prod"
-        ],
-        "phpmd:install": "@php -r \"copy('https://github.com/phpmd/phpmd/releases/download/2.15.0/phpmd.phar', 'phpmd.phar');\"",
-        "phpmd": "@php phpmd.phar",
-        "analyse": "@php -d memory_limit=3G vendor/bin/phpstan analyse"
+        ]
     },
     "extra": {
         "laravel": {
@@ -131,6 +129,22 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "phonepe/pg-php-sdk-v2",
+                "version": "2.0.0",
+                "dist": {
+                    "url": "https://phonepe.mycloudrepo.io/public/repositories/phonepe-pg-php-sdk/v2-sdk.zip",
+                    "type": "zip"
+                },
+                "autoload": {
+                    "classmap": [
+                        "/"
+                    ]
+                }
+            }
+        },
         {
             "type": "path",
             "url": "./platform/core"

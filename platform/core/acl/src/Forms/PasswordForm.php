@@ -28,7 +28,6 @@ class PasswordForm extends FormAbstract
                         PasswordField::class,
                         TextFieldOption::make()
                             ->label(trans('core/acl::users.current_password'))
-                            ->placeholder(trans('core/acl::users.current_password_placeholder'))
                             ->required()
                             ->maxLength(60)
                             ->colspan(2)
@@ -40,7 +39,6 @@ class PasswordForm extends FormAbstract
                 PasswordField::class,
                 TextFieldOption::make()
                     ->label(trans('core/acl::users.new_password'))
-                    ->placeholder(trans('core/acl::users.new_password_placeholder'))
                     ->required()
                     ->maxLength(60)
             )
@@ -49,7 +47,6 @@ class PasswordForm extends FormAbstract
                 PasswordField::class,
                 TextFieldOption::make()
                     ->label(trans('core/acl::users.confirm_new_password'))
-                    ->placeholder(trans('core/acl::users.confirm_new_password_placeholder'))
                     ->required()
                     ->maxLength(60)
             )

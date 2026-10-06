@@ -329,12 +329,7 @@ class HandleApplyPromotionsService
                                     ]) &&
                                     in_array($item->id, $productIdsForPromotion)
                                 ) {
-                                    // A same-price promotion set above the item's own price would
-                                    // otherwise produce a negative discount, which inflates the
-                                    // order total and overcharges the customer. The collection
-                                    // branch below already guards this, and the coupon service
-                                    // clamps the same way.
-                                    $promotionDiscountAmount += max($item->price - $promotion->value, 0) * $item->qty;
+                                    $promotionDiscountAmount += ($item->price - $promotion->value) * $item->qty;
 
                                     continue;
                                 }
@@ -356,11 +351,7 @@ class HandleApplyPromotionsService
                 }
             }
 
-            // Fixed amount promotions add their full value without checking what the cart is
-            // worth, so a $150 promotion on a $20 cart would record a $150 discount. Coupons
-            // already clamp this way via min($value, $rawTotal). The lower bound keeps a
-            // misconfigured promotion from ever turning into a surcharge.
-            return max(min($promotionDiscountAmount, $rawTotal), 0);
+            return $promotionDiscountAmount;
         });
     }
 }

@@ -228,7 +228,6 @@ class CartController extends BaseApiController
             $originalProduct,
             $cartItem['qty'],
             $cartItem['subtotal'],
-            $product->sku,
         );
 
         app(FacebookPixel::class)->addToCart(
@@ -577,19 +576,8 @@ class CartController extends BaseApiController
         $countCart = $cart->count();
 
         if (is_plugin_active('marketplace')) {
-            // Batch-load all products with store relation to avoid N+1 queries
-            $productIds = $content->pluck('id')->filter()->unique()->values()->all();
-            $productsMap = Product::query()
-                ->whereIn('id', $productIds)
-                ->with([
-                    'variationInfo.configurableProduct.store',
-                    'variationInfo.configurableProduct.store.slugable',
-                ])
-                ->get()
-                ->keyBy('id');
-
             foreach ($content as $item) {
-                $product = $productsMap->get($item->id);
+                $product = Product::query()->find($item->id);
 
                 if (! $product) {
                     continue;

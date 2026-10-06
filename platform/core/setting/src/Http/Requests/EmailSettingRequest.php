@@ -33,6 +33,7 @@ class EmailSettingRequest extends Request
             'email_sendgrid_key' => ['nullable', 'string', new RequiredIf($mailDriver == 'sendgrid')],
             'email_log_channel' => ['nullable', 'string', new RequiredIf($mailDriver == 'log')],
             'email_sendmail_path' => ['nullable', 'string', new RequiredIf($mailDriver == 'sendmail')],
+            'email_default_locale' => ['nullable', 'string', 'max:20'],
         ]);
     }
 }

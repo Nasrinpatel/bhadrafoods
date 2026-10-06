@@ -121,7 +121,6 @@ return [
     'apply' => 'Aplicar',
     'available' => 'Disponible',
     'back_to_return_requests' => 'Volver a solicitudes de devolución',
-    'backorder_warning' => 'Advertencia: Este producto está en espera y puede tardar más en enviarse.',
     'choose_reason' => 'Elegir motivo',
     'clear' => 'Limpiar',
     'clear_all_filters' => 'Limpiar todos los filtros',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Finalizar compra',
     'complete_order' => 'Completar pedido',
     'agree_terms_and_policy_error' => 'Debe aceptar los términos y condiciones y la política de privacidad.',
-    'optional' => 'Opcional',
-
 ];

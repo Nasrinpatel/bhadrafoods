@@ -144,15 +144,7 @@ class OrderProduct extends BaseModel
 
     protected function priceWithTax(): Attribute
     {
-        return Attribute::get(function () {
-            // When the product was sold tax-inclusive, `price` already contains tax;
-            // adding `tax_amount` would double-count it.
-            if (Arr::get($this->options ?? [], 'price_includes_tax')) {
-                return $this->price;
-            }
-
-            return $this->price + $this->tax_amount;
-        });
+        return Attribute::get(fn () => $this->price + $this->tax_amount);
     }
 
     protected function totalPriceWithTax(): Attribute

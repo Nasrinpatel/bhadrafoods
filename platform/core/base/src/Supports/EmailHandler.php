@@ -9,9 +9,7 @@ use Botble\Media\Facades\RvMedia;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\ErrorHandler\ErrorRenderer\HtmlErrorRenderer;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
@@ -32,7 +30,7 @@ class EmailHandler
 
     protected array $variableValues = [];
 
-    protected ?array $coreVariableValues = null;
+    protected array $coreVariableValues;
 
     protected TwigCompiler $twigCompiler;
 
@@ -137,12 +135,7 @@ class EmailHandler
             'site_copyright' => $this->getSiteCopyright(),
             'site_social_links' => $this->getSiteSocialLinks(),
             'css' => $this->getCssContent(),
-            'max_height_for_logo' => $maxHeightForLogo = ((int) setting('email_template_max_height_for_logo', 40)) ?: 40,
-            // Real pixel dimensions scaled to the max-height so the header <img> can carry explicit
-            // width/height attributes. These are the only way to lock the logo's aspect ratio across
-            // email clients that strip CSS (e.g. Outlook desktop). Falls back to 0 when unreadable.
-            'logo_width' => ($logoDimensions = $this->getLogoDimensions($maxHeightForLogo))['width'],
-            'logo_height' => $logoDimensions['height'],
+            'max_height_for_logo' => setting('email_template_max_height_for_logo', 40),
         ];
     }
 
@@ -169,60 +162,6 @@ class EmailHandler
                 ? RvMedia::getImageUrl($adminLogo)
                 : url(config('core.base.general.logo'))
             );
-    }
-
-    /**
-     * Resolve the email logo's real pixel size, scaled down to $maxHeight.
-     *
-     * Returns ['width' => int, 'height' => int]; both 0 when the source image can't be read
-     * (e.g. remote logo, unsupported format) so the template can gracefully omit the attributes.
-     */
-    protected function getLogoDimensions(int $maxHeight): array
-    {
-        $empty = ['width' => 0, 'height' => 0];
-
-        // Resolve the same logo that getSiteLogo() renders (filter included) so the computed
-        // dimensions always match the displayed image.
-        $logo = apply_filters('core_email_template_site_logo', setting('email_template_logo'));
-        $logo = $logo ?: setting('admin_logo');
-
-        if (! $logo || $maxHeight < 1) {
-            return $empty;
-        }
-
-        $cacheKey = 'email_template_logo_dimensions_' . md5($logo . '_' . $maxHeight);
-
-        if (is_array($cached = Cache::get($cacheKey))) {
-            return $cached;
-        }
-
-        try {
-            if (! Storage::exists($logo)) {
-                return $empty;
-            }
-
-            $size = getimagesizefromstring((string) Storage::get($logo));
-
-            if (! $size || empty($size[0]) || empty($size[1])) {
-                return $empty;
-            }
-
-            [$naturalWidth, $naturalHeight] = $size;
-
-            // Never upscale a logo smaller than the configured max-height.
-            $height = min($maxHeight, (int) $naturalHeight);
-            $width = (int) round($naturalWidth * ($height / $naturalHeight));
-
-            $dimensions = ['width' => $width, 'height' => $height];
-
-            // Only cache successful reads - a transient storage failure must not disable the
-            // feature permanently.
-            Cache::forever($cacheKey, $dimensions);
-
-            return $dimensions;
-        } catch (Throwable) {
-            return $empty;
-        }
     }
 
     protected function getSiteSocialLinks(): array
@@ -407,25 +346,18 @@ class EmailHandler
         }
 
         $coreData = $this->getCoreVariableValues();
+        $data = [...$coreData, ...$data];
+        $variables = [...array_keys($coreData), ...$variables];
 
         $twigCompiler = apply_filters('cms_twig_compiler', $this->twigCompiler);
 
-        // Only the core (admin-authored) template fragments - e.g. header/footer, which embed
-        // other core variables like {{ site_title }} - are compiled as templates so their nested
-        // variables resolve. Plugin-supplied variable values (customer name, order data, etc.)
-        // are attacker-influenced and are passed through as literal data only: they are NEVER
-        // compiled as Twig, which closes the stored server-side template injection surface where
-        // a low-privilege user could inject {{ ... }} into an email via a data field (finding #3).
-        foreach ($coreData as $key => $value) {
+        foreach ($data as $key => $value) {
             try {
-                $coreData[$key] = $value && is_string($value) ? $twigCompiler->compile($value, $coreData) : $value;
+                $data[$key] = $value && is_string($value) ? $twigCompiler->compile($value, $data) : $value;
             } catch (Throwable) {
-                // Keep the raw value when the core fragment fails to compile.
+                $data[$key] = $value;
             }
         }
-
-        $data = [...$coreData, ...$data];
-        $variables = [...array_keys($coreData), ...$variables];
 
         if (empty($data) || empty($content)) {
             return $content;
@@ -477,15 +409,9 @@ class EmailHandler
 
         if (! $subject) {
             $subject = $this->getSubject();
-        } else {
-            $subject = $this->prepareData($subject);
         }
 
-        // getContent()/getSubject() already ran the content and subject through prepareData(),
-        // so tell send() they are prepared. Re-compiling here would evaluate any Twig that a
-        // user-controlled variable value rendered into the body on the first pass (e.g. a
-        // customer name containing "{{ ... }}") - a second-pass template-injection. See send().
-        $this->send($this->getContent(), $subject, $email, $args, $debug, true);
+        $this->send($this->getContent(), $subject, $email, $args, $debug);
 
         return true;
     }
@@ -500,8 +426,7 @@ class EmailHandler
         string $title,
         string|array|null $to = null,
         array $args = [],
-        bool $debug = false,
-        bool $prepared = false
+        bool $debug = false
     ): void {
         try {
             if (empty($to)) {
@@ -511,18 +436,11 @@ class EmailHandler
                 }
             }
 
-            // Skip variable replacement when the caller already prepared the content/subject
-            // (e.g. sendUsingTemplate). Compiling twice would re-evaluate Twig that a
-            // user-controlled variable value output on the first pass - a template injection.
-            if (! $prepared) {
-                $content = $this->prepareData($content);
-                $title = $this->prepareData($title);
-            }
+            $content = $this->prepareData($content);
+            $title = $this->prepareData($title);
 
             $content = $this->sanitizeUtf8($content);
             $title = $this->sanitizeUtf8($title);
-
-            $content = $this->sanitizeOutput($content);
 
             event(new SendMailEvent($content, $title, $to, $args, $debug));
         } catch (Throwable $throwable) {
@@ -645,7 +563,7 @@ class EmailHandler
         try {
             app()->setLocale($locale);
 
-            $this->coreVariableValues = null;
+            unset($this->coreVariableValues);
 
             $result = $this->sendUsingTemplate($template, $email, $args, $debug, $type, $subject);
 
@@ -653,7 +571,7 @@ class EmailHandler
         } finally {
             app()->setLocale($previousLocale);
 
-            $this->coreVariableValues = null;
+            unset($this->coreVariableValues);
         }
     }
 
@@ -665,7 +583,11 @@ class EmailHandler
             return $locale;
         }
 
-        return apply_filters('cms_default_email_locale', config('app.locale', 'en'));
+        if (is_plugin_active('language')) {
+            return \Botble\Language\Facades\Language::getDefaultLocale() ?: config('app.locale', 'en');
+        }
+
+        return config('app.locale', 'en');
     }
 
     protected function sanitizeUtf8(string $content): string
@@ -673,58 +595,6 @@ class EmailHandler
         if (json_encode($content) === false) {
             $content = iconv('UTF-8', 'UTF-8//IGNORE', $content) ?: $content;
         }
-
-        return $content;
-    }
-
-    /**
-     * Sanitize the final email body before it is sent.
-     *
-     * Email templates are HTML-by-design and autoescape is off, so a value rendered into an
-     * email (e.g. a customer-supplied name) is emitted as raw HTML. By default we strip only the
-     * active-content XSS vectors (<script>, on* event handlers, javascript:/vbscript: URIs) while
-     * preserving the document structure - the <html>/<body> wrapper, dir/lang attributes (RTL
-     * emails) and Outlook conditional comments all survive.
-     *
-     * Two filters control this:
-     *  - cms_email_sanitize_output (default true): return false to skip sanitization entirely.
-     *  - cms_email_sanitize_output_strict (default false): return true to use the full CMS HTML
-     *    purifier instead - stronger, but it removes the <body> wrapper and therefore its dir/lang
-     *    attributes, so RTL emails lose their direction. Opt in only when that trade-off is fine.
-     */
-    protected function sanitizeOutput(string $content): string
-    {
-        if (! apply_filters('cms_email_sanitize_output', true)) {
-            return $content;
-        }
-
-        if (apply_filters('cms_email_sanitize_output_strict', false)) {
-            return (string) BaseHelper::clean($content);
-        }
-
-        return $this->stripUnsafeMarkup($content);
-    }
-
-    /**
-     * Remove active-content XSS vectors from HTML while leaving the rest of the markup intact.
-     */
-    protected function stripUnsafeMarkup(string $content): string
-    {
-        // Drop <script> blocks (and any stray/self-closing script tags).
-        $content = (string) preg_replace('#<script\b[^>]*>.*?</script\s*>#is', '', $content);
-        $content = (string) preg_replace('#</?script\b[^>]*>#i', '', $content);
-
-        // Strip inline event-handler attributes (onclick, onerror, onload, ...).
-        $content = (string) preg_replace('#\son[a-z]+\s*=\s*"[^"]*"#i', '', $content);
-        $content = (string) preg_replace("#\son[a-z]+\s*=\s*'[^']*'#i", '', $content);
-        $content = (string) preg_replace('#\son[a-z]+\s*=\s*[^\s"\'>]+#i', '', $content);
-
-        // Neutralize dangerous URI schemes in resource/link attributes.
-        $content = (string) preg_replace(
-            '#(\b(?:href|src|action|xlink:href)\s*=\s*)(["\']?)\s*(?:javascript|vbscript)\s*:[^"\'\s>]*\2#i',
-            '$1$2#$2',
-            $content
-        );
 
         return $content;
     }

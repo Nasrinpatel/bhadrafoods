@@ -32,7 +32,7 @@ class ProductPrice
     public function getPrice(bool $includingTaxes = true): float
     {
         if ($includingTaxes) {
-            $price = $this->product->isOnSale()
+            $price = $this->product->front_sale_price_with_taxes != $this->product->price_with_taxes
                 ? $this->product->front_sale_price_with_taxes
                 : $this->product->price_with_taxes;
         } else {

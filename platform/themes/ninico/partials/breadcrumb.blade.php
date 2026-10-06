@@ -4,7 +4,7 @@
     $breadcrumbBannerImage = Theme::get('breadcrumbBannerImage') ?: RvMedia::getImageUrl(theme_option('breadcrumb_background'));
 @endphp
 
-<section class="breadcrumb__area pt-60 pb-60 tp-breadcrumb__bg"
+<section class="breadcrumb__area pt-165 pb-60 tp-breadcrumb__bg"
          @if($breadcrumbBannerImage)
              data-background="{{ $breadcrumbBannerImage }}"
          @else

@@ -14,35 +14,28 @@ class UpdatePermalinkSettingsForEachLanguage
             return;
         }
 
-        $langCode = $event->request->input('ref_lang');
-
-        $slugsQuery = Slug::query()->where('reference_type', $event->reference);
-
-        $missingSlugTranslations = (clone $slugsQuery)
-            ->whereNotIn('id', function ($query) use ($langCode) {
-                $query->select('slugs_id')
-                    ->from('slugs_translations')
-                    ->where('lang_code', $langCode);
-            })
-            ->select(['id', 'key'])
+        $missingSlugTranslations = Slug::query()
+            ->where('reference_type', $event->reference)
+            ->whereNotIn('id', DB::table('slugs_translations')->pluck('slugs_id')->all())
             ->get();
 
-        if ($missingSlugTranslations->isNotEmpty()) {
-            $rows = $missingSlugTranslations->map(fn ($slug) => [
-                'slugs_id' => $slug->id,
-                'lang_code' => $langCode,
-                'key' => $slug->key,
-                'prefix' => $event->prefix,
-            ])->all();
-
-            foreach (array_chunk($rows, 500) as $chunk) {
-                DB::table('slugs_translations')->insert($chunk);
-            }
+        foreach ($missingSlugTranslations as $missingSlugTranslation) {
+            DB::table('slugs_translations')
+                ->insert([
+                    'slugs_id' => $missingSlugTranslation->id,
+                    'lang_code' => $event->request->input('ref_lang'),
+                    'key' => $missingSlugTranslation->key,
+                    'prefix' => $missingSlugTranslation->prefix,
+                ]);
         }
 
+        $slugIds = Slug::query()
+            ->where('reference_type', $event->reference)
+            ->pluck('id')
+            ->all();
+
         DB::table('slugs_translations')
-            ->whereIn('slugs_id', (clone $slugsQuery)->select('id'))
-            ->where('lang_code', $langCode)
+            ->whereIn('slugs_id', $slugIds)
             ->update(['prefix' => $event->prefix]);
     }
 }

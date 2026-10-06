@@ -78,14 +78,7 @@
                     'priceOriginalClassName' => 'tpproduct__priceinfo-list-oldprice',
                 ])
             </div>
-            @if ($product->isExternalProduct())
-                <div class="tpproduct__cart">
-                    <a href="{{ $product->original_product->external_url ?? $product->external_url }}" target="_blank" rel="nofollow noopener noreferrer">
-                        <i class="fal fa-external-link"></i>
-                        <span>{{ __('Buy on External Store') }}</span>
-                    </a>
-                </div>
-            @elseif(EcommerceHelper::isCartEnabled())
+            @if(EcommerceHelper::isCartEnabled())
                 <div class="tpproduct__cart">
                     @if ($product->variations()->exists())
                         <a data-id="{{ $product->slug }}" href="#" data-url="{{ route('public.ajax.quick-shop', $product->slug) }}" class="button-quick-shop">

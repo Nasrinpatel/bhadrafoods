@@ -9,7 +9,7 @@
             </div>
             <div class="col-xl-7 col-lg-9 align-items-center">
                 <div class="tp-slider-area p-relative">
-                    <div class="swiper-container slider-active" data-autoplay-speed="{{ $autoplaySpeed }}">
+                    <div class="swiper-container slider-active">
                         <div class="swiper-wrapper">
                             @foreach($sliders as $slider)
                                 <div class="swiper-slide">

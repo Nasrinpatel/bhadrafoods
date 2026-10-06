@@ -41,14 +41,6 @@ class Menu
 
     protected static array $locations = [];
 
-    /**
-     * Existing nodes and resolved reference urls for the menu currently being saved,
-     * loaded once instead of one query per node. Null while no save is in progress.
-     */
-    protected ?array $existingMenuNodes = null;
-
-    protected array $referenceUrls = [];
-
     public function __construct()
     {
         $this->cache = Cache::make(MenuModel::class);
@@ -65,13 +57,7 @@ class Menu
 
     public function recursiveSaveMenu(array $menuNodes, int|string $menuId, int|string $parentId): array
     {
-        $isRootCall = $this->existingMenuNodes === null;
-
         try {
-            if ($isRootCall) {
-                $this->primeMenuNodeCaches($menuNodes);
-            }
-
             foreach ($menuNodes as &$row) {
                 $child = Arr::get($row, 'children', []);
 
@@ -91,66 +77,6 @@ class Menu
             return $menuNodes;
         } catch (Exception) {
             return [];
-        } finally {
-            if ($isRootCall) {
-                $this->existingMenuNodes = null;
-                $this->referenceUrls = [];
-            }
-        }
-    }
-
-    /**
-     * Load everything the save needs up front.
-     *
-     * Without this the save runs a findOrNew plus a reference lookup for every node,
-     * which is what makes a menu with several hundred links time out.
-     */
-    protected function primeMenuNodeCaches(array $menuNodes): void
-    {
-        $ids = [];
-        $references = [];
-
-        $collect = function (array $nodes) use (&$collect, &$ids, &$references): void {
-            foreach ($nodes as $node) {
-                $item = Arr::get($node, 'menuItem', []);
-
-                if ($id = Arr::get($item, 'id')) {
-                    $ids[] = $id;
-                }
-
-                $referenceType = Arr::get($item, 'reference_type');
-                $referenceId = (int) Arr::get($item, 'reference_id');
-
-                if ($referenceType && $referenceType !== 'custom-link' && $referenceId) {
-                    $references[$referenceType][] = $referenceId;
-                }
-
-                $collect(Arr::get($node, 'children', []));
-            }
-        };
-
-        $collect($menuNodes);
-
-        $this->existingMenuNodes = $ids
-            ? MenuNode::query()->whereIn('id', array_unique($ids))->get()->keyBy('id')->all()
-            : [];
-
-        $this->referenceUrls = [];
-
-        foreach ($references as $referenceType => $referenceIds) {
-            if (! class_exists($referenceType)) {
-                continue;
-            }
-
-            $query = $referenceType::query()->whereIn('id', array_unique($referenceIds));
-
-            if (method_exists($referenceType, 'slugable')) {
-                $query->with('slugable');
-            }
-
-            foreach ($query->get() as $reference) {
-                $this->referenceUrls[$referenceType][$reference->getKey()] = str_replace(url(''), '', $reference->url);
-            }
         }
     }
 
@@ -160,32 +86,11 @@ class Menu
         int|string $parentId,
         bool $hasChild = false
     ): array {
-        $id = Arr::get($menuItem, 'id');
-
         /**
          * @var MenuNode $node
          */
-        $node = $id && isset($this->existingMenuNodes[$id])
-            ? $this->existingMenuNodes[$id]
-            : MenuNode::query()->findOrNew($id);
 
-        /**
-         * Apply the payload first so we can tell whether this node actually changed.
-         * On a reorder or a single title edit almost every node is untouched, and the
-         * form pipeline below - a full form build plus four event and filter chains -
-         * is what makes a large menu take minutes to save.
-         */
-        $node->fill($menuItem);
-        $node->menu_id = $menuId;
-        $node->parent_id = $parentId;
-        $node->has_child = (int) $hasChild;
-        $node = $this->getReferenceMenuNode($menuItem, $node);
-
-        if ($node->exists && ! $node->isDirty()) {
-            $menuItem['id'] = $node->getKey();
-
-            return $menuItem;
-        }
+        $node = MenuNode::query()->findOrNew(Arr::get($menuItem, 'id'));
 
         MenuNodeForm::createFromModel($node)
             ->saving(function (MenuNodeForm $form) use ($hasChild, $parentId, $menuId, $menuItem): void {
@@ -196,7 +101,7 @@ class Menu
                 $node->fill($menuItem);
                 $node->menu_id = $menuId;
                 $node->parent_id = $parentId;
-                $node->has_child = (int) $hasChild;
+                $node->has_child = $hasChild;
 
                 $node = $this->getReferenceMenuNode($menuItem, $node);
                 $node->save();
@@ -222,11 +127,7 @@ class Menu
                 $menuNode->reference_id = (int) Arr::get($item, 'reference_id');
                 $menuNode->reference_type = Arr::get($item, 'reference_type');
 
-                $cachedUrl = Arr::get($this->referenceUrls, "$menuNode->reference_type.$menuNode->reference_id");
-
-                if ($cachedUrl !== null) {
-                    $menuNode->url = $cachedUrl;
-                } elseif (class_exists($menuNode->reference_type)) {
+                if (class_exists($menuNode->reference_type)) {
                     $reference = $menuNode->reference_type::find($menuNode->reference_id);
                     if ($reference) {
                         $menuNode->url = str_replace(url(''), '', $reference->url);
@@ -311,19 +212,21 @@ class Menu
         $cacheEnabled = setting('cache_front_menu_enabled', true);
         $cacheKey = 'menu_all_menus_' . md5(serialize(BaseHelper::getHomepageUrl()) . app()->getLocale());
 
-        if ($cacheEnabled && ($cached = $this->cache->get($cacheKey)) instanceof Collection) {
-            return $cached;
+        if ($cacheEnabled && $this->cache->has($cacheKey)) {
+            $cached = $this->cache->get($cacheKey);
+
+            if ($cached instanceof Collection) {
+                return $cached;
+            }
         }
 
-        // Every node of a menu, at every depth, belongs to the same menu_id, so `menuNodes`
-        // already returns the whole tree flat. The child relation is then built in memory by
-        // hydrateMenuNodeTree() instead of eager loading `menuNodes.child.*`, which only ever
-        // reached two levels of model instances and left deeper levels lazy loading per node.
         $with = apply_filters('cms_menu_load_with_relations', [
             'menuNodes',
+            'menuNodes.child',
             'menuNodes.metadata',
+            'menuNodes.child.metadata',
             'menuNodes.reference',
-            'menuNodes.reference.slugable',
+            'menuNodes.child.reference',
             'locations',
         ]);
 
@@ -343,8 +246,6 @@ class Menu
             $result = RepositoryHelper::applyBeforeExecuteQuery($items, new MenuModel())->get();
         }
 
-        $this->hydrateMenuNodeTree($result);
-
         $this->preloadMenuNodeMetadata($result);
 
         if ($cacheEnabled) {
@@ -352,29 +253,6 @@ class Menu
         }
 
         return $result;
-    }
-
-    /**
-     * Build the child relation of every menu node from the flat node collection already in
-     * memory, so rendering a menu never queries again no matter how deep it is nested.
-     */
-    protected function hydrateMenuNodeTree(Collection $menus): void
-    {
-        foreach ($menus as $menu) {
-            if (! $menu->relationLoaded('menuNodes')) {
-                continue;
-            }
-
-            $nodesByParent = $menu->menuNodes
-                ->sortBy('position')
-                ->groupBy(fn (MenuNode $node) => (int) $node->parent_id);
-
-            foreach ($menu->menuNodes as $node) {
-                $children = $nodesByParent->get((int) $node->getKey());
-
-                $node->setRelation('child', new Collection($children ? $children->all() : []));
-            }
-        }
     }
 
     protected function preloadMenuNodeMetadata(Collection $menus): void
@@ -414,16 +292,13 @@ class Menu
 
         $theme = Arr::get($args, 'theme', true);
 
-        $cacheKey = 'menu_location_' . md5($this->getMenuCacheKeyPayload($args));
+        $cacheKey = 'menu_location_' . md5(serialize(BaseHelper::getHomepageUrl()) . serialize($args) . app()->getLocale());
 
-        // Views recurse into generateMenu() once per sub-menu, passing the nodes they already
-        // hold. Caching those calls would store the whole menu model again for every branch,
-        // so only the entry call - the one that still has to resolve a menu - is cached.
-        $cacheEnabled = setting('cache_front_menu_enabled', true) && ! Arr::has($args, 'menu_nodes');
+        $cacheEnabled = setting('cache_front_menu_enabled', true);
 
         $data = [];
 
-        if ($cacheEnabled) {
+        if ($cacheEnabled && $this->cache->has($cacheKey)) {
             $data = $this->cache->get($cacheKey);
         }
 
@@ -461,7 +336,7 @@ class Menu
 
             if ($menuNodes instanceof Collection) {
                 try {
-                    $menuNodes->loadMissing(['reference', 'reference.slugable']);
+                    $menuNodes->loadMissing('reference');
                 } catch (Throwable) {
                 }
             }
@@ -491,35 +366,6 @@ class Menu
         }
 
         return view('packages/menu::partials.default', $data)->render();
-    }
-
-    /**
-     * Build the cache key payload from identifiers only. Serializing $args instead would walk
-     * the whole menu model with its loaded nodes, and generateMenu() runs once per sub-menu
-     * level, so on a menu with many items that serialization dominates the page render time.
-     */
-    protected function getMenuCacheKeyPayload(array $args): string
-    {
-        $menu = Arr::get($args, 'menu');
-
-        $nodeIds = [];
-
-        if (is_iterable($menuNodes = Arr::get($args, 'menu_nodes'))) {
-            foreach ($menuNodes as $node) {
-                $nodeIds[] = $node instanceof BaseModel ? $node->getKey() : null;
-            }
-        }
-
-        return implode('|', [
-            BaseHelper::getHomepageUrl(),
-            app()->getLocale(),
-            Arr::get($args, 'slug') ?: ($menu instanceof MenuModel ? $menu->getKey() : ''),
-            Arr::get($args, 'view', ''),
-            Arr::get($args, 'theme', true) ? 1 : 0,
-            Arr::get($args, 'parent_id', 0),
-            serialize(Arr::get($args, 'options', [])),
-            implode(',', $nodeIds),
-        ]);
     }
 
     public function registerMenuOptions(string $model, string $name): void
@@ -591,15 +437,14 @@ class Menu
     public function clearCacheMenuItems(): self
     {
         try {
-            $nodes = MenuNode::query()
-                ->whereNotNull('reference_type')
-                ->whereNotNull('reference_id')
-                ->where('reference_id', '>', 0)
-                ->with(['reference'])
-                ->get();
+            $nodes = MenuNode::query()->get();
 
             foreach ($nodes as $node) {
-                if (! class_exists($node->reference_type) || ! $node->reference) {
+                if (! $node->reference_type ||
+                    ! class_exists($node->reference_type) ||
+                    ! $node->reference_id ||
+                    ! $node->reference
+                ) {
                     continue;
                 }
 

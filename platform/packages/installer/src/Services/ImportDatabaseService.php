@@ -4,8 +4,8 @@ namespace Botble\Installer\Services;
 
 use Botble\Base\Services\ClearCacheService;
 use Botble\Base\Supports\Database;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 class ImportDatabaseService
 {
@@ -15,7 +15,7 @@ class ImportDatabaseService
             Database::restoreFromPath($path);
 
             ClearCacheService::make()->purgeAll();
-        } catch (Throwable $exception) {
+        } catch (QueryException $exception) {
             throw ValidationException::withMessages([
                 'database' => [$exception->getMessage()],
             ]);

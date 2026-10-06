@@ -19,45 +19,25 @@ if (! function_exists('language_flag')) {
         $flag = apply_filters('cms_language_flag', $flag, $name);
 
         $flagPath = BASE_LANGUAGE_FLAG_PATH . $flag . '.svg';
-        $absolutePath = public_path($flagPath);
 
-        $size = file_exists($absolutePath) ? filesize($absolutePath) : false;
+        if (file_exists(public_path($flagPath))) {
+            $contents = file_get_contents(public_path($flagPath));
 
-        if ($size !== false && $size <= max_inline_language_flag_size()) {
-            $contents = file_get_contents($absolutePath);
+            $contents = trim(preg_replace('/^(<\?xml.+?\?>)/', '', $contents));
 
-            if (is_string($contents) && $contents !== '') {
-                $contents = trim(preg_replace('/^(<\?xml.+?\?>)/', '', $contents));
-
-                return str_replace(
-                    '<svg',
-                    rtrim(sprintf('<svg style="height: %spx; width: auto;" class="flag"', $width)),
-                    $contents
-                );
-            }
+            return str_replace(
+                '<svg',
+                rtrim(sprintf('<svg style="height: %spx; width: auto;" class="flag"', $width)),
+                $contents
+            );
         }
 
         return Html::image(asset($flagPath), sprintf('%s flag', $name), [
             'title' => $name,
             'class' => 'flag',
-            'style' => "height: {$width}px; width: auto;",
+            'style' => "height: {$width}px",
             'loading' => 'lazy',
-            'decoding' => 'async',
         ]);
-    }
-}
-
-if (! function_exists('max_inline_language_flag_size')) {
-    /**
-     * Largest flag SVG (in bytes) still worth inlining into the HTML document.
-     *
-     * Set to 0 to always serve flags as <img>.
-     */
-    function max_inline_language_flag_size(): int
-    {
-        $size = config('core.base.general.max_inline_language_flag_size', 4096);
-
-        return is_numeric($size) && (int) $size >= 0 ? (int) $size : 4096;
     }
 }
 
@@ -107,7 +87,7 @@ if (! function_exists('get_cms_version')) {
 if (! function_exists('get_core_version')) {
     function get_core_version(): string
     {
-        return '7.6.12';
+        return '7.6.5';
     }
 }
 

@@ -36,12 +36,10 @@ return [
     'test_payment' => '首先在测试模式下进行测试支付',
     'check_status' => '检查订单状态是否更新为"已完成"',
     'verify_webhook' => '如果订单仍为"未完成",请验证您的 webhook 配置',
-    'check_logs' => '检查 Payments > Payment Logs (admin panel) 中的支付日志以进行调试',
+    'check_logs' => '检查 storage/logs/payment-*.log 中的支付日志以进行调试',
     'troubleshooting' => '故障排除提示:',
     'ssl_required' => '确保您的网站具有有效的 SSL 证书 (HTTPS)',
     'public_url' => '验证 webhook URL 可公开访问(非 localhost)',
     'firewall_check' => '检查没有防火墙阻止 Razorpay webhook 请求',
     'live_mode' => '对于生产环境,请确保 Razorpay 处于正式模式,而非测试模式',
-    'minimum_amount_error' => '订单金额低于 Razorpay 允许的最低金额（:amount）。请向购物车中添加更多商品。',
-    'minimum_amount_warning' => 'Razorpay 要求最低订单金额为 :amount。您当前的订单总额低于此最低金额。',
 ];

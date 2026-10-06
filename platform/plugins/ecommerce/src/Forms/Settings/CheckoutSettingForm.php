@@ -148,14 +148,6 @@ class CheckoutSettingForm extends SettingForm
                     ->helperText(trans('plugins/ecommerce::setting.checkout.form.checkout_acceptance_message_enabled_helper'))
                     ->value(get_ecommerce_setting('checkout_acceptance_message_enabled', false))
             )
-            ->add(
-                'enable_order_notes_at_checkout',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('plugins/ecommerce::setting.checkout.form.enable_order_notes_at_checkout'))
-                    ->helperText(trans('plugins/ecommerce::setting.checkout.form.enable_order_notes_at_checkout_helper'))
-                    ->value(get_ecommerce_setting('enable_order_notes_at_checkout', true))
-            )
             ->when(is_plugin_active('location'), function () use ($countries, $selectedCountries): void {
                 $this
                     ->add(

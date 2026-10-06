@@ -1,15 +1,12 @@
 @php
-    use Botble\Ecommerce\Models\SpecificationAttribute;
-
     $isNotDefaultLanguage = $isNotDefaultLanguage ?? false;
 
-    // Build a map of option ID => translated value for quick lookup. Values are cast to strings:
-    // a translation payload can hold a nested array, which would otherwise be echoed below.
+    // Build a map of option ID => translated value for quick lookup
     $translatedMap = [];
     if ($isNotDefaultLanguage && !empty($translatedOptions)) {
         foreach ($translatedOptions as $tOpt) {
             if (is_array($tOpt) && isset($tOpt['id'])) {
-                $translatedMap[$tOpt['id']] = SpecificationAttribute::castOptionValue($tOpt['value'] ?? '');
+                $translatedMap[$tOpt['id']] = $tOpt['value'] ?? '';
             }
         }
     }
@@ -29,9 +26,7 @@
         @foreach($options as $index => $option)
             @php
                 $optionId = is_array($option) && isset($option['id']) ? $option['id'] : '';
-                $optionValue = SpecificationAttribute::castOptionValue(
-                    is_array($option) ? ($option['value'] ?? '') : $option
-                );
+                $optionValue = is_array($option) && isset($option['value']) ? $option['value'] : (is_string($option) ? $option : '');
 
                 if ($isNotDefaultLanguage) {
                     $defaultLabel = $optionValue;

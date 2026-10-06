@@ -97,7 +97,7 @@ class StateController extends BaseController
 
     public function ajaxGetStates(Request $request)
     {
-        $query = State::query()
+        $data = State::query()
             ->select(['id', 'name'])
             ->wherePublished()
             ->orderBy('order')
@@ -106,32 +106,15 @@ class StateController extends BaseController
         $countryId = $request->input('country_id');
 
         if ($countryId && $countryId != 'null') {
-            $query = $query
-                ->whereHas('country', function ($q) use ($countryId): void {
-                    $q
+            $data = $data
+                ->whereHas('country', function ($query) use ($countryId): void {
+                    $query
                         ->where('id', $countryId)
                         ->orWhere('code', $countryId);
                 });
         }
 
-        $term = BaseHelper::stringify($request->query('term'));
-
-        if ($term) {
-            $query = $query->where('name', 'LIKE', '%' . $term . '%');
-        }
-
-        if ($request->has('page')) {
-            $paginated = $query->paginate(20);
-
-            return $this
-                ->httpResponse()
-                ->setData([
-                    'data' => StateResource::collection($paginated),
-                    'pagination' => ['more' => $paginated->hasMorePages()],
-                ]);
-        }
-
-        $data = $query->get();
+        $data = $data->get();
 
         $data->prepend(new State(['id' => 0, 'name' => trans('plugins/location::city.select_state')]));
 

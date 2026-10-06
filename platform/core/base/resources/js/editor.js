@@ -352,7 +352,7 @@ class EditorManagement {
             directionality: $('body').prop('dir') || 'ltr',
         }
 
-        if (document.documentElement.getAttribute('data-bs-theme') === 'dark') {
+        if (localStorage.getItem('themeMode') === 'dark') {
             options.skin = 'oxide-dark'
             options.content_css = 'dark'
         }

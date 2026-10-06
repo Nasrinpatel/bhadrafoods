@@ -27,7 +27,7 @@
             "id": {!! json_encode($products->pluck('id')->all()) !!},
             "image": {!! json_encode($images) !!},
             "starTime": 5,
-            "starTimeUnit": 1000,
+            "starTime_unit": 1000,
             "stayTime": 10,
             "stayTimeUnit": 1000,
             "classUp": "slideInUp"

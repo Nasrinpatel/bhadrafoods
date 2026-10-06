@@ -36,12 +36,10 @@ return [
     'test_payment' => '먼저 테스트 모드에서 테스트 결제를 진행하세요',
     'check_status' => '주문 상태가 "완료"로 업데이트되는지 확인하세요',
     'verify_webhook' => '주문이 "미완료"로 남아 있으면 웹훅 구성을 확인하세요',
-    'check_logs' => '디버깅을 위해 Payments > Payment Logs (admin panel)에서 결제 로그를 확인하세요',
+    'check_logs' => '디버깅을 위해 storage/logs/payment-*.log에서 결제 로그를 확인하세요',
     'troubleshooting' => '문제 해결 팁:',
     'ssl_required' => '사이트에 유효한 SSL 인증서(HTTPS)가 있는지 확인하세요',
     'public_url' => '웹훅 URL이 공개적으로 액세스 가능한지 확인하세요(localhost 아님)',
     'firewall_check' => '방화벽이 Razorpay 웹훅 요청을 차단하지 않는지 확인하세요',
     'live_mode' => '프로덕션의 경우 Razorpay가 테스트 모드가 아닌 라이브 모드인지 확인하세요',
-    'minimum_amount_error' => '주문 금액이 Razorpay에서 허용하는 최소 금액(:amount)보다 적습니다. 장바구니에 더 많은 상품을 추가해 주세요.',
-    'minimum_amount_warning' => 'Razorpay는 최소 주문 금액 :amount을 요구합니다. 현재 주문 합계가 이 최소 금액 미만입니다.',
 ];

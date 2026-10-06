@@ -120,7 +120,6 @@ return [
     'apply' => 'تطبيق',
     'available' => 'متاح',
     'back_to_return_requests' => 'العودة إلى طلبات الإرجاع',
-    'backorder_warning' => 'تحذير: هذا المنتج بطلب مسبق وقد يستغرق وقتاً أطول للشحن.',
     'choose_reason' => 'اختر السبب',
     'clear' => 'مسح',
     'clear_all_filters' => 'مسح جميع المرشحات',
@@ -191,6 +190,4 @@ return [
     'checkout' => 'إتمام الشراء',
     'complete_order' => 'إكمال الطلب',
     'agree_terms_and_policy_error' => 'يجب عليك الموافقة على الشروط والأحكام وسياسة الخصوصية.',
-    'optional' => 'اختياري',
-
 ];

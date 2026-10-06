@@ -148,15 +148,6 @@ class MiscTags implements MiscTagsContract
     {
         if ($this->hasUrl()) {
             $canonicalUrl = $this->stripQueryParameters($this->currentUrl);
-
-            if (function_exists('request')) {
-                $page = (int) request()->query('page');
-
-                if ($page > 1) {
-                    $canonicalUrl .= (str_contains($canonicalUrl, '?') ? '&' : '?') . 'page=' . $page;
-                }
-            }
-
             $this->add('canonical', apply_filters('core_seo_canonical', $canonicalUrl));
         }
 

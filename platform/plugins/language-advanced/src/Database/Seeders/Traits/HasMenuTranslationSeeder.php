@@ -3,7 +3,6 @@
 namespace Botble\LanguageAdvanced\Database\Seeders\Traits;
 
 use Botble\Language\Models\LanguageMeta;
-use Botble\Menu\Database\Traits\HasMenuSeeder;
 use Botble\Menu\Facades\Menu;
 use Botble\Menu\Models\Menu as MenuModel;
 use Botble\Menu\Models\MenuLocation;
@@ -14,8 +13,6 @@ use Illuminate\Support\Str;
 
 trait HasMenuTranslationSeeder
 {
-    use HasMenuSeeder;
-
     /**
      * Seed menu translations for all locales
      *
@@ -53,14 +50,12 @@ trait HasMenuTranslationSeeder
                 continue;
             }
 
-            if (isset($translations['main-menu']) && is_array($translations['main-menu'])) {
-                $mainMenu = $translations['main-menu'];
-
+            if (isset($translations['main-menu'])) {
                 $this->createMenuTranslation(
                     $locale,
                     'main-menu',
-                    $mainMenu['name'] ?? 'Main menu',
-                    $this->buildMainMenuItems($mainMenu, $pageIds),
+                    $translations['name'],
+                    $this->buildMainMenuItems($translations, $pageIds),
                     $menuOrigins['main-menu'] ?? null,
                     $locationOrigin
                 );
@@ -222,7 +217,7 @@ trait HasMenuTranslationSeeder
     ): void {
         $slug = $this->localizedSlug($baseSlug, $locale);
 
-        $menu = MenuModel::updateOrCreate(
+        $menu = MenuModel::query()->updateOrCreate(
             ['slug' => $slug],
             ['name' => $name]
         );
@@ -231,7 +226,7 @@ trait HasMenuTranslationSeeder
         MenuLocation::query()->where('menu_id', $menu->getKey())->delete();
 
         if ($baseSlug === 'main-menu') {
-            $menuLocation = MenuLocation::create([
+            $menuLocation = MenuLocation::query()->create([
                 'menu_id' => $menu->getKey(),
                 'location' => 'main-menu',
             ]);
@@ -277,19 +272,7 @@ trait HasMenuTranslationSeeder
             ->where('reference_id', $model->getKey())
             ->value('lang_meta_origin');
 
-        if ($origin) {
-            return $origin;
-        }
-
-        // The original record (default language) has no language meta yet.
-        // Persist one with the default locale so it stays visible under the
-        // default language on the front-end (menus are filtered by language
-        // meta) and becomes the shared origin that links translated versions.
-        $origin = md5($model->getKey() . $model::class . Str::random(6));
-
-        LanguageMeta::saveMetaData($model, null, $origin);
-
-        return $origin;
+        return $origin ?: md5($model->getKey() . $model::class . Str::random(6));
     }
 
     /**

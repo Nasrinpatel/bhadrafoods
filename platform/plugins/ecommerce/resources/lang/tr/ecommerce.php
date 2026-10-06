@@ -121,7 +121,6 @@ return [
     'apply' => 'Uygula',
     'available' => 'Mevcut',
     'back_to_return_requests' => 'İade Taleplerine Dön',
-    'backorder_warning' => 'Uyarı: Bu ürün ön siparişte ve gönderim daha uzun sürebilir.',
     'choose_reason' => 'Sebep Seçin',
     'clear' => 'Temizle',
     'clear_all_filters' => 'Tüm filtreleri temizle',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Ödemeye geç',
     'complete_order' => 'Siparişi tamamla',
     'agree_terms_and_policy_error' => 'Şartlar ve koşulları ve gizlilik politikasını kabul etmelisiniz.',
-    'optional' => 'İsteğe bağlı',
-
 ];

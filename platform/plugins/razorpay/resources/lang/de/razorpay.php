@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Führen Sie zuerst eine Testzahlung im Testmodus durch',
     'check_status' => 'Überprüfen Sie, ob der Bestellstatus auf "Abgeschlossen" aktualisiert wird',
     'verify_webhook' => 'Wenn Bestellungen "Unvollständig" bleiben, überprüfen Sie Ihre Webhook-Konfiguration',
-    'check_logs' => 'Überprüfen Sie die Zahlungsprotokolle in Payments > Payment Logs (admin panel) zur Fehlerbehebung',
+    'check_logs' => 'Überprüfen Sie die Zahlungsprotokolle in storage/logs/payment-*.log zur Fehlerbehebung',
     'troubleshooting' => 'Tipps zur Fehlerbehebung:',
     'ssl_required' => 'Stellen Sie sicher, dass Ihre Website über ein gültiges SSL-Zertifikat (HTTPS) verfügt',
     'public_url' => 'Überprüfen Sie, ob die Webhook-URL öffentlich zugänglich ist (nicht localhost)',
     'firewall_check' => 'Überprüfen Sie, dass keine Firewall Razorpay-Webhook-Anfragen blockiert',
     'live_mode' => 'Stellen Sie für die Produktion sicher, dass Razorpay im Live-Modus und nicht im Testmodus ist',
-    'minimum_amount_error' => 'Der Bestellbetrag ist niedriger als der von Razorpay erlaubte Mindestbetrag (:amount). Bitte fügen Sie weitere Artikel zu Ihrem Warenkorb hinzu.',
-    'minimum_amount_warning' => 'Razorpay erfordert einen Mindestbestellbetrag von :amount. Ihr aktueller Bestellbetrag liegt unter diesem Minimum.',
 ];

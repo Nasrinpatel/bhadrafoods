@@ -42,7 +42,6 @@
                             class="text-decoration-none text-white"
                             data-bs-toggle="modal"
                             data-bs-target="#{{ $name }}-modal"
-                            aria-label="{{ trans('core/base::forms.edit') }}"
                         >
                             <x-core::icon name="ti ti-edit" />
                         </a>
@@ -53,7 +52,6 @@
                             data-bb-toggle="delete-avatar"
                             href="{{ $deleteAction }}"
                             class="text-decoration-none text-white"
-                            aria-label="{{ trans('core/base::forms.remove_image') }}"
                         >
                             <x-core::icon name="ti ti-trash" />
                         </a>

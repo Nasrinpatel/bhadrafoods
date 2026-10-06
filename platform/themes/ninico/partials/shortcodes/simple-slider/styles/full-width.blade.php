@@ -1,5 +1,5 @@
 <div class="tp-slider-area p-relative">
-    <div class="swiper-container slider-active" data-autoplay-speed="{{ $autoplaySpeed }}">
+    <div class="swiper-container slider-active">
         <div class="swiper-wrapper">
             @foreach($sliders as $slider)
                 <div class="swiper-slide">
@@ -30,3 +30,4 @@
     </div>
     <div class="slider-pagination"></div>
 </div>
+

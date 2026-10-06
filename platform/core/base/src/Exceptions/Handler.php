@@ -53,6 +53,7 @@ class Handler extends ExceptionHandler
             case $e instanceof MalformedUrlException:
                 return response(trans('core/base::errors.bad_request'), 400);
             case $e instanceof DisabledInDemoModeException:
+            case $e instanceof MethodNotAllowedHttpException:
                 return $this->baseHttpResponse
                     ->setError()
                     ->setCode($e->getCode())

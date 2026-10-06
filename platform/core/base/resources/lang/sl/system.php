@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Pridobi sistemsko poročilo',
     'system_environment' => 'Sistemsko okolje',
     'framework_version' => 'Različica ogrodja',
-    'core_version' => 'Različica jedra',
     'timezone' => 'Časovni pas',
     'debug_mode' => 'Način odpravljanja napak',
     'debug_mode_off' => 'Način odpravljanja napak izklopljen',

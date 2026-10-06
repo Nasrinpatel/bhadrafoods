@@ -35,11 +35,6 @@ class AdminHelper
         return $force ? $isInAdmin : apply_filters(IS_IN_ADMIN_FILTER, $isInAdmin);
     }
 
-    public function themeModes(): array
-    {
-        return ['light', 'dark', 'system'];
-    }
-
     public function themeMode(): string
     {
         $default = 'light';
@@ -48,18 +43,7 @@ class AdminHelper
             return $default;
         }
 
-        $themeMode = Auth::user()->getMeta('theme_mode', $default);
-
-        return in_array($themeMode, $this->themeModes(), true) ? $themeMode : $default;
-    }
-
-    /**
-     * The color mode rendered in the HTML. "system" renders light, and the
-     * theme-mode-script partial switches it to the OS preference before paint.
-     */
-    public function initialThemeMode(): string
-    {
-        return $this->themeMode() === 'dark' ? 'dark' : 'light';
+        return Auth::user()->getMeta('theme_mode', $default) ?: $default;
     }
 
     public function isPreviewing(): bool

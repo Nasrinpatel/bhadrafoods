@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Tampilkan pesan informasi yang memberitahu pelanggan tentang syarat yang mereka setujui dengan melakukan pemesanan.',
       'hide_customer_info_at_checkout' => 'Sembunyikan info pelanggan di checkout',
       'hide_customer_info_at_checkout_helper' => 'Sembunyikan informasi akun pelanggan dan tombol logout dari halaman checkout. Ketika diaktifkan, pelanggan yang login tidak akan melihat detail akun mereka ditampilkan.',
-      'enable_order_notes_at_checkout' => 'Aktifkan catatan pesanan di checkout',
-      'enable_order_notes_at_checkout_helper' => 'Jika diaktifkan, pelanggan dapat menambahkan catatan opsional ke pesanan mereka di halaman checkout (misalnya instruksi pengiriman khusus).',
     ],
   ],
   'return' =>

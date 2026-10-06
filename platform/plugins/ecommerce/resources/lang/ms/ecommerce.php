@@ -121,7 +121,6 @@ return [
     'apply' => 'Guna',
     'available' => 'Tersedia',
     'back_to_return_requests' => 'Kembali ke Permintaan Pulangan',
-    'backorder_warning' => 'Amaran: Produk ini dalam pesanan tertunggak dan mungkin mengambil masa lebih lama untuk dihantar.',
     'choose_reason' => 'Pilih Sebab',
     'clear' => 'Kosongkan',
     'clear_all_filters' => 'Kosongkan semua penapis',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Daftar keluar',
     'complete_order' => 'Lengkapkan pesanan',
     'agree_terms_and_policy_error' => 'Anda mesti bersetuju dengan terma dan syarat serta dasar privasi.',
-    'optional' => 'Pilihan',
-
 ];

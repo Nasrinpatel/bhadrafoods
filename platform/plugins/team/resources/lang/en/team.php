@@ -2,7 +2,6 @@
 
 return [
     'name' => 'Teams',
-    'teams' => 'Teams',
     'create' => 'New team',
     'forms' => [
         'name' => 'Name',

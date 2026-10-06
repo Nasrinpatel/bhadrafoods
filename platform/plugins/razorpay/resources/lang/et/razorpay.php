@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Tehke esmalt testimakse testirežiimis',
     'check_status' => 'Kontrollige, kas tellimuse olek uuendatakse "Lõpetatud"',
     'verify_webhook' => 'Kui tellimused jäävad "Lõpetamatuks", kontrollige oma webhook\'i konfiguratsiooni',
-    'check_logs' => 'Kontrollige makselogisid asukohas Payments > Payment Logs (admin panel) silumiseks',
+    'check_logs' => 'Kontrollige makselogisid asukohas storage/logs/payment-*.log silumiseks',
     'troubleshooting' => 'Tõrkeotsingu näpunäited:',
     'ssl_required' => 'Veenduge, et teie saidil on kehtiv SSL-sertifikaat (HTTPS)',
     'public_url' => 'Kontrollige, et webhook\'i URL oleks avalikult kättesaadav (mitte localhost)',
     'firewall_check' => 'Kontrollige, et ükski tulemüür ei blokeeri Razorpay webhook\'i päringuid',
     'live_mode' => 'Tootmise jaoks veenduge, et Razorpay on reaalajas režiimis, mitte testirežiimis',
-    'minimum_amount_error' => 'Tellimuse summa on väiksem kui Razorpay lubatud miinimumsumma (:amount). Palun lisage ostukorvi rohkem tooteid.',
-    'minimum_amount_warning' => 'Razorpay nõuab minimaalset tellimuse summat :amount. Teie praegune tellimuse kogusumma on sellest miinimumist väiksem.',
 ];

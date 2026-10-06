@@ -28,8 +28,6 @@
         </div>
     </div>
 
-    @include('plugins/translation::partials.quick-filters', ['locale' => $locale])
-
     <div class="translations-table">
         {{ $translationTable->renderTable() }}
     </div>

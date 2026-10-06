@@ -1,7 +1,7 @@
 <section class="slider-area platinam-light">
     <div class="container">
         <div class="platinamborder p-relative">
-            <div class="swiper-container sliderthree-active" data-autoplay-speed="{{ $autoplaySpeed }}">
+            <div class="swiper-container sliderthree-active">
                 <div class="swiper-wrapper">
                     @foreach($sliders as $slider)
                         <div class="swiper-slide platinam-light slider-bg-four" @if ($shortcode->background_color) style="background-color: {{ $shortcode->background_color }} !important;" @endif>

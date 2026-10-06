@@ -7,7 +7,7 @@
         data-bb-toggle="input"
         class="form-control"
         type="number"
-        name="items[{{ $key ?? $cartItem->rowId }}][values][qty]"
+        name="items[{{ $key }}][values][qty]"
         value="{{ $cartItem->qty }}"
         min="1"
         max="{{ $product->with_storehouse_management ? $product->quantity : 1000 }}"

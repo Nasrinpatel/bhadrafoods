@@ -30,6 +30,10 @@ trait InteractsWithSettings
 
         $this->saveSettings($data, $prefix);
 
+        if (! method_exists($this, 'httpResponse')) {
+            return BaseHttpResponse::make();
+        }
+
         DashboardMenu::clearCaches();
 
         do_action('core_after_update_settings', $data, $prefix);

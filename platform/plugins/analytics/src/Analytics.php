@@ -35,8 +35,6 @@ class Analytics extends AnalyticsAbstract implements AnalyticsContract
 
     public array $orderBys = [];
 
-    protected ?BetaAnalyticsDataClient $client = null;
-
     public function __construct(int|string $propertyId, string $credentials)
     {
         $this->propertyId = $propertyId;
@@ -50,10 +48,6 @@ class Analytics extends AnalyticsAbstract implements AnalyticsContract
 
     public function getClient(): BetaAnalyticsDataClient
     {
-        if ($this->client) {
-            return $this->client;
-        }
-
         $storage = Storage::disk('local');
 
         $fileName = 'analytics-credentials.json';
@@ -66,7 +60,7 @@ class Analytics extends AnalyticsAbstract implements AnalyticsContract
             throw new InvalidConfiguration('The credentials file does not exist.');
         }
 
-        return $this->client = new BetaAnalyticsDataClient([
+        return new BetaAnalyticsDataClient([
             'credentials' => $storage->path($fileName),
         ]);
     }

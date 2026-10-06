@@ -66,10 +66,18 @@ class HookServiceProvider extends ServiceProvider
     public function registerTopHeaderNotification(?string $options): ?string
     {
         if (Auth::guard()->user()->hasPermission('contacts.edit')) {
-            $contacts = Contact::query()
-                ->where('status', ContactStatusEnum::UNREAD)
-                ->select(['id', 'name', 'email', 'phone', 'created_at'])->latest()
-                ->paginate(10);
+            $cache = Cache::make(Contact::class);
+
+            if ($cache->has('unread-contacts')) {
+                $contacts = $cache->get('unread-contacts');
+            } else {
+                $contacts = Contact::query()
+                    ->where('status', ContactStatusEnum::UNREAD)
+                    ->select(['id', 'name', 'email', 'phone', 'created_at'])->latest()
+                    ->paginate(10);
+
+                $cache->put('unread-contacts', $contacts, 60 * 60 * 24);
+            }
 
             if ($contacts->total() == 0) {
                 return $options;

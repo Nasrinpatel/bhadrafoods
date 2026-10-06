@@ -1117,8 +1117,6 @@ class MySqlDump
         if ($this->infoCallable) {
             call_user_func($this->infoCallable, 'table', ['name' => $tableName, 'rowCount' => $count]);
         }
-
-        return null;
     }
 
     /**

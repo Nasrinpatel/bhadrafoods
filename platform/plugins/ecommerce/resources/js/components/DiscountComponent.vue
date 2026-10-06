@@ -558,7 +558,7 @@
 
                             <div
                                 class="col-md-4 mb-3"
-                                v-if="target === 'amount-minimum-order'"
+                                v-if="target === 'amount-minimum-order' && type_option !== 'shipping'"
                             >
                                 <div class="input-group input-group-flat">
                                     <input
@@ -885,7 +885,7 @@
 import DiscountSearchBoxPagination from './partials/DiscountSearchBoxPagination.vue'
 import DiscountListItemRemoveIconButton from './partials/DiscountListItemRemoveIconButton.vue'
 
-import moment from 'moment'
+const moment = require('moment')
 
 export default {
     components: { DiscountListItemRemoveIconButton, DiscountSearchBoxPagination },

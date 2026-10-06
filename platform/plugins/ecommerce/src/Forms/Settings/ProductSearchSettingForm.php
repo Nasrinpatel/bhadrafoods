@@ -61,14 +61,6 @@ class ProductSearchSettingForm extends SettingForm
                     ->defaultValue(true)
             )
             ->add(
-                'enable_filter_products_by_rating',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('plugins/ecommerce::setting.product_search.form.enable_filter_products_by_rating'))
-                    ->value(EcommerceHelper::isEnabledFilterProductsByRating())
-                    ->defaultValue(false)
-            )
-            ->add(
                 'enable_filter_products_by_tags',
                 OnOffCheckboxField::class,
                 OnOffFieldOption::make()
@@ -88,14 +80,6 @@ class ProductSearchSettingForm extends SettingForm
                     ->defaultValue(10)
             )
             ->addCloseCollapsible('enable_filter_products_by_tags', '1')
-            ->add(
-                'enable_filter_products_by_labels',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('plugins/ecommerce::setting.product_search.form.enable_filter_products_by_labels'))
-                    ->value(EcommerceHelper::isEnabledFilterProductsByLabels())
-                    ->defaultValue(false)
-            )
             ->add(
                 'enable_filter_products_by_attributes',
                 OnOffCheckboxField::class,

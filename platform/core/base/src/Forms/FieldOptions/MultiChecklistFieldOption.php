@@ -28,7 +28,9 @@ class MultiChecklistFieldOption extends SelectFieldOption
             $data['empty_value'] = $this->getEmptyValue();
         }
 
-        $data['inline'] = $this->inline;
+        if (isset($this->inline)) {
+            $data['inline'] = $this->inline;
+        }
 
         return $data;
     }

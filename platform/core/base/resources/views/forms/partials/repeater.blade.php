@@ -61,7 +61,6 @@
                     data-id="{{ $repeaterId }}_{{ $loop->index }}"
                     icon="ti ti-x"
                     :icon-only="true"
-                    :aria-label="trans('core/base::tables.delete')"
                     size="sm"
                 />
             </legend>

@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Efectuați mai întâi o plată de test în modul de testare',
     'check_status' => 'Verificați dacă starea comenzii se actualizează la "Finalizat"',
     'verify_webhook' => 'Dacă comenzile rămân "Incomplete", verificați configurația webhook-ului',
-    'check_logs' => 'Verificați jurnalele de plată în Payments > Payment Logs (admin panel) pentru depanare',
+    'check_logs' => 'Verificați jurnalele de plată în storage/logs/payment-*.log pentru depanare',
     'troubleshooting' => 'Sfaturi de depanare:',
     'ssl_required' => 'Asigurați-vă că site-ul dvs. are un certificat SSL valid (HTTPS)',
     'public_url' => 'Verificați dacă URL-ul webhook-ului este accesibil public (nu localhost)',
     'firewall_check' => 'Verificați dacă niciun firewall nu blochează cererile webhook Razorpay',
     'live_mode' => 'Pentru producție, asigurați-vă că Razorpay este în modul Live, nu în modul de testare',
-    'minimum_amount_error' => 'Suma comenzii este mai mică decât suma minimă permisă de Razorpay (:amount). Vă rugăm să adăugați mai multe produse în coș.',
-    'minimum_amount_warning' => 'Razorpay necesită o sumă minimă a comenzii de :amount. Totalul actual al comenzii dvs. este sub acest minim.',
 ];

@@ -97,7 +97,9 @@ class FindTranslationsByPathCommand extends Command
             }
 
             $remaining = count($keys) - 20;
-            $this->line("  ... and {$remaining} more keys ...");
+            if ($remaining > 0) {
+                $this->line("  ... and {$remaining} more keys ...");
+            }
 
             $this->line('  Last 10 keys:');
             for ($i = count($keysList) - 10; $i < count($keysList); $i++) {

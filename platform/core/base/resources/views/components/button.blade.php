@@ -50,8 +50,6 @@
     @if ($tooltip) data-bs-toggle="tooltip"
         data-bs-placement="{{ $tooltipPlacement }}"
         title="{{ $tooltip }}" @endif
-    {{-- Icon-only buttons have no visible text; give screen readers the tooltip as their name. --}}
-    @if ($iconOnly && $tooltip && $slot->isEmpty() && ! $attributes->has('aria-label')) aria-label="{{ $tooltip }}" @endif
 >
     @if ($icon && $iconPosition === 'left')
         @if ($loading)

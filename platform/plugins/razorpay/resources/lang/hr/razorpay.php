@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Prvo napravite probno plaćanje u testnom načinu rada',
     'check_status' => 'Provjerite ažurira li se status narudžbe na "Dovršeno"',
     'verify_webhook' => 'Ako narudžbe ostaju "Nepotpune", provjerite konfiguraciju webhooka',
-    'check_logs' => 'Provjerite dnevnike plaćanja u Payments > Payment Logs (admin panel) za otklanjanje grešaka',
+    'check_logs' => 'Provjerite dnevnike plaćanja u storage/logs/payment-*.log za otklanjanje grešaka',
     'troubleshooting' => 'Savjeti za rješavanje problema:',
     'ssl_required' => 'Osigurajte da vaša stranica ima važeći SSL certifikat (HTTPS)',
     'public_url' => 'Provjerite je li URL webhooka javno dostupan (ne localhost)',
     'firewall_check' => 'Provjerite da nijedan vatrozid ne blokira Razorpay webhook zahtjeve',
     'live_mode' => 'Za proizvodnju, osigurajte da je Razorpay u načinu uživo, a ne u testnom načinu',
-    'minimum_amount_error' => 'Iznos narudžbe je manji od minimalnog iznosa koji dopušta Razorpay (:amount). Molimo dodajte više artikala u košaricu.',
-    'minimum_amount_warning' => 'Razorpay zahtijeva minimalni iznos narudžbe od :amount. Trenutni ukupni iznos vaše narudžbe je ispod ovog minimuma.',
 ];

@@ -15,11 +15,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laravel\Socialite\AbstractUser;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
-use Laravel\Socialite\Two\User as SocialiteUser;
 
 class SocialLoginController extends BaseController
 {
@@ -108,7 +107,7 @@ class SocialLoginController extends BaseController
 
         try {
             /**
-             * @var SocialiteUser $oAuth
+             * @var AbstractUser $oAuth
              */
             $oAuth = Socialite::driver($provider)->user();
         } catch (Exception $exception) {
@@ -129,7 +128,7 @@ class SocialLoginController extends BaseController
             return $this
                 ->httpResponse()
                 ->setError()
-                ->setNextUrl($this->resolveUrl($providerData['login_url']))
+                ->setNextUrl(value($providerData['login_url']))
                 ->setMessage($message);
         }
 
@@ -137,7 +136,7 @@ class SocialLoginController extends BaseController
             return $this
                 ->httpResponse()
                 ->setError()
-                ->setNextUrl($this->resolveUrl($providerData['login_url']))
+                ->setNextUrl(value($providerData['login_url']))
                 ->setMessage(trans('plugins/social-login::social-login.no_email_provided'));
         }
 
@@ -236,7 +235,7 @@ class SocialLoginController extends BaseController
 
         Auth::guard($guard)->login($account, true);
 
-        $redirectUrl = $this->resolveUrl($providerData['redirect_url']) ?: BaseHelper::getHomepageUrl();
+        $redirectUrl = value($providerData['redirect_url']) ?: BaseHelper::getHomepageUrl();
 
         if (session()->has('url.intended')) {
             $intended = session('url.intended');
@@ -250,19 +249,6 @@ class SocialLoginController extends BaseController
             ->httpResponse()
             ->setNextUrl($redirectUrl)
             ->setMessage(trans('core/acl::auth.login.success'));
-    }
-
-    protected function resolveUrl(mixed $url): string
-    {
-        if ($url instanceof \Closure) {
-            return $url();
-        }
-
-        if (is_string($url) && Route::has($url)) {
-            return route($url);
-        }
-
-        return (string) $url;
     }
 
     protected function ensureProviderIsExisted(string $provider): void

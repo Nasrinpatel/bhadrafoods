@@ -27,6 +27,4 @@ return [
     'parent' => 'Kategorya ng Magulang',
     'image' => 'Larawan',
     'product_category_translations' => 'Mga Pagsasalin ng Kategorya ng Produkto',
-    'parent_self_reference' => 'Hindi maaaring maging magulang ng kategorya ang sarili nito.',
-    'parent_circular_reference' => 'Hindi maaaring italaga ang kategorya sa isa sa sarili nitong mga sub-kategorya bilang magulang.',
 ];

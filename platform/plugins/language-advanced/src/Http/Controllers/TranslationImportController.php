@@ -6,7 +6,6 @@ use Botble\DataSynchronize\Http\Controllers\ImportController;
 use Botble\DataSynchronize\Http\Requests\DownloadTemplateRequest;
 use Botble\DataSynchronize\Http\Requests\ImportRequest;
 use Botble\DataSynchronize\Importer\Importer;
-use Botble\LanguageAdvanced\Importers\ModelTranslationImporter;
 use Botble\LanguageAdvanced\Importers\TranslationImporterManager;
 
 class TranslationImportController extends ImportController
@@ -22,7 +21,7 @@ class TranslationImportController extends ImportController
         if ($this->type === 'model') {
             $modelClass = request()->input('class');
             if ($modelClass) {
-                return ModelTranslationImporter::make($modelClass);
+                return $this->importerManager->getImporter($this->type)->make($modelClass);
             }
         }
 

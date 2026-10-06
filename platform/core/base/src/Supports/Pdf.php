@@ -6,18 +6,13 @@ use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf as PdfFacade;
 use Barryvdh\DomPDF\PDF as DomPDF;
 use Botble\Base\Facades\BaseHelper;
-use Botble\Base\Supports\Mpdf\HostRestrictedHttpClient;
-use Botble\Base\Supports\Mpdf\ServiceContainer;
-use Botble\Media\Facades\RvMedia;
+use Botble\Base\Facades\Html;
 use Closure;
 use Dompdf\Adapter\CPDF;
 use Dompdf\Image\Cache;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
-use Mpdf\Http\SocketHttpClient;
 use Mpdf\Mpdf;
-use Psr\Log\NullLogger;
 use Throwable;
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 use Twig\Extension\DebugExtension;
@@ -123,135 +118,13 @@ class Pdf
 
         Cache::$error_message = null;
 
-        $pdf = PdfFacade::setWarnings(false)
+        return PdfFacade::setWarnings(false)
             ->setOption('chroot', [public_path(), base_path()])
             ->setOption('tempDir', storage_path('app'))
             ->setOption('logOutputFile', false)
-            ->setOption('isRemoteEnabled', $this->isRemoteEnabled());
-
-        // Restrict remote (http/https) resource fetching to an allow-list of hosts so that
-        // attacker-controlled data rendered into a template (e.g. an <img> injected via a
-        // customer name/address) cannot make the server fetch arbitrary internal URLs such as
-        // cloud metadata endpoints (169.254.169.254) - i.e. server-side request forgery.
-        // Returning null from the filter disables the allow-list (fetch any host).
-        if (($allowedRemoteHosts = $this->getAllowedRemoteHosts()) !== null) {
-            $pdf->setOption('allowedRemoteHosts', $allowedRemoteHosts);
-        }
-
-        return $pdf
+            ->setOption('isRemoteEnabled', true)
             ->loadHTML($this->content, 'UTF-8')
             ->setPaper($this->paperSize ?? CPDF::$PAPER_SIZES['a4']);
-    }
-
-    /**
-     * Whether DomPDF is allowed to fetch remote (http/https) resources at all.
-     * Kept enabled by default because templates legitimately reference the site logo and
-     * media images by URL; deployments can force it off via the filter.
-     */
-    protected function isRemoteEnabled(): bool
-    {
-        return (bool) apply_filters('core_base_pdf_is_remote_enabled', true);
-    }
-
-    /**
-     * Hosts DomPDF may fetch remote resources from. Defaults to the application's own host(s),
-     * the configured storage disk host, and the resolved media host (including any CDN custom
-     * domain) - which together cover where invoice logos/product images legitimately live.
-     *
-     * Return null (via the filter) to allow every host - only do this if you trust every value
-     * rendered into your PDF templates, as it re-opens the SSRF surface.
-     *
-     * @return array<int, string>|null
-     */
-    protected function getAllowedRemoteHosts(): ?array
-    {
-        $sources = [
-            url(''),
-            config('app.url'),
-            config('filesystems.disks.' . config('filesystems.default') . '.url'),
-            // Resolves the real media base URL, honouring cloud storage CDN custom domains
-            // (DO Spaces / Wasabi / Backblaze / BunnyCDN) so remote media images still load.
-            $this->getMediaHostSource(),
-        ];
-
-        $hosts = [];
-
-        foreach ($sources as $source) {
-            if (! $source) {
-                continue;
-            }
-
-            $host = parse_url((string) $source, PHP_URL_HOST);
-
-            if ($host) {
-                $hosts[] = strtolower($host);
-            }
-        }
-
-        $hosts = array_values(array_unique($hosts)) ?: null;
-
-        $filtered = apply_filters('core_base_pdf_allowed_remote_hosts', $hosts);
-
-        // Explicit null = allow every host (documented opt-out).
-        if ($filtered === null) {
-            return null;
-        }
-
-        // Fail closed: a filter returning an unexpected type must not silently disable the
-        // allow-list (DomPDF would then fetch any host; mPDF's client expects ?array). Fall
-        // back to the computed hosts and normalize entries to lowercase strings.
-        if (! is_array($filtered)) {
-            return $hosts;
-        }
-
-        $filtered = array_values(array_filter(array_map(
-            fn ($host) => is_string($host) ? strtolower($host) : null,
-            $filtered
-        )));
-
-        return $filtered ?: $hosts;
-    }
-
-    /**
-     * Resolve the base URL RvMedia uses for stored files (may be a CDN custom domain).
-     * Returns null when the media component is unavailable or resolution fails.
-     */
-    protected function getMediaHostSource(): ?string
-    {
-        if (! class_exists(RvMedia::class)) {
-            return null;
-        }
-
-        try {
-            return RvMedia::url('probe.png') ?: null;
-        } catch (Throwable) {
-            return null;
-        }
-    }
-
-    /**
-     * Build the mPDF service container that enforces the same remote-host allow-list as the
-     * DomPDF path. mPDF has no native host allow-list, so we override its HTTP client with a
-     * guarded decorator - closing the SSRF surface on the mPDF branch too (finding #7).
-     *
-     * Returns null when no restriction applies (remote enabled and allow-list opted out), in
-     * which case mPDF keeps its own default HTTP client.
-     */
-    protected function buildMpdfSecurityContainer(): ?ServiceContainer
-    {
-        $remoteEnabled = $this->isRemoteEnabled();
-        $allowedHosts = $this->getAllowedRemoteHosts();
-
-        if ($remoteEnabled && $allowedHosts === null) {
-            return null;
-        }
-
-        // Remote disabled => block every host; otherwise restrict to the allow-list.
-        $hosts = $remoteEnabled ? $allowedHosts : [];
-
-        $client = new HostRestrictedHttpClient(new SocketHttpClient(new NullLogger()), $hosts);
-
-        return new ServiceContainer(['httpClient' => $client]);
     }
 
     public function getContent(string $templatePath, ?string $customizedPath = null, bool $compiled = false): string
@@ -307,9 +180,11 @@ class Pdf
                     '৳' => 'bangladeshi-taka',
                     '₺' => 'turkish-lira',
                     '﷼' => 'iranian-rial',
-                    '₾' => 'georgian-lari',
-                    '₿' => 'bitcoin',
                 ];
+
+                if ($this->supportLanguage === 'arabic') {
+                    $content = $this->compileArabic($content);
+                }
             } else {
                 $currencies = [
                     '﷼' => 'iranian-rial',
@@ -317,95 +192,15 @@ class Pdf
             }
 
             foreach ($currencies as $currency => $icon) {
-                if (! str_contains($content, $currency)) {
-                    continue;
-                }
-
-                $svgPath = base_path("platform/core/base/public/images/pdf-symbols/{$icon}.svg");
-
-                if (! is_file($svgPath)) {
-                    continue;
-                }
-
-                $img = sprintf(
-                    '<img src="%s" alt="%s" style="height: 0.85em; vertical-align: middle;">',
-                    e($svgPath),
-                    e($icon)
-                );
-
-                // Glue the image to the adjacent number so DomPDF can't wrap
-                // the currency symbol onto its own line.
-                $content = preg_replace_callback(
-                    '/([0-9][0-9.,]*\h?)?' . preg_quote($currency, '/') . '(\h?[0-9][0-9.,]*)?/u',
-                    function (array $matches) use ($img): string {
-                        $before = $matches[1] ?? '';
-                        $after = $matches[2] ?? '';
-
-                        if ($before === '' && $after === '') {
-                            return $img;
-                        }
-
-                        return '<span style="white-space: nowrap;">' . $before . $img . $after . '</span>';
-                    },
+                $content = str_replace(
+                    $currency,
+                    Html::image(asset("vendor/core/core/base/images/pdf-symbols/$icon.svg"), 'currency', ['width' => 10, 'style' => 'margin-right: 2px; display: inline-block;']),
                     $content
                 );
             }
-
-            if ($this->getProcessingLibrary() == 'dompdf' && $this->supportLanguage === 'arabic') {
-                $content = $this->compileArabic($content);
-            }
-
-            $this->logBlockedRemoteHosts($content);
         }
 
         return $content;
-    }
-
-    /**
-     * Warn (in the application log) when the rendered PDF references remote resources from hosts
-     * the allow-list will block, so an admin can see which host to permit via the filter instead
-     * of silently getting a missing image. Runs for both the DomPDF and mPDF engines.
-     */
-    protected function logBlockedRemoteHosts(string $content): void
-    {
-        $remoteEnabled = $this->isRemoteEnabled();
-        $allowedHosts = $this->getAllowedRemoteHosts();
-
-        // Unrestricted (remote enabled + allow-list opted out) => nothing is blocked.
-        if ($remoteEnabled && $allowedHosts === null) {
-            return;
-        }
-
-        if (! preg_match_all('#https?://[^\s"\'<>()]+#i', $content, $matches)) {
-            return;
-        }
-
-        $blocked = [];
-
-        foreach ($matches[0] as $url) {
-            $host = parse_url($url, PHP_URL_HOST);
-
-            if (! $host) {
-                continue;
-            }
-
-            $host = strtolower($host);
-
-            if (! $remoteEnabled || ($allowedHosts !== null && ! in_array($host, $allowedHosts, true))) {
-                $blocked[$host] = true;
-            }
-        }
-
-        if (! $blocked) {
-            return;
-        }
-
-        Log::warning(sprintf(
-            'PDF generation blocked remote resources from host(s): %s. If these are legitimate, '
-            . 'allow them via the "core_base_pdf_allowed_remote_hosts" filter (or re-enable remote '
-            . 'fetching via "core_base_pdf_is_remote_enabled").',
-            implode(', ', array_keys($blocked))
-        ));
     }
 
     protected function compileContent(string $content, array $data = []): string
@@ -467,7 +262,7 @@ class Pdf
             'tempDir' => storage_path('app'),
         ];
 
-        $mpdf = new Mpdf($config, $this->buildMpdfSecurityContainer());
+        $mpdf = new Mpdf($config);
 
         $mpdf->autoLangToFont = true;
 

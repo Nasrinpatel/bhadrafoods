@@ -5,10 +5,8 @@ namespace Botble\LanguageAdvanced\Database\Seeders;
 use Botble\Base\Supports\BaseSeeder;
 use Botble\LanguageAdvanced\Database\Seeders\Traits\HasTranslationLoader;
 use Botble\LanguageAdvanced\Supports\LanguageAdvancedManager;
-use Botble\Slug\Facades\SlugHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 abstract class BaseTranslationSeeder extends BaseSeeder
 {
@@ -185,97 +183,9 @@ abstract class BaseTranslationSeeder extends BaseSeeder
 
         $trimmed = trim($value);
 
-        // Try exact match first, then trimmed value, then return original.
-        // Skip nested-array matches (those are entity-level translation containers
-        // handled elsewhere) — fall back to the original string instead.
-        $candidate = $translations[$value] ?? $translations[$trimmed] ?? null;
-
-        if (is_string($candidate)) {
-            return $candidate;
-        }
-
-        return $value;
-    }
-
-    /**
-     * Seed slug translations for entities that have translated names.
-     * Reads translated names from *_translations tables and generates localized slugs.
-     *
-     * @param array $modelClasses Array of model class names to seed slug translations for
-     * @param array $locales Array of locale codes
-     */
-    protected function seedSlugTranslations(array $modelClasses, array $locales): void
-    {
-        if (! Schema::hasTable('slugs') || ! Schema::hasTable('slugs_translations')) {
-            return;
-        }
-
-        $turnOffLatin = SlugHelper::turnOffAutomaticUrlTranslationIntoLatin();
-
-        foreach ($modelClasses as $modelClass) {
-            if (! class_exists($modelClass)) {
-                continue;
-            }
-
-            $model = new $modelClass();
-            $tableName = $model->getTable();
-            $translationTable = $tableName . '_translations';
-            $foreignKey = $tableName . '_id';
-
-            if (! Schema::hasTable($translationTable)) {
-                continue;
-            }
-
-            $slugs = DB::table('slugs')
-                ->where('reference_type', $modelClass)
-                ->get(['id', 'reference_id', 'prefix']);
-
-            if ($slugs->isEmpty()) {
-                continue;
-            }
-
-            $slugsByRefId = $slugs->keyBy('reference_id');
-
-            foreach ($locales as $locale) {
-                $translations = DB::table($translationTable)
-                    ->where('lang_code', $locale)
-                    ->get([$foreignKey, 'name']);
-
-                foreach ($translations as $translation) {
-                    $refId = $translation->{$foreignKey};
-                    $slug = $slugsByRefId[$refId] ?? null;
-
-                    if (! $slug || empty($translation->name)) {
-                        continue;
-                    }
-
-                    $slugKey = $turnOffLatin
-                        ? $translation->name
-                        : Str::slug($translation->name);
-
-                    if (empty($slugKey)) {
-                        continue;
-                    }
-
-                    try {
-                        DB::table('slugs_translations')->updateOrInsert(
-                            [
-                                'lang_code' => $locale,
-                                'slugs_id' => $slug->id,
-                            ],
-                            [
-                                'lang_code' => $locale,
-                                'slugs_id' => $slug->id,
-                                'key' => $slugKey,
-                                'prefix' => $slug->prefix,
-                            ]
-                        );
-                    } catch (\Throwable) {
-                    }
-                }
-            }
-
-            $this->command->info("✓ Seeded {$tableName} slug translations");
-        }
+        // Try exact match first, then trimmed value, then return original
+        return $translations[$value]
+            ?? $translations[$trimmed]
+            ?? $value;
     }
 }

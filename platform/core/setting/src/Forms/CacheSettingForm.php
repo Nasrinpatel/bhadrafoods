@@ -105,23 +105,6 @@ class CacheSettingForm extends SettingForm
                     ->helperText(trans('core/setting::setting.cache.form.plugin_cache_enabled_helper'))
                     ->value(setting('plugin_cache_enabled', true))
             )
-            ->add(
-                'cache_size_warning_threshold',
-                NumberField::class,
-                NumberFieldOption::make()
-                    ->label(trans('core/setting::setting.cache.form.cache_size_warning_threshold'))
-                    ->helperText(trans('core/setting::setting.cache.form.cache_size_warning_threshold_helper'))
-                    ->value(setting('cache_size_warning_threshold', 50))
-                    ->attributes(['min' => 1])
-            )
-            ->add(
-                'cache_auto_clear_enabled',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('core/setting::setting.cache.form.cache_auto_clear_enabled'))
-                    ->helperText(trans('core/setting::setting.cache.form.cache_auto_clear_enabled_helper'))
-                    ->value(setting('cache_auto_clear_enabled', false))
-            )
             ->when(setting('sitemap_enabled', true), function (CacheSettingForm $form): void {
                 $form
                     ->add(
@@ -142,32 +125,5 @@ class CacheSettingForm extends SettingForm
                     )
                     ->addCloseCollapsible('enable_cache_site_map', '1');
             });
-
-        $this
-            ->add(
-                'enable_public_cache_control',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('core/setting::setting.cache.form.enable_public_cache_control'))
-                    ->helperText(trans('core/setting::setting.cache.form.enable_public_cache_control_helper'))
-                    ->value($publicCacheEnabled = setting(
-                        'enable_public_cache_control',
-                        config('core.base.general.enable_public_cache_control', false)
-                    ))
-            )
-            ->addOpenCollapsible('enable_public_cache_control', '1', (bool) $publicCacheEnabled)
-            ->add(
-                'public_cache_max_age',
-                NumberField::class,
-                NumberFieldOption::make()
-                    ->label(trans('core/setting::setting.cache.form.public_cache_max_age'))
-                    ->helperText(trans('core/setting::setting.cache.form.public_cache_max_age_helper'))
-                    ->value(setting(
-                        'public_cache_max_age',
-                        config('core.base.general.public_cache_max_age', 600)
-                    ))
-                    ->min(1)
-            )
-            ->addCloseCollapsible('enable_public_cache_control', '1');
     }
 }

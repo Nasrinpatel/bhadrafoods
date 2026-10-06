@@ -113,11 +113,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'with' => [],
         ], $params);
 
-        $categoryIds = is_array($params['categories']) && isset($params['categories']['value_in'])
-            ? $params['categories']['value_in']
-            : (array) $params['categories'];
-
-        $filters = ['categories' => $categoryIds];
+        $filters = ['categories' => $params['categories']['value_in']];
 
         Arr::forget($params, 'categories');
 
@@ -149,13 +145,9 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             ->where(function (EloquentBuilder $query) {
                 return $query
                     ->where(function (EloquentBuilder $subQuery) {
-                        // Comparing against the base price rather than requiring
-                        // sale_price > 0 keeps 100% discounts (sale_price of 0) in
-                        // the results. A null sale_price fails the comparison, so
-                        // products without a sale price are still excluded.
                         return $subQuery
                             ->where('sale_type', 0)
-                            ->whereColumn('sale_price', '<', 'price');
+                            ->where('sale_price', '>', 0);
                     })
                     ->orWhere(function (EloquentBuilder $subQuery) {
                         return $subQuery
@@ -232,13 +224,9 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'withCount' => [],
         ], $params);
 
-        $collectionIds = is_array($params['collections']) && isset($params['collections']['value_in'])
-            ? $params['collections']['value_in']
-            : (array) $params['collections'];
+        $filters = ['collections' => $params['collections']['value_in']];
 
-        $filters = ['collections' => $collectionIds];
-
-        Arr::forget($params, 'collections');
+        Arr::forget($params, 'categories');
 
         return $this->filterProducts($filters, $params);
     }
@@ -295,11 +283,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'withCount' => [],
         ], $params);
 
-        $categoryIds = is_array($params['categories']) && isset($params['categories']['value_in'])
-            ? $params['categories']['value_in']
-            : (array) $params['categories'];
-
-        $filters = ['categories' => $categoryIds];
+        $filters = ['categories' => $params['categories']['value_in']];
 
         Arr::forget($params, 'categories');
 
@@ -329,11 +313,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'withCount' => [],
         ], $params);
 
-        $tagIds = is_array($params['product_tag']) && isset($params['product_tag']['value_in'])
-            ? $params['product_tag']['value_in']
-            : (array) $params['product_tag'];
-
-        $filters = ['tags' => $tagIds];
+        $filters = ['tags' => $params['product_tag']['value_in']];
 
         Arr::forget($params, 'product_tag');
 
@@ -349,7 +329,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'categories' => [],
             'price_ranges' => [],
             'tags' => [],
-            'labels' => [],
             'brands' => [],
             'attributes' => [],
             'collections' => [],
@@ -357,7 +336,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'discounted_only' => false,
             'recent_days' => null,
             'new_products_only' => false,
-            'rating' => null,
         ], $filters);
 
         $isUsingDefaultCurrency = get_application_currency_id() == cms_currency()->getDefaultCurrency()->getKey();
@@ -518,19 +496,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                                         }
                                     });
                                 });
-
-                            // Cross-language search: also match the default-language name/description
-                            // stored on the base ec_products table so a product can still be found by
-                            // its default (e.g. English) name while browsing a translated storefront.
-                            $query->orWhere(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial): void { // @phpstan-ignore-line
-                                if (in_array('name', $searchProductsBy)) {
-                                    $subQuery->addSearch('ec_products.name', $keyword, $isPartial);
-                                }
-
-                                if (in_array('description', $searchProductsBy)) {
-                                    $subQuery->addSearch('ec_products.description', $keyword, false);
-                                }
-                            });
                         }
 
                         if (in_array('tag', $searchProductsBy)) {
@@ -600,28 +565,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                                 });
 
                             $hasWhere = true;
-                        }
-
-                        // Cross-language search: also match product name/description stored in
-                        // other languages (ec_products_translations) so e.g. an Arabic product
-                        // name is found while browsing the default (English) storefront.
-                        if ((in_array('name', $searchProductsBy) || in_array('description', $searchProductsBy))
-                            && is_plugin_active('language')
-                            && is_plugin_active('language-advanced')) {
-                            $function = $hasWhere ? 'orWhereHas' : 'whereHas';
-                            $hasWhere = true;
-
-                            $query->{$function}('translations', function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial): void {
-                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial): void { // @phpstan-ignore-line
-                                    if (in_array('name', $searchProductsBy)) {
-                                        $subQuery->addSearch('name', $keyword, $isPartial);
-                                    }
-
-                                    if (in_array('description', $searchProductsBy)) {
-                                        $subQuery->addSearch('description', $keyword, false);
-                                    }
-                                });
-                            });
                         }
 
                         if (in_array('tag', $searchProductsBy)) {
@@ -721,16 +664,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                 });
         }
 
-        // Filter product by labels
-        $filters['labels'] = array_filter($filters['labels']);
-        if ($filters['labels']) {
-            $this->model = $this->model
-                ->whereHas('productLabels', function (EloquentBuilder $query) use ($filters) {
-                    return $query
-                        ->whereIn('ec_product_label_products.product_label_id', $filters['labels']);
-                });
-        }
-
         // Filter product by collections
         $filters['collections'] = array_filter($filters['collections']);
         if ($filters['collections']) {
@@ -754,14 +687,6 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
         if ($filters['brands']) {
             $this->model = $this->model
                 ->whereIn('ec_products.brand_id', $filters['brands']);
-        }
-
-        // Filter product by average published-review rating
-        if (! empty($filters['rating']) && $filters['rating'] >= 1 && $filters['rating'] <= 5) {
-            $this->model = $this->model->whereRaw(
-                '(SELECT COALESCE(AVG(ec_reviews.star), 0) FROM ec_reviews WHERE ec_reviews.product_id = ec_products.id AND ec_reviews.status = ?) >= ?',
-                ['published', (int) $filters['rating']]
-            );
         }
 
         // Filter product by attributes
@@ -830,10 +755,9 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
         if ($filters['discounted_only']) {
             $this->model = $this->model->where(function ($query): void {
                 $query->where(function ($subQuery): void {
-                    // Products with sale price. The column comparison alone proves
-                    // a genuine discount, so requiring sale_price > 0 only served to
-                    // drop 100% discounts (sale_price of 0) from the results.
+                    // Products with sale price
                     $subQuery->where('sale_type', 0)
+                        ->where('sale_price', '>', 0)
                         ->whereColumn('sale_price', '<', 'price');
                 })->orWhere(function ($subQuery): void {
                     // Products with time-based sale

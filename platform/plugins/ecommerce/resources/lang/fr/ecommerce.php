@@ -120,7 +120,6 @@ return [
     'apply' => 'Appliquer',
     'available' => 'Disponible',
     'back_to_return_requests' => 'Retour aux demandes de retour',
-    'backorder_warning' => 'Attention : Ce produit est en précommande et peut prendre plus de temps à être expédié.',
     'choose_reason' => 'Choisir une raison',
     'clear' => 'Effacer',
     'clear_all_filters' => 'Effacer tous les filtres',
@@ -191,6 +190,4 @@ return [
     'checkout' => 'Passer à la caisse',
     'complete_order' => 'Finaliser la commande',
     'agree_terms_and_policy_error' => 'Vous devez accepter les conditions générales et la politique de confidentialité.',
-    'optional' => 'Facultatif',
-
 ];

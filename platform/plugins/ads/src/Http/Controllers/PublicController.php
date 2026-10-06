@@ -26,7 +26,12 @@ class PublicController extends BaseController
 
     public function getAdsImage(string $randomHash, string $adsKey, string $size, string $hashName, BaseHttpResponse $response)
     {
+        /**
+         * @var Ads $ads
+         */
         $ads = Ads::query()->where('key', $adsKey)->firstOrFail();
+
+        abort_unless($ads, 404);
 
         abort_if($randomHash !== $ads->random_hash, 404);
 

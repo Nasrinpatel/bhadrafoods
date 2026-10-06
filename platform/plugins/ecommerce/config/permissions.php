@@ -589,11 +589,6 @@ return [
         'parent_flag' => 'ecommerce.settings',
     ],
     [
-        'name' => 'Pending Orders',
-        'flag' => 'ecommerce.settings.pending-orders',
-        'parent_flag' => 'ecommerce.settings',
-    ],
-    [
         'name' => 'Product Specification',
         'flag' => 'ecommerce.settings.product-specification',
         'parent_flag' => 'ecommerce.settings',

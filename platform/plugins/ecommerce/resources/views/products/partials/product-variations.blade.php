@@ -54,23 +54,13 @@
                     @endfor
                     <td>
                         @if ($currentRelatedProduct)
-                            @php
-                                $varRawSale = $currentRelatedProduct->getRawSalePrice();
-                                $varBase = $currentRelatedProduct->getRawPrice();
-                                $varHasSale = $varRawSale !== null && $varRawSale > 0 && $varRawSale < $varBase;
-                            @endphp
                             {{ format_price($currentRelatedProduct->front_sale_price) }}
-                            @if ($varHasSale)
+                            @if ($currentRelatedProduct->front_sale_price != $currentRelatedProduct->display_price)
                                 <del class="text-danger">{{ format_price($currentRelatedProduct->display_price) }}</del>
                             @endif
                         @else
-                            @php
-                                $varRawSale = $product->getRawSalePrice();
-                                $varBase = $product->getRawPrice();
-                                $varHasSale = $varRawSale !== null && $varRawSale > 0 && $varRawSale < $varBase;
-                            @endphp
                             {{ format_price($product->front_sale_price) }}
-                            @if ($varHasSale)
+                            @if ($product->front_sale_price != $product->display_price)
                                 <del class="text-danger">{{ format_price($product->display_price) }}</del>
                             @endif
                         @endif

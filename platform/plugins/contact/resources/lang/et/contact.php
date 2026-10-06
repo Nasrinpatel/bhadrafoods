@@ -141,7 +141,7 @@ return [
         'admin_reply_our_response' => 'Meie vastus:',
         'admin_reply_additional_questions' => 'Kui teil on täiendavaid küsimusi, vastake julgelt sellele e-kirjale või võtke meiega uuesti ühendust.',
         'admin_reply_best_regards' => 'Lugupidamisega,',
-        'admin_reply_team' => ':site_title Meeskond',
+        'admin_reply_team' => '{{ site_title }} Meeskond',
         'notice_title' => 'Uus kontaktsõnum',
         'notice_greeting' => 'Lugupeetud administraator,',
         'notice_message_details' => 'Sõnumi üksikasjad',
@@ -177,6 +177,4 @@ return [
     'subject_placeholder' => 'Teema',
     'your_message' => 'Sinu sõnum',
     'agree_terms_privacy' => 'Nõustun tingimuste ja privaatsuspoliitikaga',
-    'agree_terms_privacy_link' => 'Nõustun :link',
-    'terms_and_privacy_policy' => 'tingimuste ja privaatsuspoliitikaga',
 ];

@@ -50,9 +50,6 @@ class Language extends BaseModel
         });
     }
 
-    /**
-     * @return HasMany<LanguageMeta, $this>
-     */
     public function meta(): HasMany
     {
         return $this->hasMany(LanguageMeta::class, 'lang_meta_code', 'lang_code');

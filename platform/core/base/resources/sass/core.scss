@@ -1,4 +1,7 @@
-@import 'partials/tabler-legacy-look';
+$prefix: 'bb-' !default;
+$enable-negative-margins: true;
+
+@import 'partials/core';
 @import 'partials/image-picker';
 @import 'partials/flags';
 @import 'partials/notification';
@@ -17,7 +20,6 @@
 @import 'partials/form';
 @import 'partials/global-search';
 @import 'partials/table-mobile-responsive';
-@import 'partials/utilities';
 
 @import 'partials/variable';
 

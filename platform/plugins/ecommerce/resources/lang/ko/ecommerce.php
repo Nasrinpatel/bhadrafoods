@@ -121,7 +121,6 @@ return [
     'apply' => '적용',
     'available' => '사용 가능',
     'back_to_return_requests' => '반품 요청으로 돌아가기',
-    'backorder_warning' => '경고: 이 상품은 백오더 상태로 배송이 지연될 수 있습니다.',
     'choose_reason' => '사유 선택',
     'clear' => '지우기',
     'clear_all_filters' => '모든 필터 지우기',
@@ -192,6 +191,4 @@ return [
     'checkout' => '결제하기',
     'complete_order' => '주문 완료',
     'agree_terms_and_policy_error' => '이용약관 및 개인정보 처리방침에 동의해야 합니다.',
-    'optional' => '선택사항',
-
 ];

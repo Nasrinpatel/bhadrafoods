@@ -26,7 +26,7 @@
                                         @endif
                                         <div class="bb-order-info-item">
                                             <span class="label">{{ trans('plugins/ecommerce::invoice.payment_status') }}:</span>
-                                            <span class="value">{!! BaseHelper::clean($invoice->payment_status_html) !!}</span>
+                                            <span class="value">{!! BaseHelper::clean($invoice->status->toHtml()) !!}</span>
                                         </div>
                                         @if (is_plugin_active('payment') && $invoice->payment->id && $invoice->payment->payment_channel->displayName())
                                             <div class="bb-order-info-item">
@@ -149,13 +149,6 @@
                                 <div class="bb-order-total-item">
                                     <span class="label">{{ trans('plugins/ecommerce::order.shipping_tax') }}:</span>
                                     <span class="value">{{ format_price($invoice->shipping_tax_amount) }}</span>
-                                </div>
-                            @endif
-
-                            @if ((float) ($invoice->payment_fee ?? 0) > 0)
-                                <div class="bb-order-total-item">
-                                    <span class="label">{{ trans('plugins/payment::payment.payment_fee') }}:</span>
-                                    <span class="value">{{ format_price($invoice->payment_fee) }}</span>
                                 </div>
                             @endif
 

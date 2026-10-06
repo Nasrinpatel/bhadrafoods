@@ -154,9 +154,7 @@ class ProductSpecificationAttributeTranslation extends BaseModel
 
             foreach ($translatedOptions as $opt) {
                 if (is_array($opt) && ($opt['id'] ?? '') === $optionId) {
-                    // Cast: this method is typed ?string, and a translated option can hold a nested
-                    // array, which would fatal here rather than in the view that echoes it.
-                    return SpecificationAttribute::castOptionValue($opt['value'] ?? '');
+                    return $opt['value'];
                 }
             }
         }

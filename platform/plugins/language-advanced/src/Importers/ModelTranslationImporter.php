@@ -19,14 +19,7 @@ class ModelTranslationImporter extends Importer implements WithMapping
 
     public function __construct(?string $modelClass = null)
     {
-        $modelClass = $modelClass ?: request()->input('class');
-
-        abort_unless(
-            is_string($modelClass) && LanguageAdvancedManager::isSupported($modelClass),
-            404
-        );
-
-        $this->modelClass = $modelClass;
+        $this->modelClass = $modelClass ?: request()->input('class');
     }
 
     public function chunkSize(): int
@@ -65,7 +58,7 @@ class ModelTranslationImporter extends Importer implements WithMapping
                         continue;
                     }
 
-                    $maxLength = $column === 'content' ? 300000 : ($column === 'description' ? 65535 : 300000);
+                    $maxLength = $column === 'content' ? 300000 : ($column === 'description' ? 400 : 300000);
 
                     $columns[] = ImportColumn::make("{$column}_({$langCode})")
                         ->label(Str::title($column) . ' (' . $langCode . ')')

@@ -52,11 +52,10 @@ $(() => {
             price[0].toString().replace(new RegExp(re, 'g'), '$&' + currencies.thousands_separator) +
             (price[1] ? currencies.decimal_separator + price[1] : '')
         if (currencies.show_symbol_or_title) {
-            const space = priceUnit && currencies.space_between_price_and_currency ? ' ' : ''
             if (currencies.is_prefix_symbol) {
-                price = priceUnit + space + price
+                price = priceUnit + price
             } else {
-                price = price + space + priceUnit
+                price = price + priceUnit
             }
         }
         return price
@@ -174,87 +173,63 @@ $(() => {
         $('#ship-box-info').slideToggle(1000)
     })
 
-    const getSliderAutoplaySpeed = function(element, fallback) {
-        return parseInt($(element).data('autoplay-speed')) || fallback
-    }
-
-    const initSimpleSlider = function(selector, options, paginationResolver) {
-        $(selector).each(function() {
-            const $element = $(this)
-
-            if ($element.hasClass('swiper-initialized')) {
-                return
-            }
-
-            const sliderOptions = $.extend(true, {}, options)
-            const fallbackDelay = (sliderOptions.autoplay && sliderOptions.autoplay.delay) || 5000
-
-            sliderOptions.autoplay = {
-                delay: getSliderAutoplaySpeed(this, fallbackDelay),
-                disableOnInteraction: false,
-            }
-
-            if (paginationResolver && sliderOptions.pagination) {
-                sliderOptions.pagination.el = paginationResolver(this) || sliderOptions.pagination.el
-            }
-
-            new Swiper(this, sliderOptions)
-        })
-    }
-
     let initSlider = function() {
-        initSimpleSlider('.slider-active', {
+        new Swiper('.slider-active', {
             loop: true,
             slidesPerView: 1,
             effect: 'fade',
             autoplay: {
                 delay: 4500,
+                disableOnInteraction: false,
             },
             pagination: {
                 el: '.slider-pagination',
                 clickable: true,
             },
-        }, (element) => $(element).closest('.tp-slider-area').find('.slider-pagination')[0])
+        })
 
-        initSimpleSlider('.greenslider-active', {
+        new Swiper('.greenslider-active', {
             loop: true,
             slidesPerView: 1,
             fade: 'effect',
             effect: 'fade',
             autoplay: {
                 delay: 5000,
+                disableOnInteraction: false,
             },
             pagination: {
                 el: '.greenslider-pagination',
                 clickable: true,
             },
-        }, (element) => $(element).closest('.secondary-slider').find('.greenslider-pagination')[0])
+        })
 
-        initSimpleSlider('.slidertwo-active', {
+        new Swiper('.slidertwo-active', {
             loop: true,
             slidesPerView: 1,
             effect: 'fade',
             autoplay: {
                 delay: 5500,
+                disableOnInteraction: false,
             },
             pagination: {
                 el: '.slidertwo_pagination',
                 clickable: true,
             },
-        }, (element) => $(element).closest('.slider-pagination-2').find('.slidertwo_pagination')[0])
+        })
 
-        initSimpleSlider('.sliderthree-active', {
+        new Swiper('.sliderthree-active', {
             loop: false,
             effect: 'fade',
             slidesPerView: 1,
             autoplay: {
                 delay: 6000,
+                disableOnInteraction: false,
             },
             pagination: {
                 el: '.tpsliderthree__pagination',
                 clickable: true,
             },
-        }, (element) => $(element).closest('.platinamborder').find('.tpsliderthree__pagination')[0])
+        })
 
         new Swiper('.shopslider-active', {
             loop: true,

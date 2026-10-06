@@ -43,7 +43,6 @@ return [
     'get_system_report' => 'Получить системный отчет',
     'system_environment' => 'Системная среда',
     'framework_version' => 'Версия фреймворка',
-    'core_version' => 'Версия ядра',
     'timezone' => 'Часовой пояс',
     'debug_mode' => 'Режим отладки',
     'debug_mode_off' => 'Режим отладки выключен',

@@ -71,5 +71,4 @@ return [
     'showing_records' => ':total 件中 :from から :to を表示',
     'copy' => 'コピー',
     'copied' => 'コピーされました',
-    'loading' => '読み込み中...',
 ];

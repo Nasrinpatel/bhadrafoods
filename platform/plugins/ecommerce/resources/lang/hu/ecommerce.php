@@ -121,7 +121,6 @@ return [
     'apply' => 'Alkalmaz',
     'available' => 'Elérhető',
     'back_to_return_requests' => 'Vissza a visszárukhoz',
-    'backorder_warning' => 'Figyelmeztetés: Ez a termék utánrendelésre van és a szállítás tovább tarthat.',
     'choose_reason' => 'Válasszon okot',
     'clear' => 'Törlés',
     'clear_all_filters' => 'Összes szűrő törlése',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Pénztár',
     'complete_order' => 'Rendelés befejezése',
     'agree_terms_and_policy_error' => 'El kell fogadnia az általános szerződési feltételeket és az adatvédelmi szabályzatot.',
-    'optional' => 'Opcionális',
-
 ];

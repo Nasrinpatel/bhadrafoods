@@ -142,7 +142,7 @@ return [
         'admin_reply_our_response' => 'Naše odpověď:',
         'admin_reply_additional_questions' => 'Máte-li další otázky, neváhejte odpovědět na tento e-mail nebo nás kontaktujte znovu.',
         'admin_reply_best_regards' => 'S pozdravem,',
-        'admin_reply_team' => 'Tým :site_title',
+        'admin_reply_team' => 'Tým {{ site_title }}',
 
         // Notice email template
         'notice_title' => 'Nová kontaktní zpráva',
@@ -184,6 +184,4 @@ return [
     'subject_placeholder' => 'Podrobit',
     'your_message' => 'Vaše zpráva',
     'agree_terms_privacy' => 'Souhlasím s Podmínkami a Zásadami ochrany osobních údajů',
-    'agree_terms_privacy_link' => 'Souhlasím s :link',
-    'terms_and_privacy_policy' => 'Podmínkami a Zásadami ochrany osobních údajů',
 ];

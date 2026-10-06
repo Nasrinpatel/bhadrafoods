@@ -121,7 +121,6 @@ return [
     'apply' => 'Applica',
     'available' => 'Disponibile',
     'back_to_return_requests' => 'Torna alle Richieste di Reso',
-    'backorder_warning' => 'Avviso: Questo prodotto è in preordine e la spedizione potrebbe richiedere più tempo.',
     'choose_reason' => 'Scegli il Motivo',
     'clear' => 'Cancella',
     'clear_all_filters' => 'Cancella tutti i filtri',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Vai alla cassa',
     'complete_order' => 'Completa ordine',
     'agree_terms_and_policy_error' => 'Devi accettare i termini e le condizioni e l\'informativa sulla privacy.',
-    'optional' => 'Facoltativo',
-
 ];

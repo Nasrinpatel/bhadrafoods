@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Λήψη Αναφοράς Συστήματος',
     'system_environment' => 'Περιβάλλον Συστήματος',
     'framework_version' => 'Έκδοση Framework',
-    'core_version' => 'Έκδοση πυρήνα',
     'timezone' => 'Ζώνη Ώρας',
     'debug_mode' => 'Λειτουργία Αποσφαλμάτωσης',
     'debug_mode_off' => 'Λειτουργία Αποσφαλμάτωσης Ανενεργή',

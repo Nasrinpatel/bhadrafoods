@@ -27,6 +27,4 @@ return [
     'parent' => 'Üst Kategori',
     'image' => 'Resim',
     'product_category_translations' => 'Ürün Kategorisi Çevirileri',
-    'parent_self_reference' => 'Bir kategori kendi üst kategorisi olamaz.',
-    'parent_circular_reference' => 'Bir kategori, kendi alt kategorilerinden birine üst kategori olarak atanamaz.',
 ];

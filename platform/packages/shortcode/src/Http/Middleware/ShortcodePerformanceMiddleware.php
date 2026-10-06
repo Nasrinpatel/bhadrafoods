@@ -12,13 +12,13 @@ class ShortcodePerformanceMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $response = $next($request);
+
         if (! App::hasDebugModeEnabled()) {
-            return $next($request);
+            return $response;
         }
 
         $startTime = microtime(true);
-
-        $response = $next($request);
 
         $executionTime = microtime(true) - $startTime;
 

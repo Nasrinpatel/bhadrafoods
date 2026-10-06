@@ -47,7 +47,6 @@ return [
     'get_system_report' => 'Pobierz raport systemowy',
     'system_environment' => 'Środowisko systemowe',
     'framework_version' => 'Wersja frameworka',
-    'core_version' => 'Wersja rdzenia',
     'timezone' => 'Strefa czasowa',
     'debug_mode' => 'Tryb debugowania',
     'debug_mode_off' => 'Tryb debugowania wyłączony',

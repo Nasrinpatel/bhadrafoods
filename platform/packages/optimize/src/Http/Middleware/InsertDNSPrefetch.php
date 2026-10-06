@@ -13,9 +13,7 @@ class InsertDNSPrefetch extends PageSpeed
             PREG_OFFSET_CAPTURE
         );
 
-        $ownHost = parse_url(config('app.url'), PHP_URL_HOST) ?: null;
-
-        $dnsPrefetch = collect($match[0])->map(function ($item) use ($ownHost) {
+        $dnsPrefetch = collect($match[0])->map(function ($item) {
             $domain = $this->replace([
                 '/https:/' => '',
                 '/http:/' => '',
@@ -30,12 +28,8 @@ class InsertDNSPrefetch extends PageSpeed
                 return '';
             }
 
-            if ($domain[0] === $ownHost) {
-                return '';
-            }
-
             return '<link rel="dns-prefetch" href="//' . $domain[0] . '">';
-        })->filter()->unique()->implode("\n");
+        })->unique()->implode("\n");
 
         $replace = [
             '#<head>(.*?)#' => '<head>' . "\n" . $dnsPrefetch,

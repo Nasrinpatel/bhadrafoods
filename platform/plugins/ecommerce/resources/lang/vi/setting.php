@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Hiển thị thông báo thông tin cho khách hàng biết về các điều khoản mà họ đồng ý bằng cách đặt hàng.',
       'hide_customer_info_at_checkout' => 'Ẩn thông tin khách hàng tại thanh toán',
       'hide_customer_info_at_checkout_helper' => 'Ẩn thông tin tài khoản khách hàng và nút đăng xuất khỏi trang thanh toán. Khi được bật, khách hàng đã đăng nhập sẽ không thấy chi tiết tài khoản của họ được hiển thị.',
-      'enable_order_notes_at_checkout' => 'Bật ghi chú đơn hàng khi thanh toán',
-      'enable_order_notes_at_checkout_helper' => 'Nếu được bật, khách hàng có thể thêm ghi chú tùy chọn vào đơn hàng trên trang thanh toán (ví dụ: hướng dẫn giao hàng đặc biệt).',
     ],
   ],
   'return' =>

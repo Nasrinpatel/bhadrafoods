@@ -1,17 +1,6 @@
 @php
     $hasAds = $shortcode->ads_1 || $shortcode->ads_2;
-    $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'furniture', 'cosmetics', 'grocery', 'full-width']) ? 'wooden' : $shortcode->style;
-    $allowedAutoplaySpeeds = [2000, 3000, 4000, 4500, 5000, 5500, 6000, 7000, 8000, 9000, 10000];
-    $defaultAutoplaySpeeds = [
-        'wooden' => 4500,
-        'grocery' => 4500,
-        'full-width' => 4500,
-        'furniture' => 5000,
-        'fashion' => 5500,
-        'cosmetics' => 6000,
-    ];
-    $autoplaySpeed = (int) $shortcode->autoplay_speed;
-    $autoplaySpeed = in_array($autoplaySpeed, $allowedAutoplaySpeeds, true) ? $autoplaySpeed : $defaultAutoplaySpeeds[$style];
+    $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'furniture', 'cosmetics', 'grocery', 'full-width', 'hero']) ? 'wooden' : $shortcode->style;
 @endphp
 
 @if($sliders->isNotEmpty())

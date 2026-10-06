@@ -121,7 +121,6 @@ return [
     'apply' => 'Uporabi',
     'available' => 'Na voljo',
     'back_to_return_requests' => 'Nazaj na zahteve za vračilo',
-    'backorder_warning' => 'Opozorilo: Ta izdelek je v prednaročilu in dostava lahko traja dlje.',
     'choose_reason' => 'Izberite razlog',
     'clear' => 'Počisti',
     'clear_all_filters' => 'Počisti vse filtre',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Na plačilo',
     'complete_order' => 'Zaključi naročilo',
     'agree_terms_and_policy_error' => 'Strinjati se morate s pogoji in politiko zasebnosti.',
-    'optional' => 'Izbirno',
-
 ];

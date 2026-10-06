@@ -40,14 +40,11 @@ use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Supports\PaymentFeeHelper;
 use Botble\Payment\Supports\PaymentHelper;
 use Botble\Theme\Facades\Theme;
+use Exception;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Contracts\Cache\LockProvider;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -62,23 +59,6 @@ class PublicCheckoutController extends BaseController
         if (class_exists(OptimizerHelper::class)) {
             OptimizerHelper::disable();
         }
-    }
-
-    /**
-     * The unfinished order a checkout token may still be resumed on, if any.
-     *
-     * Cancelling an order leaves is_finished = false, so without the status filter a cancelled
-     * order's checkout link stays payable forever. A buyer reopening an old link (bookmark,
-     * abandoned-cart email, browser history) would pay into an order that is already void: the
-     * money is captured but the cancelled order is never revived and the success page has
-     * nothing to show. Treating it as gone sends them back to start a fresh checkout.
-     */
-    protected function findResumableOrderByToken(string $token): ?Order
-    {
-        return Order::query()
-            ->where(['token' => $token, 'is_finished' => false])
-            ->where('status', '!=', OrderStatusEnum::CANCELED)
-            ->first();
     }
 
     public function getCheckout(
@@ -96,19 +76,13 @@ class PublicCheckoutController extends BaseController
         }
 
         if ($token !== session('tracked_start_checkout')) {
-            $order = $this->findResumableOrderByToken($token);
+            $order = Order::query()->where(['token' => $token, 'is_finished' => false])->first();
 
             if (! $order) {
                 return $this
                     ->httpResponse()
                     ->setNextUrl(BaseHelper::getHomepageUrl());
             }
-        } elseif (OrderHelper::discardSpentCheckoutSession()) {
-            // The session still points at an order a gateway webhook already completed.
-            // Rendering this page would open a new payment on that old order's token.
-            return $this
-                ->httpResponse()
-                ->setNextUrl(route('public.cart'));
         }
 
         if (
@@ -390,50 +364,6 @@ class PublicCheckoutController extends BaseController
             ];
         } elseif ($addressFromInput = (array) $request->input('address', [])) {
             $addressData = $addressFromInput;
-        } elseif (! empty($sessionData['name'])) {
-            // Fallback: previous postSaveInformation merged address fields into
-            // sessionData top-level. Mirrors the same fallback in
-            // OrderHelper::processAddressOrder. Without this, guests whose final
-            // postCheckout request lacks address[*] fields (split-step UIs, autofill,
-            // broken JS) get orders with NULL shipping address — see backfill
-            // migration 2026_04_25_000001_backfill_missing_order_shipping_addresses.
-            $addressData = Arr::only($sessionData, [
-                'name', 'phone', 'email', 'country', 'state', 'city', 'address', 'zip_code',
-            ]);
-        }
-
-        // Safety net: when any address field is still empty after the 3-branch
-        // chain above, fill it from the next available source. Catches cases
-        // where postSaveInformation never fired (broken JS / fast click / autofill)
-        // AND $request->input('address') arrives empty for whatever upstream
-        // reason — without this, $addressData stays at the initial billing-only
-        // shape, checkAndCreateOrderAddress warns + skips, and every shipping-
-        // carrier plugin loses its destination.
-        //
-        // Field list respects admin settings: zip_code is opt-in (default off);
-        // any field in EcommerceHelper::getHiddenFieldsAtCheckout() is excluded
-        // so we never re-introduce a value the admin has chosen to hide.
-        $safetyNetFields = ['name', 'phone', 'email', 'country', 'state', 'city', 'address'];
-        if (EcommerceHelper::isZipCodeEnabled()) {
-            $safetyNetFields[] = 'zip_code';
-        }
-        $safetyNetFields = array_diff(
-            $safetyNetFields,
-            (array) EcommerceHelper::getHiddenFieldsAtCheckout()
-        );
-
-        foreach ($safetyNetFields as $safetyNetField) {
-            if (! empty($addressData[$safetyNetField])) {
-                continue;
-            }
-
-            $value = $request->input("address.$safetyNetField")
-                ?: Arr::get($sessionData, $safetyNetField)
-                ?: $request->input($safetyNetField);
-
-            if (! empty($value)) {
-                $addressData[$safetyNetField] = $value;
-            }
         }
 
         $addressData = OrderHelper::cleanData($addressData);
@@ -474,20 +404,7 @@ class PublicCheckoutController extends BaseController
             return $sessionData;
         }
 
-        // Re-sync the pending order to the cart that is actually being checked out.
-        // The order is a snapshot taken on the first checkout render and stored in the
-        // session. If the buyer edits the cart (quantity/items) or returns later with a
-        // changed cart, the `isset` guards below would skip the rebuild, so the order keeps
-        // its stale items/total while the payment is captured for the new cart amount. We
-        // detect a cart change by comparing the cart's last-updated timestamp against the one
-        // recorded when the order products were last built, and force a rebuild when they differ.
-        $cartLastUpdatedAt = Cart::instance('cart')->getLastUpdatedAt();
-        $storedCartUpdatedAt = Arr::get($sessionData, 'created_order_product');
-        $cartChangedSinceOrder = $storedCartUpdatedAt
-            && $cartLastUpdatedAt
-            && Carbon::parse($storedCartUpdatedAt)->notEqualTo(Carbon::parse($cartLastUpdatedAt));
-
-        if (! isset($sessionData['created_order']) || $cartChangedSinceOrder) {
+        if (! isset($sessionData['created_order'])) {
             $currentUserId = 0;
             if (auth('customer')->check()) {
                 $currentUserId = auth('customer')->id();
@@ -554,24 +471,13 @@ class PublicCheckoutController extends BaseController
                 ['order_id' => $sessionData['created_order_id']],
                 (array) $request->input('address', [])
             );
-        } elseif (! empty($addressData['name'])) {
-            // Session-fallback path (set above): keep $addressData but stamp order_id
-            // so checkAndCreateOrderAddress can persist the row.
-            $addressData['order_id'] = $sessionData['created_order_id'];
         }
 
         $sessionData['is_save_order_shipping_address'] = EcommerceHelper::isSaveOrderShippingAddress($products);
 
         $sessionData = OrderHelper::checkAndCreateOrderAddress($addressData, $sessionData);
 
-        // Never rebuild the line items of an order that is already paid. createOrderFromData()
-        // above bails out on such an order, but this block is driven by the session flags
-        // alone, so without the same guard a buyer returning to checkout after paying would
-        // have the paid order's items replaced by whatever is in the cart now.
-        $orderToBuildProductsFor = Order::query()->find(Arr::get($sessionData, 'created_order_id'));
-        $canRebuildOrderProducts = $orderToBuildProductsFor && ! OrderHelper::isOrderLocked($orderToBuildProductsFor);
-
-        if ($canRebuildOrderProducts && (! isset($sessionData['created_order_product']) || $cartChangedSinceOrder)) {
+        if (! isset($sessionData['created_order_product'])) {
             $weight = Cart::instance('cart')->weight();
 
             OrderProduct::query()->where(['order_id' => $sessionData['created_order_id']])->delete();
@@ -589,7 +495,7 @@ class PublicCheckoutController extends BaseController
                     'product_name' => $cartItem->name,
                     'product_image' => $cartItem->options['image'],
                     'qty' => $cartItem->qty,
-                    'weight' => Arr::get($cartItem->options, 'weight', 0),
+                    'weight' => $weight,
                     'price' => $cartItem->price,
                     'tax_amount' => $cartItem->taxTotal,
                     'options' => $cartItem->options,
@@ -603,7 +509,7 @@ class PublicCheckoutController extends BaseController
                 OrderProduct::query()->create($data);
             }
 
-            $sessionData['created_order_product'] = $cartLastUpdatedAt;
+            $sessionData['created_order_product'] = Cart::instance('cart')->getLastUpdatedAt();
         }
 
         OrderHelper::setOrderSessionData($token, $sessionData);
@@ -620,7 +526,7 @@ class PublicCheckoutController extends BaseController
         abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if ($token !== session('tracked_start_checkout')) {
-            $order = $this->findResumableOrderByToken($token);
+            $order = Order::query()->where(['token' => $token, 'is_finished' => false])->first();
 
             if (! $order) {
                 return $this
@@ -649,17 +555,15 @@ class PublicCheckoutController extends BaseController
                         ->where('id', $storeData['created_order_id'])
                         ->first();
 
-                    // Same guard as createOrUpdateIncompleteOrder(): this writes the order
-                    // total directly, so a paid order must be left alone.
-                    if ($order && ! OrderHelper::isOrderLocked($order)) {
-                        $storeShippingAmount = Arr::get($storeData, 'shipping_amount', 0);
+                    if ($order) {
+                        $shippingAmount = Arr::get($storeData, 'shipping_amount', 0);
                         $shippingOption = Arr::get($storeData, 'shipping_option');
-                        $storeShippingTaxAmount = EcommerceHelper::calculateShippingTax($storeShippingAmount);
-                        $newAmount = $order->sub_total - $order->discount_amount + $order->tax_amount + $storeShippingAmount + $storeShippingTaxAmount + ($order->payment_fee ?? 0);
+                        $storeShippingTaxAmount = EcommerceHelper::calculateShippingTax($shippingAmount);
+                        $newAmount = $order->sub_total - $order->discount_amount + $order->tax_amount + $shippingAmount + $storeShippingTaxAmount + ($order->payment_fee ?? 0);
 
-                        if ($order->shipping_amount != $storeShippingAmount || $order->amount != $newAmount || $order->shipping_option != $shippingOption) {
+                        if ($order->shipping_amount != $shippingAmount || $order->amount != $newAmount || $order->shipping_option != $shippingOption) {
                             $order->update([
-                                'shipping_amount' => $storeShippingAmount,
+                                'shipping_amount' => $shippingAmount,
                                 'shipping_tax_amount' => $storeShippingTaxAmount,
                                 'shipping_option' => $shippingOption,
                                 'amount' => $newAmount,
@@ -683,9 +587,7 @@ class PublicCheckoutController extends BaseController
                     ->where('id', $sessionData['created_order_id'])
                     ->first();
 
-                // Same guard as createOrUpdateIncompleteOrder(): this writes the order total
-                // directly, so a paid order must be left alone.
-                if ($order && ! OrderHelper::isOrderLocked($order)) {
+                if ($order) {
                     $shippingAmount = Arr::get($sessionData, 'shipping_amount', 0);
                     $shippingOption = Arr::get($sessionData, 'shipping_option');
                     $orderShippingTaxAmount = EcommerceHelper::calculateShippingTax($shippingAmount);
@@ -721,81 +623,6 @@ class PublicCheckoutController extends BaseController
         HandleApplyPromotionsService $handleApplyPromotionsService
     ) {
         abort_unless(EcommerceHelper::isCartEnabled(), 404);
-
-        $arguments = [$token, $request, $shippingFeeService, $applyCouponService, $removeCouponService, $handleApplyPromotionsService];
-
-        // Serialize submissions of the same checkout. Overlapping submits (double-click, two
-        // tabs, a retried request) would otherwise all reach the payment gateway: COD and bank
-        // transfer mint a fresh charge_id per call, so every overlapping submit stored another
-        // set of payment rows for the same orders. A later submit waits here, then sees the
-        // finished order and is sent to the success page.
-        if (! Cache::getStore() instanceof LockProvider) {
-            return $this->handlePostCheckout(...$arguments);
-        }
-
-        $lock = Cache::lock('ecommerce_checkout_submit_' . $token, 60);
-
-        try {
-            $lock->block(20);
-        } catch (LockTimeoutException) {
-            return $this
-                ->httpResponse()
-                ->setError()
-                ->setMessage(__('Your order is still being processed. Please wait a moment before trying again.'));
-        }
-
-        try {
-            return $this->handlePostCheckout(...$arguments);
-        } finally {
-            $lock->release();
-        }
-    }
-
-    protected function handlePostCheckout(
-        string $token,
-        CheckoutRequest $request,
-        HandleShippingFeeService $shippingFeeService,
-        HandleApplyCouponService $applyCouponService,
-        HandleRemoveCouponService $removeCouponService,
-        HandleApplyPromotionsService $handleApplyPromotionsService
-    ) {
-        // An overlapping submit of this checkout may have placed the order while this request
-        // waited for the lock. This request's session was loaded before that, so its cart still
-        // looks full: trust the database instead, drop the stale cart (so this request's session
-        // write does not restore it) and send the buyer to the success page.
-        if (Order::query()->where('token', $token)->where('is_finished', true)->exists()) {
-            Cart::instance('cart')->destroy();
-
-            return $this
-                ->httpResponse()
-                ->setNextUrl(route('public.checkout.success', $token));
-        }
-
-        // Same reason as findResumableOrderByToken(): never take payment for a cancelled order.
-        // Scoped to "nothing left to pay for" rather than "any sibling is cancelled", because a
-        // marketplace checkout splits one token across several vendor orders and cancelling one
-        // of them must not block payment for the rest.
-        if (
-            Order::query()->where('token', $token)->exists()
-            && ! $this->findResumableOrderByToken($token)
-        ) {
-            // Drop the dead token so the next request mints a fresh one, otherwise the buyer
-            // is sent back to this same cancelled checkout and can never get past it. The cart
-            // is deliberately left intact - they still want to buy, just on a new order.
-            // Only clear the session token when it is this checkout: submitting an old
-            // bookmarked link must not throw away a different checkout already in progress.
-            session()->forget(md5('checkout_address_information_' . $token));
-
-            if (session('tracked_start_checkout') === $token) {
-                session()->forget('tracked_start_checkout');
-            }
-
-            return $this
-                ->httpResponse()
-                ->setError()
-                ->setNextUrl(route('public.checkout.information', OrderHelper::getOrderSessionToken()))
-                ->setMessage(__('This order has been cancelled. Please place your order again.'));
-        }
 
         if (! EcommerceHelper::isEnabledGuestCheckout() && ! auth('customer')->check()) {
             return $this
@@ -878,7 +705,7 @@ class PublicCheckoutController extends BaseController
             ];
         }
 
-        $stockValidation = OrderHelper::validateStock($cartItems);
+        $stockValidation = OrderHelper::validateAndReserveStock($cartItems);
 
         if (! $stockValidation['success']) {
             return $this
@@ -887,19 +714,27 @@ class PublicCheckoutController extends BaseController
                 ->setMessage($stockValidation['message']);
         }
 
-        return $this->processCheckoutAfterStockValidated(
-            $request,
-            $token,
-            $sessionData,
-            $products,
-            $handleApplyPromotionsService,
-            $shippingFeeService,
-            $applyCouponService,
-            $removeCouponService,
-        );
+        $reservedItems = $stockValidation['reserved_items'] ?? [];
+
+        try {
+            return $this->processCheckoutAfterStockReserved(
+                $request,
+                $token,
+                $sessionData,
+                $products,
+                $handleApplyPromotionsService,
+                $shippingFeeService,
+                $applyCouponService,
+                $removeCouponService,
+            );
+        } catch (Exception $e) {
+            OrderHelper::restoreReservedStock($reservedItems);
+
+            throw $e;
+        }
     }
 
-    protected function processCheckoutAfterStockValidated(
+    protected function processCheckoutAfterStockReserved(
         CheckoutRequest $request,
         string $token,
         array $sessionData,
@@ -1153,7 +988,7 @@ class PublicCheckoutController extends BaseController
         return $this
             ->httpResponse()
             ->setNextUrl(PaymentHelper::getRedirectURL($token))
-            ->setMessage(OrderHelper::getCheckoutSuccessMessage($paymentData));
+            ->setMessage(trans('plugins/ecommerce::order.checkout_successfully'));
     }
 
     public function getCheckoutSuccess(string $token)
@@ -1263,14 +1098,11 @@ class PublicCheckoutController extends BaseController
             return apply_filters(PROCESS_GET_CHECKOUT_RECOVER_ECOMMERCE, $token, $request);
         }
 
-        // Recovery links live in abandoned-cart emails and stay valid for a long time, so this
-        // is the most likely way a buyer lands on an order that was cancelled in the meantime.
         $order = Order::query()
             ->where([
                 'token' => $token,
                 'is_finished' => false,
             ])
-            ->where('status', '!=', OrderStatusEnum::CANCELED)
             ->with(['products', 'address'])
             ->firstOrFail();
 

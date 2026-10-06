@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'Parādīt informācijas ziņojumu, kas informē klientus par noteikumiem, kuriem viņi piekrīt, veicot pasūtījumu.',
       'hide_customer_info_at_checkout' => 'Paslēpt klienta informāciju norēķinu lapā',
       'hide_customer_info_at_checkout_helper' => 'Paslēpt klienta konta informāciju un izrakstīšanās pogu no norēķinu lapas. Kad iespējots, pieteikušies klienti neredzēs savu konta informāciju.',
-      'enable_order_notes_at_checkout' => 'Iespējot pasūtījuma piezīmes norēķinos',
-      'enable_order_notes_at_checkout_helper' => 'Ja iespējots, klienti var pievienot neobligātas piezīmes savam pasūtījumam norēķinu lapā (piemēram, īpašas piegādes instrukcijas).',
     ],
   ],
   'return' =>

@@ -299,8 +299,6 @@ return [
       'checkout_acceptance_message_enabled_helper' => 'عرض رسالة إعلامية تخبر العملاء بالشروط التي يوافقون عليها بتقديم طلب.',
       'hide_customer_info_at_checkout' => 'إخفاء معلومات العميل في الدفع',
       'hide_customer_info_at_checkout_helper' => 'إخفاء معلومات حساب العميل وزر تسجيل الخروج من صفحة الدفع. عند التمكين، لن يرى العملاء المسجلون تفاصيل حسابهم المعروضة.',
-      'enable_order_notes_at_checkout' => 'تمكين ملاحظات الطلب عند الدفع',
-      'enable_order_notes_at_checkout_helper' => 'عند التمكين، يمكن للعملاء إضافة ملاحظات اختيارية إلى طلبهم في صفحة الدفع (مثل تعليمات التسليم الخاصة).',
     ],
   ],
   'return' =>

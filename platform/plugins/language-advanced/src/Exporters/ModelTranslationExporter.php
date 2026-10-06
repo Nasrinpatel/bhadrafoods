@@ -18,14 +18,7 @@ class ModelTranslationExporter extends Exporter
 
     public function __construct(?string $modelClass = null)
     {
-        $modelClass = $modelClass ?: request()->input('class');
-
-        abort_unless(
-            is_string($modelClass) && LanguageAdvancedManager::isSupported($modelClass),
-            404
-        );
-
-        $this->modelClass = $modelClass;
+        $this->modelClass = $modelClass ?: request()->input('class');
     }
 
     public function getLabel(): string

@@ -26,19 +26,13 @@ class CreateStateTranslationListener
 
             $row = $event->row;
 
-            $name = Arr::get($row, "name_$language->lang_code") ?: Arr::get($row, 'name');
-
-            DB::table('states_translations')->updateOrInsert(
-                [
-                    'states_id' => $event->state->getKey(),
-                    'lang_code' => $language->lang_code,
-                ],
-                [
-                    'name' => $name,
-                    'slug' => Str::slug($name),
-                    'abbreviation' => Arr::get($row, "abbreviation_$language->lang_code") ?: Arr::get($row, 'abbreviation'),
-                ]
-            );
+            DB::table('states_translations')->insertOrIgnore([
+                'states_id' => $event->state->getKey(),
+                'lang_code' => $language->lang_code,
+                'name' => $name = Arr::get($row, "name_$language->lang_code") ?: Arr::get($row, 'name'),
+                'slug' => Str::slug($name),
+                'abbreviation' => Arr::get($row, "abbreviation_$language->lang_code", Arr::get($row, 'abbreviation')),
+            ]);
         }
     }
 }

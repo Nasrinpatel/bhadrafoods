@@ -36,12 +36,10 @@ return [
     'test_payment' => 'Gumawa muna ng pagbabayad sa pagsubok sa Test Mode',
     'check_status' => 'Tingnan kung nag-update ang status ng order sa "Nakumpleto"',
     'verify_webhook' => 'Kung nananatiling "Hindi Kumpleto" ang mga order, i-verify ang iyong pagsasaayos ng webhook',
-    'check_logs' => 'Tingnan ang mga log ng pagbabayad sa Payments > Payment Logs (admin panel) para sa pag-debug',
+    'check_logs' => 'Tingnan ang mga log ng pagbabayad sa storage/logs/payment-*.log para sa pag-debug',
     'troubleshooting' => 'Mga Tip sa Pag-troubleshoot:',
     'ssl_required' => 'Tiyaking ang iyong site ay may wastong SSL certificate (HTTPS)',
     'public_url' => 'I-verify na ang URL ng webhook ay pampublikong naa-access (hindi localhost)',
     'firewall_check' => 'Tingnan na walang firewall na humahadlang sa mga kahilingan ng webhook ng Razorpay',
     'live_mode' => 'Para sa produksyon, tiyaking ang Razorpay ay nasa Live Mode, hindi Test Mode',
-    'minimum_amount_error' => 'Ang halaga ng order ay mas mababa sa minimum na halaga na pinapayagan ng Razorpay (:amount). Mangyaring magdagdag ng higit pang mga item sa iyong cart.',
-    'minimum_amount_warning' => 'Nangangailangan ang Razorpay ng minimum na halaga ng order na :amount. Ang kasalukuyang kabuuan ng iyong order ay mas mababa sa minimum na ito.',
 ];

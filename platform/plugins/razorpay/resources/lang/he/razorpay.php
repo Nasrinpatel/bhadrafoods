@@ -36,12 +36,10 @@ return [
     'test_payment' => 'בצע תשלום ניסיון במצב בדיקה תחילה',
     'check_status' => 'בדוק אם סטטוס ההזמנה מתעדכן ל"הושלם"',
     'verify_webhook' => 'אם הזמנות נשארות "לא הושלם", אמת את תצורת ה-webhook שלך',
-    'check_logs' => 'בדוק את יומני התשלום ב-Payments > Payment Logs (admin panel) לניפוי באגים',
+    'check_logs' => 'בדוק את יומני התשלום ב-storage/logs/payment-*.log לניפוי באגים',
     'troubleshooting' => 'טיפים לפתרון בעיות:',
     'ssl_required' => 'וודא שלאתר שלך יש תעודת SSL תקפה (HTTPS)',
     'public_url' => 'אמת שכתובת ה-URL של webhook נגישה לציבור (לא localhost)',
     'firewall_check' => 'בדוק שאין חומת אש חוסמת בקשות webhook של Razorpay',
     'live_mode' => 'לייצור, וודא ש-Razorpay במצב חי, לא במצב בדיקה',
-    'minimum_amount_error' => 'סכום ההזמנה נמוך מהסכום המינימלי המותר על ידי Razorpay (:amount). אנא הוסף פריטים נוספים לעגלת הקניות שלך.',
-    'minimum_amount_warning' => 'Razorpay דורש סכום הזמנה מינימלי של :amount. סכום ההזמנה הנוכחי שלך נמוך ממינימום זה.',
 ];

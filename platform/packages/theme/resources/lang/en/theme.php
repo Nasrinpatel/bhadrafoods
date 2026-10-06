@@ -68,8 +68,6 @@ return [
     'typography_font_family' => ':name Font',
     'typography_font_size' => ':name Font Size',
     'typography_font_size_helper' => 'Font size in pixels. The default value is :default.',
-    'typography_font_weight' => ':name Font Weight',
-    'typography_font_weight_default' => 'Default',
     'robots_txt_editor' => 'Robots.txt Editor',
     'robots_txt_content' => 'Robots.txt Content',
     'robots_txt_not_writable' => 'Cannot write robots.txt file! Please chmod to make it writable! (Your robots.txt file is located at :path)',
@@ -77,7 +75,6 @@ return [
     'robots_txt_sitemap_suggestion' => '<strong>Tip:</strong> You can link to your sitemap in your robots.txt content by adding: <code>Sitemap: :sitemap_url</code>',
     'robots_txt_file' => 'Upload robots.txt file',
     'robots_txt_file_helper' => 'If you want to upload a robots.txt file, please select it here.',
-    'robots_txt_file_not_readable' => 'The uploaded robots.txt file could not be read, so your robots.txt was left unchanged. Please try uploading it again.',
     'email_template_logo_helper_text' => 'If don\'t set, it will get from theme options logo in Admin -> Appearance -> Theme Options -> Logo.',
     'settings' => [
         'website_tracking' => [
@@ -101,8 +98,6 @@ return [
             'custom_tracking_body_html_helper' => 'Paste any noscript or additional code that goes after the opening &lt;body&gt; tag. Leave empty if not required.',
             'gtm_debug_mode' => 'Enable GTM Debug Mode',
             'gtm_debug_mode_helper' => 'Enable debug mode to log GTM events to browser console and troubleshoot tracking issues. Disable in production for better performance.',
-            'gtm_user_data' => 'Include customer data on purchase (Enhanced Conversions)',
-            'gtm_user_data_helper' => 'Adds a user_data object (email, phone, name, address) to the purchase dataLayer event for Google Ads Enhanced Conversions and Meta Advanced Matching. Values are sent unhashed for your GTM tags to hash. Only enable if your privacy policy and consent setup allow sharing this data.',
             'setup_instructions' => 'Setup Instructions',
             'verification_title' => 'How to Verify Your Setup',
             'common_mistakes' => 'Common Mistakes:',

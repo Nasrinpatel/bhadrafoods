@@ -4,7 +4,6 @@ namespace Botble\Ecommerce\Models;
 
 use Botble\Base\Models\BaseModel;
 use Botble\Ecommerce\Enums\InvoiceStatusEnum;
-use Botble\Ecommerce\Models\Concerns\HasUniqueCode;
 use Botble\Payment\Models\Payment;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,8 +12,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Invoice extends BaseModel
 {
-    use HasUniqueCode;
-
     protected $table = 'ec_invoices';
 
     protected $fillable = [
@@ -119,22 +116,6 @@ class Invoice extends BaseModel
             ])
             ->values()
             ->all();
-    }
-
-    /**
-     * The invoice status only moves to completed/canceled when the order does, so it never
-     * reflects a failed, refunded or fraudulent payment. Fall back to the payment status
-     * whenever a payment record exists so customers see the real payment state.
-     */
-    protected function paymentStatusHtml(): Attribute
-    {
-        return Attribute::get(function () {
-            if (is_plugin_active('payment') && $this->payment->id) {
-                return $this->payment->status->toHtml();
-            }
-
-            return $this->status->toHtml();
-        });
     }
 
     protected function taxClassesName(): Attribute

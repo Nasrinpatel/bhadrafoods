@@ -121,7 +121,6 @@ return [
     'apply' => 'Примени',
     'available' => 'Доступно',
     'back_to_return_requests' => 'Назад на захтеве за повраћај',
-    'backorder_warning' => 'Упозорење: Овај производ је у предпродаји и испорука може трајати дуже.',
     'choose_reason' => 'Изаберите разлог',
     'clear' => 'Обриши',
     'clear_all_filters' => 'Обриши све филтере',
@@ -192,6 +191,4 @@ return [
     'checkout' => 'Плати',
     'complete_order' => 'Заврши поруџбину',
     'agree_terms_and_policy_error' => 'Морате се сложити са условима и политиком приватности.',
-    'optional' => 'Opciono',
-
 ];

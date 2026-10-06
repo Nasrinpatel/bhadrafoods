@@ -34,21 +34,13 @@ class BlogSettingForm extends SettingForm
                 SelectFieldOption::make()
                     ->label(trans('plugins/blog::base.settings.schema_type'))
                     ->choices([
-                        'BlogPosting' => 'BlogPosting',
-                        'Article' => 'Article',
                         'NewsArticle' => 'NewsArticle',
                         'News' => 'News',
+                        'Article' => 'Article',
+                        'BlogPosting' => 'BlogPosting',
                     ])
-                    ->selected(setting('blog_post_schema_type', 'BlogPosting'))
+                    ->selected(setting('blog_post_schema_type', 'NewsArticle'))
             )
-            ->addCloseCollapsible('blog_post_schema_enabled', '1')
-            ->add(
-                'blog_heading_anchors_enabled',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('plugins/blog::base.settings.enable_heading_anchors'))
-                    ->defaultValue((bool) setting('blog_heading_anchors_enabled', false))
-                    ->helperText(trans('plugins/blog::base.settings.enable_heading_anchors_description'))
-            );
+            ->addCloseCollapsible('blog_post_schema_enabled', '1');
     }
 }
