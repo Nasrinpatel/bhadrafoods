@@ -60,3 +60,6 @@ storage/framework/maintenance.php
 .mcp.json
 .taskmaster/
 composer.lock
+
+/storage/framework/views/*
+/storage/logs/*
