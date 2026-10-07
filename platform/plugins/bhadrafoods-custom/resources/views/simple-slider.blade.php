@@ -1,27 +1,56 @@
 @php
-    $hasAds = $shortcode->ads_1 || $shortcode->ads_2;
-    $style = ! in_array($shortcode->style, ['wooden', 'fashion', 'furniture', 'cosmetics', 'grocery', 'full-width', 'hero']) ? 'wooden' : $shortcode->style;
-    $allowedAutoplaySpeeds = [2000, 3000, 4000, 4500, 5000, 5500, 6000, 7000, 8000, 9000, 10000];
-    $defaultAutoplaySpeeds = [
-        'wooden' => 4500,
-        'grocery' => 4500,
-        'full-width' => 4500,
-        'furniture' => 5000,
-        'fashion' => 5500,
-        'cosmetics' => 6000,
-        'hero' => 4500,
-    ];
     $autoplaySpeed = (int) $shortcode->autoplay_speed;
-    $autoplaySpeed = in_array($autoplaySpeed, $allowedAutoplaySpeeds, true) ? $autoplaySpeed : $defaultAutoplaySpeeds[$style];
+    $autoplaySpeed = $autoplaySpeed >= 2000 && $autoplaySpeed <= 10000 ? $autoplaySpeed : 4500;
 @endphp
 
 @if($sliders->isNotEmpty())
-    @php $sliders->loadMissing('metadata'); @endphp
-    <section @class([
-        'slider-area',
-        'pb-25' => $style === 'wooden',
-        'slider-bg slider-bg-height' => $style === 'fashion',
-    ]) @if ($shortcode->background_color) style="background-color: {{ $shortcode->background_color }} !important;" @endif>
-        @include(Theme::getThemeNamespace("partials.shortcodes.simple-slider.styles.$style"))
+    @php
+        $sliders->loadMissing('metadata');
+    @endphp
+
+    <section class="bf-fullscreen-hero-slider" data-autoplay-speed="{{ $autoplaySpeed }}" aria-label="{{ __('Featured products') }}">
+        <div class="swiper">
+            <div class="swiper-wrapper">
+                @foreach($sliders as $slider)
+                    @php($subtitle = $slider->getMetaData('subtitle', true))
+                    <div class="swiper-slide">
+                        <div class="bf-fullscreen-hero-slide">
+                            <div class="bf-fullscreen-hero-image">
+                                @include(Theme::getThemeNamespace('partials.shortcodes.simple-slider.includes.image'))
+                            </div>
+
+                            <div class="bf-fullscreen-hero-shade"></div>
+
+                            @if ($shortcode->show_slider_text)
+                                <div class="bf-fullscreen-hero-content">
+                                    @if ($slider->title)
+                                        <div class="bf-fullscreen-hero-badge">
+                                            <span aria-hidden="true">✦</span>
+                                            <span>{!! BaseHelper::clean($slider->title) !!}</span>
+                                        </div>
+                                    @endif
+
+                                    @if ($subtitle)
+                                        <h1 class="bf-fullscreen-hero-title">{!! BaseHelper::clean($subtitle) !!}</h1>
+                                    @elseif ($slider->description)
+                                        <h1 class="bf-fullscreen-hero-title">{!! BaseHelper::clean($slider->description) !!}</h1>
+                                    @endif
+
+                                    @if ($subtitle && $slider->description)
+                                        <p class="bf-fullscreen-hero-subtitle">{!! BaseHelper::clean($slider->description) !!}</p>
+                                    @endif
+
+                                    @if (($actionLabel = $slider->getMetaData('action_label', true)) && $slider->link)
+                                        <a class="bf-fullscreen-hero-button" href="{{ $slider->link }}">
+                                            {{ $actionLabel }} <span aria-hidden="true">→</span>
+                                        </a>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
     </section>
 @endif

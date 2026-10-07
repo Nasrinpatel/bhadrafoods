@@ -20,7 +20,7 @@ class HookServiceProvider extends ServiceProvider
             return Theme::getThemeName() === 'ninico'
                 ? 'plugins/bhadrafoods-custom::simple-slider'
                 : $template;
-        });
+        }, 99);
 
         if (! function_exists('shortcode')) {
             return;

@@ -31,7 +31,18 @@ class BhadraFoodsCustomServiceProvider extends ServiceProvider
 
             Theme::asset()
                 ->usePath(false)
-                ->add('bhadrafoods-custom-css', asset('vendor/core/plugins/bhadrafoods-custom/css/custom.css'));
+                ->add('bhadrafoods-custom-css', asset('vendor/core/plugins/bhadrafoods-custom/css/custom.css'), [], [], '1.1.1');
+
+            Theme::asset()
+                ->container('footer')
+                ->usePath(false)
+                ->add(
+                    'bhadrafoods-hero-slider-js',
+                    asset('vendor/core/plugins/bhadrafoods-custom/js/hero-slider.js'),
+                    ['swiper-bundle-js'],
+                    [],
+                    '1.1.0'
+                );
         });
     }
 }
