@@ -3,6 +3,7 @@
     "description": "PhonePe Standard Checkout v2 payment gateway for Botble",
     "type": "package",
     "require": {
-        "phonepe/pg-php-sdk-v2": "^2.0"
+        "phonepe/pg-php-sdk-v2": "^2.0",
+        "netresearch/jsonmapper": "^4.4"
     }
 }
