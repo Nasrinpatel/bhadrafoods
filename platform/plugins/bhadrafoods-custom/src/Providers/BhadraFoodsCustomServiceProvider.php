@@ -29,9 +29,12 @@ class BhadraFoodsCustomServiceProvider extends ServiceProvider
                 return;
             }
 
+            $cssVersion = filemtime($this->getPath('/public/css/custom.css')) ?: '1.1.1';
+            $jsVersion = filemtime($this->getPath('/public/js/hero-slider.js')) ?: '1.1.0';
+
             Theme::asset()
                 ->usePath(false)
-                ->add('bhadrafoods-custom-css', asset('vendor/core/plugins/bhadrafoods-custom/css/custom.css'), [], [], '1.1.1');
+                ->add('bhadrafoods-custom-css', asset('vendor/core/plugins/bhadrafoods-custom/css/custom.css'), [], [], $cssVersion);
 
             Theme::asset()
                 ->container('footer')
@@ -41,7 +44,7 @@ class BhadraFoodsCustomServiceProvider extends ServiceProvider
                     asset('vendor/core/plugins/bhadrafoods-custom/js/hero-slider.js'),
                     ['swiper-bundle-js'],
                     [],
-                    '1.1.0'
+                    $jsVersion
                 );
         });
     }
