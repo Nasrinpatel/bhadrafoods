@@ -2,7 +2,7 @@
     @case('style-1')
         <section class="category-area pt-70 pb-70">
             <div class="container">
-                <div class="custom-row category-border pb-45 justify-content-xl-between">
+                <div class="custom-row category-border pb-45 justify-content-xl-evenly">
                     @foreach($categories as $category)
                         <div class="tpcategory mb-40">
                             <div class="tpcategory__icon p-relative">
