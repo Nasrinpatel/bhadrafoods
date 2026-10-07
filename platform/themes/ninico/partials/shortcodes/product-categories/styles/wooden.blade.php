@@ -7,7 +7,7 @@
                 </div>
             </div>
         </div>
-        <div class="custom-row category-border pb-45 justify-content-xl-between">
+        <div class="custom-row category-border pb-45 justify-content-xl-evenly">
             @foreach($categories as $category)
                 <div class="tpcategory mb-40">
                     <a href="{{ $category->url }}">
