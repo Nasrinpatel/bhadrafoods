@@ -1,0 +1,11 @@
+{
+    "id": "bhadrafoods/custom",
+    "name": "Bhadra Foods Customizations",
+    "namespace": "BhadraFoods\\Custom\\",
+    "provider": "BhadraFoods\\Custom\\Providers\\BhadraFoodsCustomServiceProvider",
+    "author": "Bhadra Foods",
+    "version": "1.0.0",
+    "description": "Storefront customizations kept separate from the Ninico theme.",
+    "required_plugins": ["contact", "ecommerce", "simple-slider"],
+    "minimum_core_version": "7.4.0"
+}
